@@ -1,0 +1,171 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+// --- Header fixture visuals (the engine owns positioning/transform) ---
+.arts-header__bar {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  background: #111;
+  color: #fff;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.pg-logo {
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  font-size: 14px;
+}
+
+.arts-header_sticky .arts-header__bar {
+  background: #0b1220;
+}
+
+// --- Page sections ---
+.pg-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #eee;
+  font-size: 2rem;
+  color: #c4c4c4;
+}
+
+.pg-section:nth-child(even) {
+  background: #fafafa;
+}
+
+.pg-zone {
+  background: #1d4ed8;
+  color: #fff;
+  text-align: center;
+  padding: 40px;
+  font-size: 1.25rem;
+  line-height: 1.5;
+}
+
+// --- Chrome ---
+.pg-nav {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  z-index: 9999;
+  background: #000;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+
+  a {
+    color: #7dd3fc;
+    text-decoration: none;
+  }
+}
+
+.pg-hud {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.85);
+  color: #4ade80;
+  font: 12px/1.6 ui-monospace, monospace;
+  padding: 10px 14px;
+  border-radius: 6px;
+  min-width: 240px;
+  white-space: nowrap;
+}
+
+.pg-cls {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 9999;
+  background: #052e16;
+  color: #4ade80;
+  font: 13px/1 ui-monospace, monospace;
+  padding: 8px 12px;
+  border-radius: 6px;
+
+  &_bad {
+    background: #450a0a;
+    color: #fca5a5;
+  }
+}
+
+// Full-viewport tinted hero — a gradient stands in for a hero photo (no external asset).
+.pg-hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 3rem;
+  letter-spacing: 0.05em;
+  text-align: center;
+  background:
+    linear-gradient(rgba(10, 15, 30, 0.5), rgba(10, 15, 30, 0.72)),
+    repeating-linear-gradient(45deg, #4b6cb7, #4b6cb7 40px, #182848 40px, #182848 80px);
+}
+
+.pg-controls {
+  position: fixed;
+  top: 96px;
+  right: 12px;
+  z-index: 9999;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  button {
+    cursor: pointer;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #f7f7f7;
+  }
+}
+
+// --- Hub ---
+.pg-hub {
+  max-width: 680px;
+  margin: 64px auto;
+  padding: 0 20px;
+
+  h1 {
+    font-size: 1.4rem;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  li {
+    margin: 10px 0;
+  }
+
+  a {
+    font-weight: 600;
+    color: #1d4ed8;
+    text-decoration: none;
+  }
+
+  span {
+    color: #777;
+  }
+}

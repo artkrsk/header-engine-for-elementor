@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-playground/
+.env
+src/php/libraries/
+vendor/
+vendor-prefixed/
+*.log
+.DS_Store

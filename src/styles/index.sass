@@ -1,0 +1,55 @@
+@use '_sticky'
+@use '_interaction'
+@use '_logo-interaction'
+
+.arts-header
+	position: static
+	--arts-header-spacing-horizontal: var(--arts-header-non-sticky-spacing-horizontal, 0px)
+	--arts-header-spacing-vertical: var(--arts-header-non-sticky-spacing-vertical, 0px)
+	&.customize-partial-refreshing
+		position: relative
+		z-index: 500
+
+body.admin-bar
+	.arts-header
+		--arts-header-top: var(--wp-admin--admin-bar--height, 0px)
+
+// Bar visual-state transitions (background/border/etc. when toggling per-state sticky styles).
+.arts-header .arts-header__bar,
+.arts-header .arts-header__bar.e-con:not(.e-div-block-base),
+.arts-header .arts-header__bar.elementor-element:not(.e-div-block-base) .elementor-widget-container,
+.arts-header .arts-header__bar.elementor-element:not(.e-div-block-base):not(:has(.elementor-widget-container))
+	transition-property: background, box-shadow, border-color, border-width, border-radius, opacity, padding
+	transition-duration: var(--spacing-transition, 0.3s)
+	transition-timing-function: ease
+
+// The WRAPPER carries positioning in EVERY mode (its containing block is the page), so the reveal
+// transform always rides the wrapper — one code path for flow + overlay, and the engine stays
+// mode-agnostic. The bar's modifier class only signals which mode; the wrapper positions.
+//   flow    (_sticky)   → in flow, native sticky (reserves space, zero content offsets)
+//   overlay (_fixed)    → out of flow, fixed over content (transparent-over-hero; no layout shift
+//                         when the bar shrinks, since it no longer occupies flow)
+//   overlay (_absolute) → out of flow, absolute within the nearest positioned ancestor
+.arts-header:has(> .arts-header__bar_sticky)
+	position: sticky
+	top: var(--arts-header-top, 0px)
+	z-index: 100
+	transition: transform var(--spacing-transition, 0.3s) ease
+
+.arts-header:has(> .arts-header__bar_fixed),
+.arts-header:has(> .arts-header__bar_absolute)
+	top: var(--arts-header-top, 0px)
+	left: 0
+	right: 0
+	z-index: 100
+	transition: transform var(--spacing-transition, 0.3s) ease
+
+.arts-header:has(> .arts-header__bar_fixed)
+	position: fixed
+
+.arts-header:has(> .arts-header__bar_absolute)
+	position: absolute
+
+// Scrub mode: JS writes the wrapper transform every frame — kill the transition or it lags the writes.
+.arts-header.arts-header_reveal-scrub
+	transition: none

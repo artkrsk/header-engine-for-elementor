@@ -1,0 +1,15 @@
+.arts-header.arts-header_sticky:not(.arts-header_scrolling-down)
+	--arts-header-spacing-horizontal: var(--arts-header-sticky-spacing-horizontal, 0px)
+	--arts-header-spacing-vertical: var(--arts-header-sticky-spacing-vertical, 0px)
+
+// Auto-hide reveal (v2): CSS owns the transform on the sticky wrapper — compositor-friendly, no
+// per-frame JS writes. Hide while scrolling down and stuck; the transition animates it. Scrolling
+// up removes `_scrolling-down` and it slides back. `_locked` freezes the current state.
+// `:not(_reveal-scrub)` — in scrub mode JS writes the wrapper transform inline (authoritative),
+// so CSS must not co-drive it.
+.arts-header.arts-header_sticky.arts-header_scrolling-down:not(.arts-header_locked):not(.arts-header_reveal-scrub)
+	transform: translateY(-100%)
+
+// Zone- / API-driven full hide (hide-over zones, toggleHidden()).
+.arts-header.arts-header_hidden:not(.arts-header_reveal-scrub)
+	transform: translateY(-100%)
