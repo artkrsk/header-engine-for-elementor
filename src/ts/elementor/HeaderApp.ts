@@ -94,7 +94,6 @@ export class HeaderApp {
     this.state = 'running'
 
     try {
-      // Execute before callback
       await this.executeBeforeCallback()
 
       // If artsHeader is already initialized, destroy it first
@@ -117,7 +116,6 @@ export class HeaderApp {
         await this.artsHeader.init()
       }
 
-      // Execute after callback
       await this.executeAfterCallback()
     } catch (error) {
       logger.error('Error during arts header initialization:', error)
@@ -137,29 +135,18 @@ export class HeaderApp {
     this.editorHandlerAttached = true
   }
 
-  /**
-   * Execute the before callback if it exists
-   */
   private async executeBeforeCallback(): Promise<void> {
     if (typeof this.callbackBefore === 'function') {
       await this.callbackBefore()
     }
   }
 
-  /**
-   * Execute the after callback if it exists
-   */
   private async executeAfterCallback(): Promise<void> {
     if (typeof this.callbackAfter === 'function') {
       await this.callbackAfter()
     }
   }
 
-  /**
-   * Check if the instance is in a specific state
-   * @param checkState The state to check against
-   * @returns True if the instance is in the specified state
-   */
   private isInState(checkState: TAppState): boolean {
     return this.state === checkState
   }
