@@ -15,6 +15,8 @@ export interface IHeaderOptions {
     toggleReveal?: boolean
     /** Animation strategy for the reveal. Defaults to `auto-hide`. */
     revealMode?: TRevealMode
+    /** Scroll distance (px) past the stick point before hide/reveal engages. Defaults to 0 (immediate). */
+    revealOffset?: number
     /** Optional boundary element/selector; the header stops sticking past it (sticky-until). */
     until?: string | HTMLElement
     toggleAttributes?: TToggleAttributes

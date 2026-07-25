@@ -13,3 +13,15 @@
 // Zone- / API-driven full hide (hide-over zones, toggleHidden()).
 .arts-header.arts-header_hidden:not(.arts-header_reveal-scrub)
 	transform: translateY(-100%)
+
+// Stick-detection sentinel: a zero-visual marker the engine injects as a sibling before the
+// wrapper. `margin-bottom:-1px` cancels the 1px height so it adds no gap in the unstuck state,
+// while keeping a real 1px box the IntersectionObserver can observe reliably (a 0-height box
+// intersects unreliably). Shifting the next sibling up doesn't touch the sentinel's own rect, so
+// stick detection is unaffected.
+.arts-header__sentinel
+	width: 1px
+	height: 1px
+	margin-bottom: -1px
+	pointer-events: none
+	visibility: hidden

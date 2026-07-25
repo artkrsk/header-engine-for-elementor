@@ -10,6 +10,7 @@ export interface IResolvedHeaderOptions {
     trigger?: string | HTMLElement
     toggleReveal: boolean
     revealMode: TRevealMode
+    revealOffset: number
     until?: string | HTMLElement
     toggleAttributes?: TToggleAttributes
   }

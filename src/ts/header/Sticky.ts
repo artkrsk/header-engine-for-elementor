@@ -19,7 +19,10 @@ export class Sticky extends Plugin {
   private stickyTop = 0
 
   private sentinel: HTMLElement | null = null
+  private triggerEl: HTMLElement | null = null
   private stickyObserver: IntersectionObserver | null = null
+  private untilSentinel: HTMLElement | null = null
+  private untilObserver: IntersectionObserver | null = null
   private zones: IZone[] = []
   private zoneMutationObserver: MutationObserver | null = null
 
@@ -28,8 +31,9 @@ export class Sticky extends Plugin {
   private scrollingDown = false
   private hidden = false
   private locked = false
+  private released = false
   private displacedState = false
-  private revealOffset = 0
+  private scrubOffset = 0
 
   private lastScrollY = 0
   private rafId = 0
@@ -73,7 +77,7 @@ export class Sticky extends Plugin {
     this.toggleStateClass('hidden', value)
     if (value && this.isScrubMode()) {
       // JS owns the transform in scrub — force fully hidden (a later scroll-up reveals).
-      this.revealOffset = this.barHeight
+      this.scrubOffset = this.barHeight
       this.applyScrubTransform()
     }
     this.notify(EVENTS.HIDDEN, value)
@@ -99,8 +103,10 @@ export class Sticky extends Plugin {
 
   protected override onInit(): void {
     this.measure()
+    this.triggerEl = this.resolveTrigger()
     this.setupSentinel()
     this.setupSticky()
+    this.setupUntil()
 
     if (this.isRevealEnabled()) {
       window.addEventListener('scroll', this.onScroll, { passive: true })
@@ -122,6 +128,9 @@ export class Sticky extends Plugin {
     if (this.stickyTop !== previousStickyTop || !this.stickyObserver) {
       this.setupSticky()
     }
+    // Re-arm unconditionally: the release line is pin + bar height, and the bar can resize without
+    // the pin line moving.
+    this.setupUntil()
     this.refreshZones()
   }
 
@@ -131,6 +140,8 @@ export class Sticky extends Plugin {
 
     this.stickyObserver?.disconnect()
     this.stickyObserver = null
+    this.untilObserver?.disconnect()
+    this.untilObserver = null
     this.teardownZones()
     this.zoneMutationObserver?.disconnect()
     this.zoneMutationObserver = null
@@ -139,10 +150,18 @@ export class Sticky extends Plugin {
       this.sentinel.parentNode.removeChild(this.sentinel)
     }
     this.sentinel = null
+    this.triggerEl = null
+    if (this.untilSentinel?.parentNode) {
+      this.untilSentinel.parentNode.removeChild(this.untilSentinel)
+    }
+    this.untilSentinel = null
 
-    // Clear the scrub inline transform + mode class.
+    // Clear the scrub inline transform + mode class, and any release anchor.
     this.container.style.transform = ''
+    this.container.style.removeProperty('--arts-header-release-top')
     this.toggleStateClass('revealScrub', false)
+    this.toggleStateClass('released', false)
+    this.released = false
 
     if (revert) {
       this.setSticking(false)
@@ -164,15 +183,32 @@ export class Sticky extends Plugin {
 
   private measure(): void {
     this.barHeight = Math.round(this.bar.getBoundingClientRect().height)
-    // The wrapper is the sticky element in flow mode; its resolved `top` is the sticky line.
-    const top = parseFloat(getComputedStyle(this.container).top)
-    this.stickyTop = Number.isFinite(top) ? top : 0
+    // stickyTop = the pin line (viewport Y where the header locks): the admin-bar offset, which WP
+    // applies as <html> margin-top. Read that resolved px value rather than the container's computed
+    // `top` — a bottom-docked wrapper (hero-bottom at rest) reports its docked offset, not the pin line.
+    const adminOffset = parseFloat(getComputedStyle(document.documentElement).marginTop)
+    this.stickyTop = Number.isFinite(adminOffset) ? Math.max(0, adminOffset) : 0
   }
 
   // --- Sticky detection (sentinel + IntersectionObserver) ------------------
 
+  /** Resolve `sticky.trigger` (selector or element) — a custom stick anchor replacing the sentinel. */
+  private resolveTrigger(): HTMLElement | null {
+    const trigger = this.options.sticky.trigger
+    if (!trigger) {
+      return null
+    }
+    return typeof trigger === 'string' ? document.querySelector<HTMLElement>(trigger) : trigger
+  }
+
+  /** The element whose top edge crossing the sticky line flips the stuck state. */
+  private getStickyObserveTarget(): HTMLElement | null {
+    return this.triggerEl ?? this.sentinel
+  }
+
   private setupSentinel(): void {
-    if (this.sentinel) {
+    // A custom trigger replaces the auto-sentinel entirely — don't inject one.
+    if (this.sentinel || this.triggerEl) {
       return
     }
     const parent = this.container.parentNode
@@ -182,21 +218,21 @@ export class Sticky extends Plugin {
     const sentinel = document.createElement('div')
     sentinel.className = 'arts-header__sentinel'
     sentinel.setAttribute('aria-hidden', 'true')
-    // Zero-footprint marker at the header's natural top edge. Placed as a sibling *before* the
-    // wrapper (not inside it) so it isn't carried along when the wrapper pins.
-    sentinel.style.cssText =
-      'width:1px;height:1px;margin:0;padding:0;pointer-events:none;visibility:hidden'
+    // Styled in CSS (`.arts-header__sentinel`) as a zero-flow-footprint 1px marker at the header's
+    // natural top edge. Placed as a sibling *before* the wrapper (not inside it) so it isn't carried
+    // along when the wrapper pins.
     parent.insertBefore(sentinel, this.container)
     this.sentinel = sentinel
   }
 
   private setupSticky(): void {
     this.stickyObserver?.disconnect()
-    if (!this.sentinel) {
+    const target = this.getStickyObserveTarget()
+    if (!target) {
       return
     }
-    // Shrink the root's top edge to the sticky line so the sentinel "leaves" exactly when the
-    // header pins. Anchors to the header's natural position, not scrollY=0.
+    // Shrink the root's top edge to the sticky line so the target "leaves" exactly when the header
+    // pins. Anchors to the header's natural position (or the custom trigger), not scrollY=0.
     const margin = Math.max(0, Math.round(this.stickyTop))
     this.stickyObserver = new IntersectionObserver(
       (entries) => {
@@ -211,7 +247,7 @@ export class Sticky extends Plugin {
       },
       { rootMargin: `${-margin}px 0px 0px 0px`, threshold: [0] }
     )
-    this.stickyObserver.observe(this.sentinel)
+    this.stickyObserver.observe(target)
   }
 
   private setSticking(value: boolean): void {
@@ -231,7 +267,7 @@ export class Sticky extends Plugin {
         this.setRevealing(false)
         if (this.isScrubMode()) {
           // Reset the scrub accumulator so each stick cycle starts fully shown.
-          this.revealOffset = 0
+          this.scrubOffset = 0
           this.applyScrubTransform()
         }
         if (this.displacedState) {
@@ -239,6 +275,69 @@ export class Sticky extends Plugin {
         }
       }
     }
+  }
+
+  // --- Sticky-until (release / scroll-away) --------------------------------
+
+  /** Resolve `sticky.until` (selector or element) — the boundary past which the header releases. */
+  private resolveUntil(): HTMLElement | null {
+    const until = this.options.sticky.until
+    if (!until) {
+      return null
+    }
+    return typeof until === 'string' ? document.querySelector<HTMLElement>(until) : until
+  }
+
+  private setupUntil(): void {
+    this.untilObserver?.disconnect()
+    const boundary = this.resolveUntil()
+    if (!boundary?.parentNode) {
+      return
+    }
+    // Observe a zero-footprint sentinel at the boundary's *top* edge, not the (often tall) boundary
+    // itself: a 1px marker with a one-sided top rootMargin gives a clean, jump-proof top-edge
+    // crossing (same trick as the stick sentinel), where observing the tall element directly would
+    // stay "intersecting" until it fully cleared the line.
+    if (!this.untilSentinel) {
+      const sentinel = document.createElement('div')
+      sentinel.className = 'arts-header__sentinel'
+      sentinel.setAttribute('aria-hidden', 'true')
+      boundary.parentNode.insertBefore(sentinel, boundary)
+      this.untilSentinel = sentinel
+    }
+    // The release line is the header's bottom edge (pin line + bar height): the header hands off to
+    // the boundary exactly when their edges meet, so there's no gap.
+    const line = this.stickyTop + this.barHeight
+    const margin = Math.max(0, Math.round(line))
+    this.untilObserver = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]
+        if (!entry) {
+          return
+        }
+        this.setReleased(!entry.isIntersecting && entry.boundingClientRect.top <= line)
+      },
+      { rootMargin: `${-margin}px 0px 0px 0px`, threshold: [0] }
+    )
+    this.untilObserver.observe(this.untilSentinel)
+  }
+
+  private setReleased(value: boolean): void {
+    if (this.released === value) {
+      return
+    }
+    this.released = value
+    if (value) {
+      // Anchor at the document Y the header holds right now so it scrolls away with no jump — the
+      // fixed→absolute swap (CSS `_released`) is continuous. Reveal is frozen by the updateDirection
+      // gate, so whatever state it's in (shown / hidden / mid-scrub) simply detaches and scrolls off,
+      // rather than animating back to shown at the hand-off.
+      const anchor = Math.round(window.scrollY + this.stickyTop)
+      this.container.style.setProperty('--arts-header-release-top', `${anchor}px`)
+    } else {
+      this.container.style.removeProperty('--arts-header-release-top')
+    }
+    this.toggleStateClass('released', value)
   }
 
   // --- Direction / auto-hide reveal ---------------------------------------
@@ -251,10 +350,11 @@ export class Sticky extends Plugin {
     this.lastScrollY = y
 
     // Gate the direction *actions* (not the tracking): a lock freezes state, and there's nothing
-    // to reveal/hide before sticking. Sub-pixel jitter / overscroll bounce is ignored. Hidden is
-    // deliberately NOT gated — `_hidden` wins visually, but the underlying state must stay live so
-    // exiting a hide-over zone reveals correctly.
-    if (this.locked || !this.sticking || Math.abs(delta) < 1) {
+    // to reveal/hide before sticking. A release (sticky-until) hands the bar over to normal scroll,
+    // so no reveal transform runs while released. Sub-pixel jitter / overscroll bounce is ignored.
+    // Hidden is deliberately NOT gated — `_hidden` wins visually, but the underlying state must stay
+    // live so exiting a hide-over zone reveals correctly.
+    if (this.locked || !this.sticking || this.released || Math.abs(delta) < 1) {
       return
     }
 
@@ -266,8 +366,8 @@ export class Sticky extends Plugin {
   }
 
   private updateAutoHide(delta: number, y: number): void {
-    if (delta > 0 && y > this.stickyTop + this.barHeight) {
-      // Scrolling down, past the bar's own height → hide (CSS owns the transform).
+    if (delta > 0 && y > this.stickyTop + this.options.sticky.revealOffset) {
+      // Scrolling down, past the configured offset (default 0 = immediate) → hide.
       this.setScrollingDown(true)
       this.setRevealing(false)
       if (!this.displacedState) {
@@ -294,28 +394,28 @@ export class Sticky extends Plugin {
       // A hide-over zone forces fully hidden; frozen until it clears.
       return
     }
-    // Gate the hide near the top exactly like auto-hide; reveal (delta < 0) always runs.
-    if (delta > 0 && y <= this.stickyTop + this.barHeight) {
+    // Gate the hide by the configured offset (default 0 = immediate); reveal (delta < 0) always runs.
+    if (delta > 0 && y <= this.stickyTop + this.options.sticky.revealOffset) {
       return
     }
-    const next = Math.min(this.barHeight, Math.max(0, this.revealOffset + delta))
-    if (next === this.revealOffset) {
+    const next = Math.min(this.barHeight, Math.max(0, this.scrubOffset + delta))
+    if (next === this.scrubOffset) {
       return
     }
-    this.revealOffset = next
+    this.scrubOffset = next
     this.applyScrubTransform()
     // Keep the direction classes live for consumer styling (transform is JS-owned in scrub).
     this.setScrollingDown(delta > 0)
     this.setRevealing(delta < 0)
-    if (this.revealOffset >= this.barHeight && !this.displacedState) {
+    if (this.scrubOffset >= this.barHeight && !this.displacedState) {
       this.setDisplaced(true)
-    } else if (this.revealOffset <= 0 && this.displacedState) {
+    } else if (this.scrubOffset <= 0 && this.displacedState) {
       this.setDisplaced(false)
     }
   }
 
   private applyScrubTransform(): void {
-    this.container.style.transform = `translateY(-${this.revealOffset}px)`
+    this.container.style.transform = `translateY(-${this.scrubOffset}px)`
   }
 
   private clampScroll(y: number): number {

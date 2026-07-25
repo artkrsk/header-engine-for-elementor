@@ -86,6 +86,110 @@ body {
   white-space: nowrap;
 }
 
+.pg-swap {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 9999;
+  cursor: pointer;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font: 12px/1 ui-monospace, monospace;
+  background: #1f2937;
+  color: #cbd5e1;
+}
+
+.pg-lenis {
+  position: fixed;
+  bottom: 76px;
+  right: 12px;
+  z-index: 9999;
+  cursor: pointer;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font: 12px/1 ui-monospace, monospace;
+  background: #1f2937;
+  color: #cbd5e1;
+
+  &_on {
+    background: #0e7490;
+    color: #fff;
+    border-color: #22d3ee;
+  }
+}
+
+.pg-panel {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  z-index: 10000;
+  width: 220px;
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  background: rgba(17, 24, 39, 0.95);
+  color: #e5e7eb;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 12px;
+  font: 12px/1.4 ui-monospace, monospace;
+
+  &__title {
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #93c5fd;
+  }
+}
+
+.pg-ctl {
+  margin-bottom: 10px;
+
+  &__label {
+    display: block;
+    margin-bottom: 4px;
+    color: #9ca3af;
+  }
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+
+  &__opt {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+  }
+
+  input[type='range'] {
+    width: 100%;
+  }
+
+  &_inline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+}
+
+.pg-zone_lock {
+  background: #7c2d12;
+}
+
+// sticky.until release boundary — distinct so the release point is obvious while scrolling.
+.pg-until {
+  background: #4a044e;
+  color: #fff;
+  text-align: center;
+  padding: 40px;
+  font-size: 1.25rem;
+  line-height: 1.5;
+}
+
 .pg-cls {
   position: fixed;
   top: 12px;
@@ -104,7 +208,9 @@ body {
 }
 
 // Full-viewport tinted hero — a gradient stands in for a hero photo (no external asset).
+// position:relative so hero-bottom mode can dock the header (absolute) + trigger marker inside it.
 .pg-hero {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;

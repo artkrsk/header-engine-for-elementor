@@ -50,6 +50,35 @@ body.admin-bar
 .arts-header:has(> .arts-header__bar_absolute)
 	position: absolute
 
+// Hero-bottom mode: the header is docked (absolute) over the bottom of a positioned hero,
+// transparent, riding up with it; once stuck (via a `sticky.trigger` marker at its top) it pins to
+// the top (fixed). Both states are out of flow, so the absolute↔fixed swap causes no layout shift
+// and is seamless at the crossover (the header's top is at the sticky line in both).
+.arts-header.arts-header_hero-bottom
+	position: absolute
+	top: auto
+	bottom: 0
+	left: 0
+	right: 0
+	z-index: 100
+	transition: transform var(--spacing-transition, 0.3s) ease
+
+.arts-header.arts-header_hero-bottom.arts-header_sticky
+	position: fixed
+	top: var(--arts-header-top, 0px)
+	bottom: auto
+
+// Sticky-until release: past the boundary the header stops pinning and scrolls away with the page,
+// anchored at the document Y it held when released (`--arts-header-release-top`) so the hand-off has
+// no jump. `_released` only ever coexists with `_sticky`; this 3-class selector wins over every
+// mode's positioning (overlay fixed, flow sticky, hero-bottom fixed) by specificity + source order.
+// Out-of-flow modes (overlay/hero-bottom) release with zero layout shift; a flow header would reflow
+// its reserved space, so release pairs with an out-of-flow mode.
+.arts-header.arts-header_sticky.arts-header_released
+	position: absolute
+	top: var(--arts-header-release-top, 0px)
+	bottom: auto
+
 // Scrub mode: JS writes the wrapper transform every frame — kill the transition or it lags the writes.
 .arts-header.arts-header_reveal-scrub
 	transition: none

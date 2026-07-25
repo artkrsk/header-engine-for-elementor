@@ -16,6 +16,7 @@ export const defaultConfig: IResolvedConfig = {
     scrollingDown: 'arts-header_scrolling-down',
     hidden: 'arts-header_hidden',
     locked: 'arts-header_locked',
+    released: 'arts-header_released',
     revealScrub: 'arts-header_reveal-scrub'
   },
   selectors: {

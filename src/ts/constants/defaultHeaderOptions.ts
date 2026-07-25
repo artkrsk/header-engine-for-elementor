@@ -7,6 +7,7 @@ export const defaultHeaderOptions: IResolvedHeaderOptions = {
     trigger: undefined,
     toggleReveal: true,
     revealMode: 'auto-hide',
+    revealOffset: 0,
     until: undefined,
     toggleAttributes: {
       'data-arts-header-logo': {

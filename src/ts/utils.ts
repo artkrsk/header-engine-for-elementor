@@ -119,7 +119,9 @@ export class Resize {
     })
     for (const element of this.elements) {
       if (isHTMLElement(element)) {
-        this.instance.observe(element)
+        // Observe the border-box so padding-driven size changes (e.g. a sticky header shrinking its
+        // vertical padding on scroll) fire the callback — the content-box default would miss them.
+        this.instance.observe(element, { box: 'border-box' })
       }
     }
   }

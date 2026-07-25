@@ -107,16 +107,20 @@ export class HeightObserver extends Plugin {
     return this.container.classList.contains(stickingClass)
   }
 
-  private updateValue(): void {
-    // Fractional + border-box, matching the pre-paint inline script's getBoundingClientRect().
-    const newHeight = this.bar.getBoundingClientRect().height
-    const currentStickyState = this.isSticky()
-
-    this.height = newHeight
-
-    if (!currentStickyState) {
-      this.heightNonSticky = newHeight
+  // Debounced: a shrink/grow transition fires the RO on many frames; capturing the non-sticky
+  // height only after it settles avoids stomping the stable value with mid-transition frames (and
+  // with a frame where the class was already removed but the bar is still animating).
+  private measureNonStickySettled = debounce((): void => {
+    if (!this.isSticky()) {
+      this.heightNonSticky = this.bar.getBoundingClientRect().height
     }
+  }, 150)
+
+  private updateValue(): void {
+    // Current height tracks live — the border-box RO fires on the padding-driven sticky shrink too.
+    this.height = this.bar.getBoundingClientRect().height
+    // Non-sticky (rest) height is captured separately, once settled, so transitions don't corrupt it.
+    this.measureNonStickySettled()
   }
 
   /** Read transition-duration from element's computed styles */
