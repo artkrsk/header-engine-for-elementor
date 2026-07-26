@@ -1,4 +1,3 @@
-import { globSync } from 'node:fs'
 import path from 'node:path'
 import { defineConfig } from 'vite'
 
@@ -13,14 +12,6 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: path.resolve(process.cwd(), 'dist-playground'),
-    rollupOptions: {
-      input: Object.fromEntries(
-        ['index.html', ...globSync('pages/*/index.html', { cwd: root })].map((f) => [
-          f === 'index.html' ? 'index' : (f.split('/')[1] ?? f),
-          path.join(root, f)
-        ])
-      )
-    }
+    outDir: path.resolve(process.cwd(), 'dist-playground')
   }
 })

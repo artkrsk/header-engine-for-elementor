@@ -65,7 +65,7 @@ src/ts/
   interfaces/   I*-prefixed, one per file      types/  T*-prefixed, one per file
   utils.ts      vendored @arts/utilities subset
 src/styles/     Sass: index + _sticky, _interaction, _logo-interaction
-playground/     Vite harness: one page per scenario + shared fixtures/hud/cls
+playground/     Vite harness: single configurable page + shared fixtures/lenis
 ```
 
 ## Two-layer configuration (deepmerge over defaults)
@@ -99,7 +99,7 @@ Subscribe via `onHeaderEvent` / `offHeaderEvent` or plain `document.addEventList
   in Sass.
 - **Selectors**: container `.js-arts-header`, bar `.js-arts-header__bar`.
 - **Data attributes**: `data-arts-header-options` (JSON); `data-arts-header-hide-over` /
-  `-lock-over` (zones, value `cover|band|enter`); `data-arts-header-logo` / `-non-sticky-logo` /
+  `-lock-over` (zones, value `at-top|overlap|in-view`); `data-arts-header-logo` / `-non-sticky-logo` /
   `-sticky-logo`.
 - **Editor panel setting keys** read by `ContainerHandler`: `arts_header_enabled`,
   `arts_header_sticky_enabled`, `arts_header_sticky_toggle_reveal_enabled`,
@@ -114,9 +114,16 @@ Subscribe via `onHeaderEvent` / `offHeaderEvent` or plain `document.addEventList
 - **The wrapper positions in every mode; the bar's modifier class only *signals* the mode**
   (`__bar_sticky`→flow/native sticky, `__bar_fixed`/`__bar_absolute`→overlay, plus a `_hero-bottom`
   variant). The reveal transform always rides the wrapper, so the engine stays mode-agnostic.
-- **Auto-hide reveal is CSS-owned; scrub reveal is JS-owned.** Auto-hide just toggles classes and lets
-  a CSS transition move the wrapper; scrub writes an inline `translateY` each frame and adds
-  `arts-header_reveal-scrub` so CSS drops its transition and doesn't fight the writes.
+- **Auto-hide reveal is CSS-owned; scrub reveal is JS-owned — but scrub hands the transform back to
+  CSS while locked or hidden** (`syncScrubOwnership`): the frame writes are gated in those states, so
+  `arts-header_reveal-scrub` drops (re-enabling the CSS transition, same slide as auto-hide) and the
+  inline `translateY` clears; JS reclaims on release. Otherwise scrub writes the transform each frame
+  and the `_reveal-scrub` class keeps CSS transitions off so they don't fight the writes.
+- **Scrub defers the published sticky state through the natural departure.** The sentinel crossing
+  sets internal `stuck` only; `arts-header_sticky`, the STICKY event, and `isSticking` publish once
+  the bar fully departs (a bar height of scroll) or visibly pins (revealOffset gating, deep-scroll
+  boot), and unpublish at the sentinel re-entry — so the initial scroll-away looks like plain
+  in-flow scrolling, v1-style. Auto-hide publishes at the crossing as before.
 - **Missing container/bar never throws** — it is logged and `init()` no-ops, so a half-rendered page
   (editor mid-edit) degrades silently.
 - **`destroy(revert=false)` keeps the current visual state** (for AJAX page transitions swapping the

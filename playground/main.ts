@@ -1,107 +1,62 @@
 import { Header, type IHeaderOptions } from '@engine'
-import { injectStyle } from '../../shared/fixtures'
-import { scenario } from '../../shared/scenario'
+import '@styles/index.sass'
+import { buildHeader, heroSection, makeSection, zoneSection } from './shared/fixtures'
+import { mountLenisToggle } from './shared/lenis'
+import './shared/playground.scss'
 
-// One-page control room: every option is a live control that re-inits the header, with a unified HUD
-// (state classes + height vars + scrollY + CLS). The harness for exercising all behaviors together.
-
-scenario('control-room', { nav: false })
-
-// Hero-bottom styling: transparent header docked over the hero bottom, opaque once pinned; the
-// trigger marker sits at the header's top (bar is 72px, docked at bottom:0 → top at bottom:72px).
-injectStyle(`
-  .stick-trigger { position: absolute; left: 0; bottom: 72px; width: 1px; height: 1px; pointer-events: none; }
-  .arts-header_hero-bottom .arts-header__bar { background: transparent; color: #fff; }
-  .arts-header_hero-bottom.arts-header_sticky .arts-header__bar { background: #0b1220; box-shadow: 0 6px 24px rgba(0,0,0,.28); }
-`)
+// Single playground page: every option is a live control. Options are constructor-only, so the
+// controls marked "(rebuild)" tear the header down and re-init it; the rest act on the live instance.
 
 type Mode = 'flow' | 'overlay' | 'hero-bottom'
 type Reveal = 'off' | 'auto-hide' | 'scrub'
-type ZoneMode = 'cover' | 'band' | 'enter'
+type ZoneMode = 'at-top' | 'overlap' | 'in-view'
 
 const state = {
+  stickyEnabled: true,
   mode: 'flow' as Mode,
   reveal: 'auto-hide' as Reveal,
   revealOffset: 0,
-  zoneMode: 'cover' as ZoneMode,
+  zoneMode: 'at-top' as ZoneMode,
   until: false,
-  lock: false
+  lock: false,
+  tallBar: false
 }
 
 let header: Header | null = null
 let container: HTMLElement | null = null
+let bar: HTMLElement | null = null
 let main: HTMLElement | null = null
 
 // --- fixture -------------------------------------------------------------
 
-function makeBar(): { container: HTMLElement; bar: HTMLElement } {
-  const c = document.createElement('header')
-  c.className = 'arts-header js-arts-header'
-  if (state.mode === 'hero-bottom') {
-    c.classList.add('arts-header_hero-bottom')
-  }
-  const bar = document.createElement('div')
-  // flow → _sticky · overlay → _fixed · hero-bottom → no bar modifier (the wrapper class positions)
-  const modifier =
-    state.mode === 'flow'
-      ? ' arts-header__bar_sticky'
-      : state.mode === 'overlay'
-        ? ' arts-header__bar_fixed'
-        : ''
-  bar.className = `arts-header__bar${modifier} js-arts-header__bar`
-  bar.innerHTML = '<span class="pg-logo">HEADER</span>'
-  c.appendChild(bar)
-  return { container: c, bar }
-}
-
-function section(
-  label: string,
-  cls = '',
-  attrs: Record<string, string> = {},
-  minH = '80vh'
-): HTMLElement {
-  const s = document.createElement('section')
-  s.className = `pg-section ${cls}`.trim()
-  s.style.minHeight = minH
-  s.textContent = label
-  for (const [k, v] of Object.entries(attrs)) {
-    s.setAttribute(k, v)
-  }
-  return s
-}
-
 function appendZonesAndContent(m: HTMLElement): void {
-  m.appendChild(section('content 1 — scroll down/up to see reveal'))
-  m.appendChild(section('content 2'))
+  m.appendChild(makeSection('content 1 — scroll down/up to see reveal'))
+  m.appendChild(makeSection('content 2'))
   m.appendChild(
-    section(
-      `HIDE-OVER ZONE (${state.zoneMode})`,
-      'pg-zone',
-      { 'data-arts-header-hide-over': state.zoneMode },
-      '160vh'
+    zoneSection(
+      'hide',
+      state.zoneMode,
+      `HIDE ZONE (${state.zoneMode}) — header hides over this section`
     )
   )
-  m.appendChild(section('content 3'))
+  m.appendChild(makeSection('content 3'))
   m.appendChild(
-    section(
-      `LOCK-OVER ZONE (${state.zoneMode})`,
-      'pg-zone pg-zone_lock',
-      { 'data-arts-header-lock-over': state.zoneMode },
-      '160vh'
+    zoneSection(
+      'lock',
+      state.zoneMode,
+      `LOCK ZONE (${state.zoneMode}) — header reveals + freezes over this section`
     )
   )
-  m.appendChild(section('content 4'))
+  m.appendChild(makeSection('content 4'))
   if (state.until) {
-    m.appendChild(
-      section(
-        'RELEASE BOUNDARY (sticky.until) — header un-pins and scrolls away below here',
-        'pg-until',
-        {},
-        '120vh'
-      )
-    )
+    const boundary = document.createElement('section')
+    boundary.className = 'pg-section pg-until'
+    boundary.style.minHeight = '120vh'
+    boundary.textContent =
+      'RELEASE BOUNDARY (sticky.until) — header un-pins and scrolls away below here'
+    m.appendChild(boundary)
   }
-  m.appendChild(section('content 5'))
+  m.appendChild(makeSection('content 5'))
 }
 
 // --- lifecycle -----------------------------------------------------------
@@ -114,14 +69,16 @@ async function rebuild(): Promise<void> {
   container?.remove()
   main?.remove()
 
-  const built = makeBar()
+  const built = buildHeader({ mode: state.mode })
   container = built.container
+  bar = built.bar
   main = document.createElement('main')
 
   const options: IHeaderOptions = {
     // hero-bottom rides the overlay/out-of-flow CSS; its `_hero-bottom` wrapper class + trigger do the rest.
     mode: state.mode === 'hero-bottom' ? 'overlay' : state.mode,
     sticky: {
+      enabled: state.stickyEnabled,
       toggleReveal: state.reveal !== 'off',
       revealMode: state.reveal === 'scrub' ? 'scrub' : 'auto-hide',
       revealOffset: state.revealOffset
@@ -131,9 +88,7 @@ async function rebuild(): Promise<void> {
   if (state.mode === 'hero-bottom') {
     // Header docked inside a relative hero (over its bottom, transparent); a trigger marker at the
     // header's top drives the pin.
-    const hero = document.createElement('section')
-    hero.className = 'pg-hero'
-    hero.textContent = 'FULLSCREEN HERO'
+    const hero = heroSection('FULLSCREEN HERO')
     const trigger = document.createElement('span')
     trigger.className = 'stick-trigger'
     hero.appendChild(trigger)
@@ -146,10 +101,7 @@ async function rebuild(): Promise<void> {
     // flow / overlay: header is a body child before the content (sentinel lands at the page top).
     document.body.appendChild(container)
     if (state.mode === 'overlay') {
-      const hero = document.createElement('section')
-      hero.className = 'pg-hero'
-      hero.textContent = 'FULLSCREEN HERO'
-      main.appendChild(hero)
+      main.appendChild(heroSection('FULLSCREEN HERO'))
     }
     appendZonesAndContent(main)
     document.body.appendChild(main)
@@ -163,6 +115,9 @@ async function rebuild(): Promise<void> {
   await header.init()
   if (state.lock) {
     header.lockSticky(true)
+  }
+  if (state.tallBar) {
+    bar.style.height = '140px'
   }
 }
 
@@ -244,46 +199,64 @@ function checkbox(label: string, value: boolean, onChange: (v: boolean) => void)
   return wrap
 }
 
+function actionButton(label: string, onClick: () => void): HTMLElement {
+  const wrap = document.createElement('div')
+  wrap.className = 'pg-ctl'
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'pg-ctl__btn'
+  button.textContent = label
+  button.addEventListener('click', onClick)
+  wrap.appendChild(button)
+  return wrap
+}
+
 function mountPanel(): void {
   const panel = document.createElement('div')
   panel.className = 'pg-panel'
-  panel.innerHTML = '<div class="pg-panel__title">control room</div>'
+  panel.innerHTML = '<div class="pg-panel__title">playground</div>'
 
   panel.appendChild(
-    radioGroup('mode', ['flow', 'overlay', 'hero-bottom'] as const, state.mode, (v) => {
+    checkbox('sticky enabled (rebuild)', state.stickyEnabled, (v) => {
+      state.stickyEnabled = v
+      rebuild()
+    })
+  )
+  panel.appendChild(
+    radioGroup('mode (rebuild)', ['flow', 'overlay', 'hero-bottom'] as const, state.mode, (v) => {
       state.mode = v
       rebuild()
     })
   )
   panel.appendChild(
-    radioGroup('reveal', ['off', 'auto-hide', 'scrub'] as const, state.reveal, (v) => {
+    radioGroup('reveal (rebuild)', ['off', 'auto-hide', 'scrub'] as const, state.reveal, (v) => {
       state.reveal = v
       rebuild()
     })
   )
   panel.appendChild(
-    slider('revealOffset', 0, 300, state.revealOffset, (v) => {
+    slider('revealOffset (rebuild)', 0, 300, state.revealOffset, (v) => {
       state.revealOffset = v
       rebuild()
     })
   )
   panel.appendChild(
-    radioGroup('zone geometry', ['cover', 'band', 'enter'] as const, state.zoneMode, (v) => {
+    radioGroup('zone geometry', ['at-top', 'overlap', 'in-view'] as const, state.zoneMode, (v) => {
       state.zoneMode = v
       // Update the zone attributes in place, then re-scan — no full rebuild needed.
       for (const el of document.querySelectorAll<HTMLElement>('[data-arts-header-hide-over]')) {
         el.setAttribute('data-arts-header-hide-over', v)
-        el.textContent = `HIDE-OVER ZONE (${v})`
+        el.textContent = `HIDE ZONE (${v}) — header hides over this section`
       }
       for (const el of document.querySelectorAll<HTMLElement>('[data-arts-header-lock-over]')) {
         el.setAttribute('data-arts-header-lock-over', v)
-        el.textContent = `LOCK-OVER ZONE (${v})`
+        el.textContent = `LOCK ZONE (${v}) — header reveals + freezes over this section`
       }
       header?.refreshZones()
     })
   )
   panel.appendChild(
-    checkbox('until (release / scroll away)', state.until, (v) => {
+    checkbox('until (release / scroll away) (rebuild)', state.until, (v) => {
       state.until = v
       rebuild()
     })
@@ -294,53 +267,32 @@ function mountPanel(): void {
       header?.lockSticky(v)
     })
   )
-  document.body.appendChild(panel)
-}
-
-// --- unified HUD (persistent, reads the current container live) -----------
-
-const STATE_CLASSES = ['sticky', 'revealing', 'scrolling-down', 'hidden', 'locked', 'released']
-
-function mountHud(): void {
-  const el = document.createElement('div')
-  el.className = 'pg-hud'
-  document.body.appendChild(el)
-
-  let cls = 0
-  try {
-    new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) {
-        const shift = entry as PerformanceEntry & { value: number; hadRecentInput: boolean }
-        if (!shift.hadRecentInput) {
-          cls += shift.value
-        }
+  panel.appendChild(
+    actionButton('Toggle bar height', () => {
+      state.tallBar = !state.tallBar
+      if (bar) {
+        bar.style.height = state.tallBar ? '140px' : ''
       }
-    }).observe({ type: 'layout-shift', buffered: true })
-  } catch {
-    // layout-shift unsupported
-  }
-
-  const paint = (): void => {
-    const cs = getComputedStyle(document.documentElement)
-    const active = container
-      ? STATE_CLASSES.filter((c) => container?.classList.contains(`arts-header_${c}`))
-      : []
-    el.innerHTML = [
-      `mode: ${state.mode} · reveal: ${state.reveal}${state.reveal !== 'off' ? ` (+${state.revealOffset})` : ''}`,
-      `state: ${active.join(' ') || '—'}`,
-      `--height: ${cs.getPropertyValue('--arts-header-height').trim() || '—'}`,
-      `--non-sticky: ${cs.getPropertyValue('--arts-header-height-non-sticky').trim() || '—'}`,
-      `scrollY: ${Math.round(window.scrollY)} · CLS: ${cls.toFixed(4)}`
-    ].join('<br>')
-    requestAnimationFrame(paint)
-  }
-  paint()
+    })
+  )
+  panel.appendChild(
+    actionButton('Toggle hidden', () => {
+      if (header) {
+        header.toggleHidden(!header.isHidden)
+      }
+    })
+  )
+  document.body.appendChild(panel)
 }
 
 // --- boot ----------------------------------------------------------------
 
 mountPanel()
-mountHud()
+mountLenisToggle()
 rebuild()
 
-Object.assign(window, { getHeader: () => header, getContainer: () => container })
+Object.assign(window, {
+  getHeader: () => header,
+  getContainer: () => container,
+  getBar: () => bar
+})

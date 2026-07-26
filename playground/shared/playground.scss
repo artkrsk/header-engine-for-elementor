@@ -24,8 +24,77 @@ body {
   font-size: 14px;
 }
 
-.arts-header_sticky .arts-header__bar {
+// Dual-logo crossfade: the engine Sass only toggles opacity/visibility — the consuming theme
+// supplies the stacking + transition, like a real integration would.
+.arts-header-logo {
+  position: relative;
+  display: inline-block;
+
+  &__img-primary,
+  &__img-secondary {
+    transition: opacity 0.3s ease;
+  }
+
+  &__img-secondary {
+    position: absolute;
+    inset: 0;
+  }
+}
+
+// flow (`_sticky` bar): constant-height background/color swap on stick — height never changes,
+// so the in-flow bar never reflows the page. Height-changing switches belong in overlay mode.
+.arts-header__bar.arts-header__bar_sticky {
+  background: #fff;
+  color: #111;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.arts-header_sticky .arts-header__bar.arts-header__bar_sticky {
   background: #0b1220;
+  color: #fff;
+  border-bottom-color: transparent;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+
+// overlay (`_fixed` bar): transparent over the hero, gains a background and shrinks its vertical
+// padding once stuck. Out of flow, so the shrink never reflows the page.
+.arts-header {
+  --arts-header-non-sticky-spacing-vertical: 34px;
+  --arts-header-sticky-spacing-vertical: 10px;
+}
+
+.arts-header__bar.arts-header__bar_fixed {
+  height: auto;
+  padding-top: var(--arts-header-spacing-vertical);
+  padding-bottom: var(--arts-header-spacing-vertical);
+  background: transparent;
+  box-shadow: none;
+}
+
+.arts-header_sticky .arts-header__bar.arts-header__bar_fixed {
+  background: #0b1220;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+}
+
+// hero-bottom (no bar modifier): transparent header docked over the hero bottom, opaque once
+// pinned; the trigger marker sits at the header's top (bar is 72px, docked at bottom:0).
+.stick-trigger {
+  position: absolute;
+  left: 0;
+  bottom: 72px;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.arts-header_hero-bottom .arts-header__bar {
+  background: transparent;
+  color: #fff;
+}
+
+.arts-header_hero-bottom.arts-header_sticky .arts-header__bar {
+  background: #0b1220;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
 }
 
 // --- Page sections ---
@@ -38,7 +107,9 @@ body {
   color: #c4c4c4;
 }
 
-.pg-section:nth-child(even) {
+// Stripe only plain sections — the zone/until colors must survive any position, and this rule's
+// specificity would otherwise beat them when a hero shifts the section parity (overlay/hero-bottom).
+.pg-section:nth-child(even):not(.pg-zone):not(.pg-until) {
   background: #fafafa;
 }
 
@@ -52,54 +123,6 @@ body {
 }
 
 // --- Chrome ---
-.pg-nav {
-  position: fixed;
-  bottom: 12px;
-  left: 12px;
-  z-index: 9999;
-  background: #000;
-  color: #fff;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-
-  a {
-    color: #7dd3fc;
-    text-decoration: none;
-  }
-}
-
-.pg-hud {
-  position: fixed;
-  bottom: 12px;
-  right: 12px;
-  z-index: 9999;
-  background: rgba(0, 0, 0, 0.85);
-  color: #4ade80;
-  font: 12px/1.6 ui-monospace, monospace;
-  padding: 10px 14px;
-  border-radius: 6px;
-  min-width: 240px;
-  white-space: nowrap;
-}
-
-.pg-swap {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  z-index: 9999;
-  cursor: pointer;
-  border: 1px solid #333;
-  border-radius: 6px;
-  padding: 8px 12px;
-  font: 12px/1 ui-monospace, monospace;
-  background: #1f2937;
-  color: #cbd5e1;
-}
-
 .pg-lenis {
   position: fixed;
   bottom: 76px;
@@ -164,6 +187,17 @@ body {
     cursor: pointer;
   }
 
+  &__btn {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid #374151;
+    border-radius: 4px;
+    background: #1f2937;
+    color: #e5e7eb;
+    font: inherit;
+    cursor: pointer;
+  }
+
   input[type='range'] {
     width: 100%;
   }
@@ -190,23 +224,6 @@ body {
   line-height: 1.5;
 }
 
-.pg-cls {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  z-index: 9999;
-  background: #052e16;
-  color: #4ade80;
-  font: 13px/1 ui-monospace, monospace;
-  padding: 8px 12px;
-  border-radius: 6px;
-
-  &_bad {
-    background: #450a0a;
-    color: #fca5a5;
-  }
-}
-
 // Full-viewport tinted hero — a gradient stands in for a hero photo (no external asset).
 // position:relative so hero-bottom mode can dock the header (absolute) + trigger marker inside it.
 .pg-hero {
@@ -222,56 +239,4 @@ body {
   background:
     linear-gradient(rgba(10, 15, 30, 0.5), rgba(10, 15, 30, 0.72)),
     repeating-linear-gradient(45deg, #4b6cb7, #4b6cb7 40px, #182848 40px, #182848 80px);
-}
-
-.pg-controls {
-  position: fixed;
-  top: 96px;
-  right: 12px;
-  z-index: 9999;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  button {
-    cursor: pointer;
-    padding: 6px 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: #f7f7f7;
-  }
-}
-
-// --- Hub ---
-.pg-hub {
-  max-width: 680px;
-  margin: 64px auto;
-  padding: 0 20px;
-
-  h1 {
-    font-size: 1.4rem;
-  }
-
-  ul {
-    list-style: none;
-    padding: 0;
-  }
-
-  li {
-    margin: 10px 0;
-  }
-
-  a {
-    font-weight: 600;
-    color: #1d4ed8;
-    text-decoration: none;
-  }
-
-  span {
-    color: #777;
-  }
 }

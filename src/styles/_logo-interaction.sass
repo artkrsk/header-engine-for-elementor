@@ -17,6 +17,8 @@
 			opacity: 1
 			visibility: visible
 
+// The logo tracks the sticky state only — never scroll direction. A hiding/scrubbing/locked bar
+// is still sticky ("pseudo sticky"), so no `_scrolling-down` variant here.
 .arts-header.arts-header_sticky
 	&[data-arts-header-sticky-logo="primary"]
 		.arts-header-logo__img-primary
@@ -32,19 +34,3 @@
 		.arts-header-logo__img-secondary
 			opacity: 1
 			visibility: visible
-
-.arts-header.arts-header_sticky.arts-header_scrolling-down
-	&[data-arts-header-non-sticky-logo="secondary"][data-arts-header-sticky-logo="primary"]
-		.arts-header-logo__img-primary
-			opacity: 0
-			visibility: hidden
-		.arts-header-logo__img-secondary
-			opacity: 1
-			visibility: visible
-	&[data-arts-header-non-sticky-logo="primary"][data-arts-header-sticky-logo="secondary"]
-		.arts-header-logo__img-primary
-			opacity: 1
-			visibility: visible
-		.arts-header-logo__img-secondary
-			opacity: 0
-			visibility: hidden

@@ -27,6 +27,11 @@ export class Sticky extends Plugin {
   private zoneMutationObserver: MutationObserver | null = null
 
   private sticking = false
+  // Geometric stuck state (sentinel crossing). Usually published as `sticking` immediately — except
+  // during a scrub-mode natural departure, where publishing defers (see setStuck).
+  private stuck = false
+  private pendingStickPublish = false
+  private departureAnchorY = 0
   private revealing = false
   private scrollingDown = false
   private hidden = false
@@ -75,10 +80,15 @@ export class Sticky extends Plugin {
     }
     this.hidden = value
     this.toggleStateClass('hidden', value)
-    if (value && this.isScrubMode()) {
-      // JS owns the transform in scrub — force fully hidden (a later scroll-up reveals).
-      this.scrubOffset = this.barHeight
-      this.applyScrubTransform()
+    if (this.isRevealEnabled() && this.isScrubMode()) {
+      // Bookkeeping for the eventual reclaim: hidden parks the offset at full-hide (a later
+      // scroll-up reveals); leaving hidden while locked parks it at shown (CSS shows the bar).
+      if (value) {
+        this.scrubOffset = this.barHeight
+      } else if (this.locked) {
+        this.scrubOffset = 0
+      }
+      this.syncScrubOwnership()
     }
     this.notify(EVENTS.HIDDEN, value)
   }
@@ -90,7 +100,32 @@ export class Sticky extends Plugin {
     }
     this.locked = value
     this.toggleStateClass('locked', value)
+    if (this.isRevealEnabled() && this.isScrubMode()) {
+      if (value && !this.hidden) {
+        // Lock reveals: park the offset at shown so a later unlock reclaims from there.
+        this.scrubOffset = 0
+      }
+      this.syncScrubOwnership()
+    }
     this.notify(EVENTS.LOCKED, value)
+  }
+
+  /**
+   * Scrub-mode transform ownership. JS owns the wrapper transform only while actively scrubbing;
+   * locked and hidden both gate the frame writes, so in those states ownership passes to CSS —
+   * dropping `_reveal-scrub` re-enables the mode transition and clearing the inline transform lets
+   * the `_hidden` / locked-baseline rules animate the change, the same slides auto-hide gets.
+   */
+  private syncScrubOwnership(): void {
+    if (this.locked || this.hidden) {
+      this.toggleStateClass('revealScrub', false)
+      this.container.style.removeProperty('transform')
+    } else {
+      // Reclaim: class back on (kills the transition), inline transform restored at the parked
+      // offset — visually identical to what CSS was showing, so the swap is seamless.
+      this.toggleStateClass('revealScrub', true)
+      this.applyScrubTransform()
+    }
   }
 
   /** Re-scan the DOM for hide-over / lock-over zones (call after layout-affecting changes). */
@@ -163,6 +198,8 @@ export class Sticky extends Plugin {
     this.toggleStateClass('released', false)
     this.released = false
 
+    this.stuck = false
+    this.pendingStickPublish = false
     if (revert) {
       this.setSticking(false)
       this.setRevealing(false)
@@ -243,11 +280,64 @@ export class Sticky extends Plugin {
         // Distinguish "scrolled above the sticky line" (stuck) from "still below the fold"
         // (not stuck) — the boundingClientRect check makes mid-page headers work too.
         const stuck = !entry.isIntersecting && entry.boundingClientRect.top <= this.stickyTop
-        this.setSticking(stuck)
+        // How far past the pin line the crossing was when this callback delivered — anchors the
+        // natural-departure math to the stick line itself (works for mid-page triggers too).
+        const overshoot = stuck ? Math.max(0, this.stickyTop - entry.boundingClientRect.top) : 0
+        this.setStuck(stuck, overshoot)
       },
       { rootMargin: `${-margin}px 0px 0px 0px`, threshold: [0] }
     )
     this.stickyObserver.observe(target)
+  }
+
+  private setStuck(value: boolean, overshoot = 0): void {
+    if (value === this.stuck) {
+      return
+    }
+    this.stuck = value
+    if (value) {
+      // Scrub natural departure: while the pinned+translated bar tracks the exact trajectory of
+      // in-flow scrolling (first barHeight of travel past the pin line), it is visually plain page
+      // content — defer the published sticky state (class, events, getter, logo/spacing swap) until
+      // the bar fully departs or visibly pins (resolvePendingStick decides per frame). A crossing
+      // detected deeper than a bar height (scroll-restored load, programmatic jump) publishes
+      // immediately.
+      if (this.isRevealEnabled() && this.isScrubMode() && overshoot <= this.barHeight) {
+        this.pendingStickPublish = true
+        this.departureAnchorY = this.clampScroll(window.scrollY)
+        return
+      }
+      this.setSticking(true)
+    } else {
+      if (this.pendingStickPublish) {
+        // Unstick during a deferral that never published: clear the departure leftovers the
+        // published unstick branch would normally reset.
+        this.pendingStickPublish = false
+        this.scrubOffset = 0
+        this.applyScrubTransform()
+        this.setScrollingDown(false)
+        this.setRevealing(false)
+        if (this.displacedState) {
+          this.setDisplaced(false)
+        }
+      }
+      this.setSticking(false)
+    }
+  }
+
+  /** Publish once the deferred bar either fully departed (swap happens off-screen) or visibly pins. */
+  private resolvePendingStick(y: number): void {
+    if (!this.pendingStickPublish) {
+      return
+    }
+    // The scrub accumulates deltas from the moment the stick delivered, so on a natural departure
+    // the offset tracks the scroll travelled since then; lagging behind it means the bar is being
+    // held in place (revealOffset gating, zone freeze) — visibly sticky.
+    const since = y - this.departureAnchorY
+    if (this.scrubOffset >= this.barHeight || this.scrubOffset < since - 4) {
+      this.pendingStickPublish = false
+      this.setSticking(true)
+    }
   }
 
   private setSticking(value: boolean): void {
@@ -354,7 +444,7 @@ export class Sticky extends Plugin {
     // so no reveal transform runs while released. Sub-pixel jitter / overscroll bounce is ignored.
     // Hidden is deliberately NOT gated — `_hidden` wins visually, but the underlying state must stay
     // live so exiting a hide-over zone reveals correctly.
-    if (this.locked || !this.sticking || this.released || Math.abs(delta) < 1) {
+    if (this.locked || !this.stuck || this.released || Math.abs(delta) < 1) {
       return
     }
 
@@ -390,6 +480,7 @@ export class Sticky extends Plugin {
    * JS-authoritative); the `_reveal-scrub` class drops the CSS transition so writes aren't fought.
    */
   private updateScrub(delta: number, y: number): void {
+    this.resolvePendingStick(y)
     if (this.hidden) {
       // A hide-over zone forces fully hidden; frozen until it clears.
       return
@@ -404,6 +495,7 @@ export class Sticky extends Plugin {
     }
     this.scrubOffset = next
     this.applyScrubTransform()
+    this.resolvePendingStick(y)
     // Keep the direction classes live for consumer styling (transform is JS-owned in scrub).
     this.setScrollingDown(delta > 0)
     this.setRevealing(delta < 0)
@@ -469,18 +561,22 @@ export class Sticky extends Plugin {
   }
 
   private readZoneMode(raw: string | null): TZoneMode {
-    return raw === 'band' || raw === 'enter' ? raw : 'cover'
+    return raw === 'overlap' || raw === 'in-view' ? raw : 'at-top'
   }
 
   private observeZone(element: HTMLElement, kind: IZone['kind'], mode: TZoneMode): void {
-    // `cover`: fires when the zone's top crosses the viewport top (zone fills the screen). The
+    // `at-top`: fires while the zone straddles the viewport top, where the header docks. The
     // edge-line rootMargin makes IO usable on elements taller than the viewport, where thresholds
-    // never approach 1. `band`: intersects the header strip. `enter`: any viewport intersection.
+    // never approach 1. `overlap`: intersects the header strip itself. `in-view`: any viewport
+    // intersection. Margins are computed at observe time; `refresh()` re-arms them.
     let rootMargin = '0px'
-    if (mode === 'cover') {
+    if (mode === 'at-top') {
       rootMargin = '0px 0px -100% 0px'
-    } else if (mode === 'band') {
-      rootMargin = `${-(this.stickyTop + this.barHeight)}px 0px 0px 0px`
+    } else if (mode === 'overlap') {
+      // Shrink the root to the header strip [stickyTop, stickyTop + barHeight].
+      const line = this.stickyTop + this.barHeight
+      const below = Math.max(0, Math.round(window.innerHeight - line))
+      rootMargin = `${-Math.round(this.stickyTop)}px 0px ${-below}px 0px`
     }
 
     const zone: IZone = {
