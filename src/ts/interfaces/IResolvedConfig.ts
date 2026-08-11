@@ -3,6 +3,7 @@ export interface IResolvedConfig {
   vars: {
     headerHeight: string
     headerHeightNonSticky: string
+    releaseTop: string
   }
   classes: {
     hasHeaderHeight: string

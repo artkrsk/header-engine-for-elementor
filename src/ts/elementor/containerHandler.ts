@@ -1,5 +1,18 @@
+import {
+  BAR_ABSOLUTE_CLASS,
+  BAR_CLASS,
+  BAR_FIXED_CLASS,
+  BAR_JS_CLASS,
+  NON_STICKY_LOGO_ATTR,
+  OPTIONS_ATTR,
+  STICKY_LOGO_ATTR,
+  WRAPPER_CLASS,
+  WRAPPER_ELEMENT_ID_PREFIX,
+  WRAPPER_JS_CLASS
+} from '../constants'
 import type { IContainerHandler } from '../interfaces'
 import type { TOnDestroyCallback, TOnInitCallback } from '../types'
+import { mapPanelSettings } from './mapPanelSettings'
 
 /**
  * Editor-only container handler: wraps an Elementor Container in the `.arts-header` div, syncs
@@ -28,12 +41,9 @@ export const createContainerHandler = (onInit: TOnInitCallback, onDestroy: TOnDe
 
       if (enabled) {
         const stickyEnabled = !!this.getElementSettings('arts_header_sticky_enabled')
-
-        this.setHeaderBarLogo()
         this.toggleHeaderBarSticky(stickyEnabled)
       } else {
         this.removeHeaderBarSticky()
-        this.removeHeaderBarLogo()
       }
     },
 
@@ -49,7 +59,7 @@ export const createContainerHandler = (onInit: TOnInitCallback, onDestroy: TOnDe
           this.isLoading = true
 
           await onInit({
-            container: this.wrapperEl,
+            container: this.wrapperEl ?? null,
             bar: this.el
           })
 
@@ -69,67 +79,41 @@ export const createContainerHandler = (onInit: TOnInitCallback, onDestroy: TOnDe
         return
       }
 
-      const stickyEnabled = !!this.getElementSettings('arts_header_sticky_enabled')
-      const stickyToggleRevealEnabled = !!this.getElementSettings(
-        'arts_header_sticky_toggle_reveal_enabled'
-      )
       const nonStickyLogoVersion = this.getElementSettings(
         'arts_header_state_non_sticky_logo_version'
       )
       const stickyLogoVersion = this.getElementSettings('arts_header_state_sticky_logo_version')
-      const toggleAttributes: boolean | object = false
 
       if (nonStickyLogoVersion) {
-        this.wrapperEl.setAttribute('data-arts-header-non-sticky-logo', nonStickyLogoVersion)
+        this.wrapperEl.setAttribute(NON_STICKY_LOGO_ATTR, nonStickyLogoVersion)
       }
 
       if (stickyLogoVersion) {
-        this.wrapperEl.setAttribute('data-arts-header-sticky-logo', stickyLogoVersion)
+        this.wrapperEl.setAttribute(STICKY_LOGO_ATTR, stickyLogoVersion)
       }
 
-      const options = {
-        sticky: {
-          enabled: !!stickyEnabled,
-          toggleReveal: !!(stickyEnabled && stickyToggleRevealEnabled),
-          toggleAttributes
-        }
-      }
+      const options = mapPanelSettings({
+        stickyEnabled: this.getElementSettings('arts_header_sticky_enabled'),
+        toggleRevealEnabled: this.getElementSettings('arts_header_sticky_toggle_reveal_enabled')
+      })
 
-      this.wrapperEl.setAttribute('data-arts-header-options', JSON.stringify(options))
-    },
-
-    setHeaderBarLogo(this: IContainerHandler) {
-      const nonStickyLogoVersion = this.getElementSettings(
-        'arts_header_state_non_sticky_logo_version'
-      )
-
-      if (nonStickyLogoVersion) {
-        this.wrapperEl?.setAttribute('data-arts-header-logo', nonStickyLogoVersion)
-      } else {
-        this.removeHeaderBarLogo()
-      }
-    },
-
-    removeHeaderBarLogo(this: IContainerHandler) {
-      this.wrapperEl?.removeAttribute('data-arts-header-logo')
+      this.wrapperEl.setAttribute(OPTIONS_ATTR, JSON.stringify(options))
     },
 
     toggleHeaderBarAttributes(this: IContainerHandler, toggle = true) {
-      const classNames = ['arts-header__bar', 'js-arts-header__bar']
-
-      classNames.forEach((className) => {
+      for (const className of [BAR_CLASS, BAR_JS_CLASS]) {
         this.el.classList.toggle(className, toggle)
-      })
+      }
     },
 
     toggleHeaderBarSticky(this: IContainerHandler, toggle = true) {
-      this.el.classList.toggle('arts-header__bar_fixed', toggle)
-      this.el.classList.toggle('arts-header__bar_absolute', !toggle)
+      this.el.classList.toggle(BAR_FIXED_CLASS, toggle)
+      this.el.classList.toggle(BAR_ABSOLUTE_CLASS, !toggle)
     },
 
     removeHeaderBarSticky(this: IContainerHandler) {
-      this.el.classList.remove('arts-header__bar_fixed')
-      this.el.classList.remove('arts-header__bar_absolute')
+      this.el.classList.remove(BAR_FIXED_CLASS)
+      this.el.classList.remove(BAR_ABSOLUTE_CLASS)
     },
 
     toggleWrapper(this: IContainerHandler, toggle = true) {
@@ -141,27 +125,23 @@ export const createContainerHandler = (onInit: TOnInitCallback, onDestroy: TOnDe
     },
 
     addWrapper(this: IContainerHandler) {
-      // Check if element has a parent node
       if (!this.el.parentNode) {
         return
       }
 
-      // Check if wrapper already exists - be more specific to match removeWrapper logic
+      // Reuse an existing wrapper — match removeWrapper's identification exactly.
       if (
-        this.el.parentElement?.classList.contains('arts-header') &&
-        this.el.parentElement.classList.contains('js-arts-header')
+        this.el.parentElement?.classList.contains(WRAPPER_CLASS) &&
+        this.el.parentElement.classList.contains(WRAPPER_JS_CLASS)
       ) {
         this.wrapperEl = this.el.parentElement
         return
       }
 
-      // Create wrapper div
       const wrapper = document.createElement('div')
-      const ID = this.getID()
-      const classNameWithId = `arts-header_elementor-element-${ID}`
-      wrapper.classList.add('arts-header', classNameWithId, 'js-arts-header')
+      const classNameWithId = `${WRAPPER_ELEMENT_ID_PREFIX}${this.getID()}`
+      wrapper.classList.add(WRAPPER_CLASS, classNameWithId, WRAPPER_JS_CLASS)
 
-      // Insert wrapper before the element and move element inside
       this.el.parentNode.insertBefore(wrapper, this.el)
       wrapper.appendChild(this.el)
       this.wrapperEl = wrapper
@@ -170,22 +150,18 @@ export const createContainerHandler = (onInit: TOnInitCallback, onDestroy: TOnDe
     removeWrapper(this: IContainerHandler) {
       const parentElement = this.el.parentElement
 
-      // Check if the direct parent is our arts-header wrapper
       if (
-        !parentElement?.classList.contains('arts-header') ||
-        !parentElement.classList.contains('js-arts-header') ||
+        !parentElement?.classList.contains(WRAPPER_CLASS) ||
+        !parentElement.classList.contains(WRAPPER_JS_CLASS) ||
         !parentElement.parentNode
       ) {
         return
       }
 
-      // Store reference to the wrapper's parent
       const grandParent = parentElement.parentNode
-
-      // Move element out of wrapper back to its grandparent
       grandParent.insertBefore(this.el, parentElement)
 
-      // Remove the wrapper only if it's empty
+      // Remove the wrapper only if it ends up empty.
       if (parentElement.children.length === 0) {
         parentElement.remove()
       }

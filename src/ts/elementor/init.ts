@@ -1,11 +1,11 @@
 import { elementorEditorLoaded, logger } from '../utils'
-import { HeaderApp } from './HeaderApp'
+import { createHeaderApp } from './createHeaderApp'
 
 export const init = (): void => {
   const elementorLoaded = elementorEditorLoaded()
   const isElementorEditor = !!window.artsHeaderOptions?.isElementorEditor
 
-  HeaderApp.create({ autoInit: !isElementorEditor })
+  createHeaderApp({ autoInit: !isElementorEditor })
     .then((instance) => {
       window.artsHeaderForElementor = instance
 

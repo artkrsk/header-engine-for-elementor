@@ -3,6 +3,7 @@ export interface IConfig {
   vars?: {
     headerHeight?: string
     headerHeightNonSticky?: string
+    releaseTop?: string
   }
   classes?: {
     hasHeaderHeight?: string

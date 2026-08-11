@@ -8,13 +8,11 @@ import type { TOnInitCallback } from '../types/TOnInitCallback'
  */
 export interface IContainerHandler extends Frontend.Handlers.Base {
   isLoading: boolean
-  wrapperEl?: HTMLElement
+  wrapperEl?: HTMLElement | null
   el: HTMLElement
   setHeader(): void
   initHeader(onInit: TOnInitCallback, onDestroy: TOnDestroyCallback): Promise<void>
   setHeaderOptions(): void
-  setHeaderBarLogo(): void
-  removeHeaderBarLogo(): void
   toggleHeaderBarAttributes(toggle?: boolean): void
   toggleHeaderBarSticky(toggle?: boolean): void
   removeHeaderBarSticky(): void

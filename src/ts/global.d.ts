@@ -4,7 +4,7 @@ import type {
   ElementorFrontend,
   ElementorModules
 } from '@artemsemkin/elementor-types'
-import type { HeaderApp } from './elementor/HeaderApp'
+import type { IHeaderApp } from './interfaces/IHeaderApp'
 
 declare global {
   interface Window {
@@ -12,7 +12,7 @@ declare global {
     elementor?: ElementorEditor
     elementorFrontend?: ElementorFrontend
     elementorModules?: ElementorModules
-    artsHeaderForElementor?: HeaderApp
+    artsHeaderForElementor?: IHeaderApp
     artsHeaderOptions?: {
       isElementorEditor: boolean
     }

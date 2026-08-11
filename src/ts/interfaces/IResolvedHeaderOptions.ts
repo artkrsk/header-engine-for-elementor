@@ -1,22 +1,8 @@
-import type { THeaderMode } from '../types/THeaderMode'
-import type { TRevealMode } from '../types/TRevealMode'
-import type { TToggleAttributes } from '../types/TToggleAttributes'
+import type { IResolvedHeightObserverOptions } from './IResolvedHeightObserverOptions'
+import type { IResolvedStickyOptions } from './IResolvedStickyOptions'
 
-/** What the engine consumes after merging with defaults — no optional chaining needed. */
+/** What the engine consumes after resolution — a section is concretely `false` or fully populated. */
 export interface IResolvedHeaderOptions {
-  mode: THeaderMode
-  sticky: {
-    enabled: boolean
-    trigger?: string | HTMLElement
-    toggleReveal: boolean
-    revealMode: TRevealMode
-    revealOffset: number
-    until?: string | HTMLElement
-    toggleAttributes?: TToggleAttributes
-  }
-  heightObserver: {
-    enabled: boolean
-    observe: boolean
-    cleanupOnDestroy: boolean
-  }
+  sticky: IResolvedStickyOptions | false
+  heightObserver: IResolvedHeightObserverOptions | false
 }

@@ -3,17 +3,23 @@
 // through `boot.ts` instead.
 
 export { defaultConfig, defaultHeaderOptions, EVENTS } from './constants'
-export { HeaderApp } from './elementor/HeaderApp'
-export { resolveConfig } from './header/config'
-export { dispatchHeaderEvent, offHeaderEvent, onHeaderEvent } from './header/events'
-export { Header } from './header/Header'
-export { resolveHeaderOptions } from './header/options'
+export { createHeader } from './core/createHeader'
+export { createHeaderApp } from './elementor/createHeaderApp'
+export { dispatchHeaderEvent, offHeaderEvent, onHeaderEvent } from './events/headerEvents'
 export type {
   IConfig,
+  IHeader,
+  IHeaderApp,
   IHeaderAppArgs,
+  IHeaderArgs,
   IHeaderEventDetail,
   IHeaderOptions,
+  IHeightObserverOptions,
   IResolvedConfig,
-  IResolvedHeaderOptions
+  IResolvedHeaderOptions,
+  IRevealOptions,
+  IStickyOptions
 } from './interfaces'
-export type { THeaderEventName, THeaderMode, TRevealMode, TToggleAttributes } from './types'
+export { resolveConfig } from './options/config'
+export { resolveHeaderOptions } from './options/headerOptions'
+export type { THeaderEventName, TRevealMode, TToggleAttributes, TZoneMode } from './types'
