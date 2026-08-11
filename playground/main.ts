@@ -1,5 +1,5 @@
-import { Header, type IHeaderOptions } from '@engine'
-import '@styles/index.sass'
+import { createHeader, type IHeader, type IStickyOptions, type TZoneMode } from '@engine'
+import '@styles/index.scss'
 import { buildHeader, heroSection, makeSection, zoneSection } from './shared/fixtures'
 import { mountLenisToggle } from './shared/lenis'
 import './shared/playground.scss'
@@ -9,20 +9,19 @@ import './shared/playground.scss'
 
 type Mode = 'flow' | 'overlay' | 'hero-bottom'
 type Reveal = 'off' | 'auto-hide' | 'scrub'
-type ZoneMode = 'at-top' | 'overlap' | 'in-view'
 
 const state = {
   stickyEnabled: true,
   mode: 'flow' as Mode,
   reveal: 'auto-hide' as Reveal,
   revealOffset: 0,
-  zoneMode: 'at-top' as ZoneMode,
+  zoneMode: 'at-top' as TZoneMode,
   until: false,
   lock: false,
   tallBar: false
 }
 
-let header: Header | null = null
+let header: IHeader | null = null
 let container: HTMLElement | null = null
 let bar: HTMLElement | null = null
 let main: HTMLElement | null = null
@@ -61,9 +60,9 @@ function appendZonesAndContent(m: HTMLElement): void {
 
 // --- lifecycle -----------------------------------------------------------
 
-async function rebuild(): Promise<void> {
+function rebuild(): void {
   if (header) {
-    await header.destroy(true)
+    header.destroy(true)
     header = null
   }
   container?.remove()
@@ -74,16 +73,20 @@ async function rebuild(): Promise<void> {
   bar = built.bar
   main = document.createElement('main')
 
-  const options: IHeaderOptions = {
-    // hero-bottom rides the overlay/out-of-flow CSS; its `_hero-bottom` wrapper class + trigger do the rest.
-    mode: state.mode === 'hero-bottom' ? 'overlay' : state.mode,
-    sticky: {
-      enabled: state.stickyEnabled,
-      toggleReveal: state.reveal !== 'off',
-      revealMode: state.reveal === 'scrub' ? 'scrub' : 'auto-hide',
-      revealOffset: state.revealOffset
-    }
-  }
+  // Docking mode is a pure markup/CSS concern (the bar's modifier class decides); options only
+  // carry behavior. hero-bottom rides the overlay CSS; its `_hero-bottom` wrapper class + trigger
+  // do the rest.
+  const sticky: IStickyOptions | false = state.stickyEnabled
+    ? {
+        reveal:
+          state.reveal === 'off'
+            ? false
+            : {
+                mode: state.reveal === 'scrub' ? 'scrub' : 'auto-hide',
+                offset: state.revealOffset
+              }
+      }
+    : false
 
   if (state.mode === 'hero-bottom') {
     // Header docked inside a relative hero (over its bottom, transparent); a trigger marker at the
@@ -96,7 +99,10 @@ async function rebuild(): Promise<void> {
     main.appendChild(hero)
     appendZonesAndContent(main)
     document.body.appendChild(main)
-    options.sticky = { ...options.sticky, trigger: '.stick-trigger' }
+    if (sticky !== false) {
+      // A trigger marker at the header's top drives the pin.
+      sticky.trigger = '.stick-trigger'
+    }
   } else {
     // flow / overlay: header is a body child before the content (sentinel lands at the page top).
     document.body.appendChild(container)
@@ -107,12 +113,12 @@ async function rebuild(): Promise<void> {
     document.body.appendChild(main)
   }
 
-  if (state.until) {
-    options.sticky = { ...options.sticky, until: '.pg-until' }
+  if (state.until && sticky !== false) {
+    sticky.until = '.pg-until'
   }
 
-  header = new Header(container, built.bar, { options })
-  await header.init()
+  header = createHeader(container, built.bar, { options: { sticky } })
+  header.init()
   if (state.lock) {
     header.lockSticky(true)
   }

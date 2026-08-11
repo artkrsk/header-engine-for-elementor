@@ -30,7 +30,7 @@ function start(): void {
   lenis = new Lenis()
   // Exposed for console/automated testing — Lenis fights native window.scrollTo, so drive scrolls
   // via `window.__pgLenis.scrollTo(y)` when smooth scroll is on.
-  ;(window as unknown as { __pgLenis?: Lenis }).__pgLenis = lenis
+  ;(window as unknown as { __pgLenis?: Lenis | undefined }).__pgLenis = lenis
   const raf = (time: number): void => {
     lenis?.raf(time)
     rafId = requestAnimationFrame(raf)
@@ -42,10 +42,10 @@ function stop(): void {
   cancelAnimationFrame(rafId)
   lenis?.destroy()
   lenis = null
-  ;(window as unknown as { __pgLenis?: Lenis }).__pgLenis = undefined
+  ;(window as unknown as { __pgLenis?: Lenis | undefined }).__pgLenis = undefined
 }
 
-/** Mounts a fixed toggle button (bottom-right, above the HUD) to run the page under Lenis. */
+/** Mounts a fixed toggle button (bottom-right) to run the page under Lenis. */
 export function mountLenisToggle(): void {
   const btn = document.createElement('button')
   btn.type = 'button'
