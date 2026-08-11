@@ -30,6 +30,9 @@ class Plugin {
 	}
 
 	public function init_elementor(): void {
-		// Elementor-dependent wiring lands here in later tasks.
+		$assets = new Elementor\Assets();
+
+		add_action( 'wp_enqueue_scripts', array( $assets, 'register' ) );
+		add_action( 'wp_enqueue_scripts', array( $assets, 'enqueue' ) );
 	}
 }
