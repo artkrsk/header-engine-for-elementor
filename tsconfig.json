@@ -11,8 +11,9 @@
     "noEmit": true,
     "paths": {
       "@engine": ["./src/ts/index.ts"],
-      "@styles/*": ["./src/styles/*"]
+      "@styles/*": ["./src/styles/*"],
+      "@ts/*": ["./src/ts/*"]
     }
   },
-  "include": ["src/ts/**/*", "playground/**/*", "vite.config.ts"]
+  "include": ["src/ts/**/*", "playground/**/*", "tests/**/*", "vite.config.ts", "vitest.config.ts"]
 }

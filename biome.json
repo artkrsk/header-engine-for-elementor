@@ -5,9 +5,11 @@
     "includes": [
       "build/**",
       "src/ts/**",
+      "tests/**",
       "playground/**/*.ts",
       "project.config.js",
       "vite.config.ts",
+      "vitest.config.ts",
       "biome.json"
     ]
   },

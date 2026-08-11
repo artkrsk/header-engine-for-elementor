@@ -1,0 +1,124 @@
+// @vitest-environment happy-dom
+import { createContainerHandler } from '@ts/elementor/containerHandler'
+import type { IContainerHandler } from '@ts/interfaces'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+/**
+ * Elementor's Base.extend is stubbed to return the prototype object itself; the tests then run the
+ * handler methods against a plain-object `this` — the engine never instanceof-checks, so a literal
+ * with the right members is a legitimate handler.
+ */
+const stubExtend = (): void => {
+  ;(window as { elementorModules?: unknown }).elementorModules = {
+    frontend: { handlers: { Base: { extend: (proto: unknown) => proto } } }
+  }
+}
+
+afterEach(() => {
+  ;(window as { elementorModules?: unknown }).elementorModules = undefined
+  document.body.innerHTML = ''
+})
+
+const makeHandler = (settings: Record<string, unknown>) => {
+  stubExtend()
+  const onInit = vi.fn(async () => {})
+  const onDestroy = vi.fn(async () => {})
+  const proto = createContainerHandler(onInit, onDestroy) as unknown as IContainerHandler
+  const el = document.createElement('div')
+  document.body.appendChild(el)
+  const handler = Object.assign(Object.create(proto) as IContainerHandler, {
+    el,
+    isLoading: false,
+    getElementSettings: (key: string) => settings[key],
+    getID: () => 'abc123'
+  })
+  return { handler, el, onInit, onDestroy }
+}
+
+describe('createContainerHandler', () => {
+  it('wraps the bar in the arts-header wrapper with the per-element id class', () => {
+    const { handler, el } = makeHandler({ arts_header_enabled: 'yes' })
+    handler.setHeader()
+    const wrapper = el.parentElement
+    expect(wrapper?.classList.contains('arts-header')).toBe(true)
+    expect(wrapper?.classList.contains('js-arts-header')).toBe(true)
+    expect(wrapper?.classList.contains('arts-header_elementor-element-abc123')).toBe(true)
+    expect(el.classList.contains('arts-header__bar')).toBe(true)
+    expect(el.classList.contains('js-arts-header__bar')).toBe(true)
+  })
+
+  it('reuses an existing wrapper instead of double-wrapping', () => {
+    const { handler, el } = makeHandler({ arts_header_enabled: 'yes' })
+    handler.setHeader()
+    const wrapper = el.parentElement
+    handler.setHeader()
+    expect(el.parentElement).toBe(wrapper)
+    expect(wrapper?.parentElement?.classList.contains('arts-header')).toBe(false)
+  })
+
+  it('unwraps and removes the wrapper when the header is disabled', () => {
+    const settings: Record<string, unknown> = { arts_header_enabled: 'yes' }
+    const { handler, el } = makeHandler(settings)
+    handler.setHeader()
+    settings.arts_header_enabled = ''
+    handler.setHeader()
+    expect(el.parentElement).toBe(document.body)
+    expect(document.querySelector('.arts-header')).toBeNull()
+  })
+
+  it('signals the docking mode on the bar — never both modifier classes at once', () => {
+    const settings: Record<string, unknown> = {
+      arts_header_enabled: 'yes',
+      arts_header_sticky_enabled: 'yes'
+    }
+    const { handler, el } = makeHandler(settings)
+    handler.setHeader()
+    expect(el.classList.contains('arts-header__bar_fixed')).toBe(true)
+    expect(el.classList.contains('arts-header__bar_absolute')).toBe(false)
+    settings.arts_header_sticky_enabled = ''
+    handler.setHeader()
+    expect(el.classList.contains('arts-header__bar_fixed')).toBe(false)
+    expect(el.classList.contains('arts-header__bar_absolute')).toBe(true)
+  })
+
+  it('serializes the mapped panel options and the logo version attributes onto the wrapper', () => {
+    const { handler, el } = makeHandler({
+      arts_header_enabled: 'yes',
+      arts_header_sticky_enabled: 'yes',
+      arts_header_sticky_toggle_reveal_enabled: 'yes',
+      arts_header_state_non_sticky_logo_version: 'primary',
+      arts_header_state_sticky_logo_version: 'secondary'
+    })
+    handler.setHeader()
+    const wrapper = el.parentElement
+    expect(wrapper?.getAttribute('data-arts-header-options')).toBe('{"sticky":{"reveal":{}}}')
+    expect(wrapper?.getAttribute('data-arts-header-non-sticky-logo')).toBe('primary')
+    expect(wrapper?.getAttribute('data-arts-header-sticky-logo')).toBe('secondary')
+  })
+
+  it('boots via onInit with the wrapper+bar pair, guarded against re-entrancy', async () => {
+    const { handler, onInit } = makeHandler({ arts_header_enabled: 'yes' })
+    handler.setHeader()
+    const first = handler.initHeader(
+      onInit,
+      vi.fn(async () => {})
+    )
+    const second = handler.initHeader(
+      onInit,
+      vi.fn(async () => {})
+    )
+    await first
+    await second
+    expect(onInit).toHaveBeenCalledTimes(1)
+    expect(onInit).toHaveBeenCalledWith({ container: handler.wrapperEl, bar: handler.el })
+  })
+
+  it('routes a disabled header to onDestroy instead of onInit', async () => {
+    const { handler, onInit, onDestroy } = makeHandler({ arts_header_enabled: '' })
+    handler.setHeader()
+    Object.assign(handler, { onDestroy })
+    await handler.initHeader(onInit, onDestroy)
+    expect(onInit).not.toHaveBeenCalled()
+    expect(onDestroy).toHaveBeenCalledTimes(1)
+  })
+})

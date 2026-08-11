@@ -7,3 +7,4 @@ vendor/
 vendor-prefixed/
 *.log
 .DS_Store
+coverage
