@@ -1,4 +1,10 @@
-import { createHeader, type IHeader, type IStickyOptions, type TZoneMode } from '@engine'
+import {
+  createHeader,
+  type IHeader,
+  type IRevealOptions,
+  type IStickyOptions,
+  type TZoneMode
+} from '@engine'
 import '@styles/index.scss'
 import { buildHeader, heroSection, makeSection, zoneSection } from './shared/fixtures'
 import { mountLenisToggle } from './shared/lenis'
@@ -60,6 +66,52 @@ function appendZonesAndContent(m: HTMLElement): void {
 
 // --- lifecycle -----------------------------------------------------------
 
+/** Docking mode is a pure markup/CSS concern (the bar's modifier class decides); options only
+ * carry behavior. hero-bottom rides the overlay CSS; its `_hero-bottom` wrapper class + trigger
+ * do the rest. */
+function revealFromState(): IRevealOptions | false {
+  const reveal = state.reveal
+  return reveal === 'off' ? false : { mode: reveal, offset: state.revealOffset }
+}
+
+function stickyFromState(): IStickyOptions | false {
+  if (!state.stickyEnabled) {
+    return false
+  }
+  const sticky: IStickyOptions = { reveal: revealFromState() }
+  if (state.mode === 'hero-bottom') {
+    // A trigger marker at the header's top drives the pin.
+    sticky.trigger = '.stick-trigger'
+  }
+  if (state.until) {
+    sticky.until = '.pg-until'
+  }
+  return sticky
+}
+
+/** Mount the header container + content sections for the current mode; returns the new <main>. */
+function mountFixture(headerContainer: HTMLElement): HTMLElement {
+  const m = document.createElement('main')
+  if (state.mode === 'hero-bottom') {
+    // Header docked inside a relative hero (over its bottom, transparent).
+    const hero = heroSection('FULLSCREEN HERO')
+    const trigger = document.createElement('span')
+    trigger.className = 'stick-trigger'
+    hero.appendChild(trigger)
+    hero.appendChild(headerContainer)
+    m.appendChild(hero)
+  } else {
+    // flow / overlay: header is a body child before the content (sentinel lands at the page top).
+    document.body.appendChild(headerContainer)
+    if (state.mode === 'overlay') {
+      m.appendChild(heroSection('FULLSCREEN HERO'))
+    }
+  }
+  appendZonesAndContent(m)
+  document.body.appendChild(m)
+  return m
+}
+
 function rebuild(): void {
   if (header) {
     header.destroy(true)
@@ -71,53 +123,9 @@ function rebuild(): void {
   const built = buildHeader({ mode: state.mode })
   container = built.container
   bar = built.bar
-  main = document.createElement('main')
+  main = mountFixture(container)
 
-  // Docking mode is a pure markup/CSS concern (the bar's modifier class decides); options only
-  // carry behavior. hero-bottom rides the overlay CSS; its `_hero-bottom` wrapper class + trigger
-  // do the rest.
-  const sticky: IStickyOptions | false = state.stickyEnabled
-    ? {
-        reveal:
-          state.reveal === 'off'
-            ? false
-            : {
-                mode: state.reveal === 'scrub' ? 'scrub' : 'auto-hide',
-                offset: state.revealOffset
-              }
-      }
-    : false
-
-  if (state.mode === 'hero-bottom') {
-    // Header docked inside a relative hero (over its bottom, transparent); a trigger marker at the
-    // header's top drives the pin.
-    const hero = heroSection('FULLSCREEN HERO')
-    const trigger = document.createElement('span')
-    trigger.className = 'stick-trigger'
-    hero.appendChild(trigger)
-    hero.appendChild(container)
-    main.appendChild(hero)
-    appendZonesAndContent(main)
-    document.body.appendChild(main)
-    if (sticky !== false) {
-      // A trigger marker at the header's top drives the pin.
-      sticky.trigger = '.stick-trigger'
-    }
-  } else {
-    // flow / overlay: header is a body child before the content (sentinel lands at the page top).
-    document.body.appendChild(container)
-    if (state.mode === 'overlay') {
-      main.appendChild(heroSection('FULLSCREEN HERO'))
-    }
-    appendZonesAndContent(main)
-    document.body.appendChild(main)
-  }
-
-  if (state.until && sticky !== false) {
-    sticky.until = '.pg-until'
-  }
-
-  header = createHeader(container, built.bar, { options: { sticky } })
+  header = createHeader(container, built.bar, { options: { sticky: stickyFromState() } })
   header.init()
   if (state.lock) {
     header.lockSticky(true)
@@ -217,77 +225,74 @@ function actionButton(label: string, onClick: () => void): HTMLElement {
   return wrap
 }
 
+/** Store the new value under `key`, then tear down and re-init (constructor-only options). */
+function setAndRebuild<K extends keyof typeof state>(key: K): (v: (typeof state)[K]) => void {
+  return (v) => {
+    state[key] = v
+    rebuild()
+  }
+}
+
+/** Update the zone attributes in place, then re-scan — no full rebuild needed. */
+function applyZoneMode(v: TZoneMode): void {
+  state.zoneMode = v
+  for (const el of document.querySelectorAll<HTMLElement>('[data-arts-header-hide-over]')) {
+    el.setAttribute('data-arts-header-hide-over', v)
+    el.textContent = `HIDE ZONE (${v}) — header hides over this section`
+  }
+  for (const el of document.querySelectorAll<HTMLElement>('[data-arts-header-lock-over]')) {
+    el.setAttribute('data-arts-header-lock-over', v)
+    el.textContent = `LOCK ZONE (${v}) — header reveals + freezes over this section`
+  }
+  header?.refreshZones()
+}
+
 function mountPanel(): void {
   const panel = document.createElement('div')
   panel.className = 'pg-panel'
   panel.innerHTML = '<div class="pg-panel__title">playground</div>'
 
-  panel.appendChild(
-    checkbox('sticky enabled (rebuild)', state.stickyEnabled, (v) => {
-      state.stickyEnabled = v
-      rebuild()
-    })
-  )
-  panel.appendChild(
-    radioGroup('mode (rebuild)', ['flow', 'overlay', 'hero-bottom'] as const, state.mode, (v) => {
-      state.mode = v
-      rebuild()
-    })
-  )
-  panel.appendChild(
-    radioGroup('reveal (rebuild)', ['off', 'auto-hide', 'scrub'] as const, state.reveal, (v) => {
-      state.reveal = v
-      rebuild()
-    })
-  )
-  panel.appendChild(
-    slider('revealOffset (rebuild)', 0, 300, state.revealOffset, (v) => {
-      state.revealOffset = v
-      rebuild()
-    })
-  )
-  panel.appendChild(
-    radioGroup('zone geometry', ['at-top', 'overlap', 'in-view'] as const, state.zoneMode, (v) => {
-      state.zoneMode = v
-      // Update the zone attributes in place, then re-scan — no full rebuild needed.
-      for (const el of document.querySelectorAll<HTMLElement>('[data-arts-header-hide-over]')) {
-        el.setAttribute('data-arts-header-hide-over', v)
-        el.textContent = `HIDE ZONE (${v}) — header hides over this section`
-      }
-      for (const el of document.querySelectorAll<HTMLElement>('[data-arts-header-lock-over]')) {
-        el.setAttribute('data-arts-header-lock-over', v)
-        el.textContent = `LOCK ZONE (${v}) — header reveals + freezes over this section`
-      }
-      header?.refreshZones()
-    })
-  )
-  panel.appendChild(
-    checkbox('until (release / scroll away) (rebuild)', state.until, (v) => {
-      state.until = v
-      rebuild()
-    })
-  )
-  panel.appendChild(
+  const controls = [
+    checkbox('sticky enabled (rebuild)', state.stickyEnabled, setAndRebuild('stickyEnabled')),
+    radioGroup(
+      'mode (rebuild)',
+      ['flow', 'overlay', 'hero-bottom'] as const,
+      state.mode,
+      setAndRebuild('mode')
+    ),
+    radioGroup(
+      'reveal (rebuild)',
+      ['off', 'auto-hide', 'scrub'] as const,
+      state.reveal,
+      setAndRebuild('reveal')
+    ),
+    slider('revealOffset (rebuild)', 0, 300, state.revealOffset, setAndRebuild('revealOffset')),
+    radioGroup(
+      'zone geometry',
+      ['at-top', 'overlap', 'in-view'] as const,
+      state.zoneMode,
+      applyZoneMode
+    ),
+    checkbox('until (release / scroll away) (rebuild)', state.until, setAndRebuild('until')),
     checkbox('lock (freeze)', state.lock, (v) => {
       state.lock = v
       header?.lockSticky(v)
-    })
-  )
-  panel.appendChild(
+    }),
     actionButton('Toggle bar height', () => {
       state.tallBar = !state.tallBar
       if (bar) {
         bar.style.height = state.tallBar ? '140px' : ''
       }
-    })
-  )
-  panel.appendChild(
+    }),
     actionButton('Toggle hidden', () => {
       if (header) {
         header.toggleHidden(!header.isHidden)
       }
     })
-  )
+  ]
+  for (const control of controls) {
+    panel.appendChild(control)
+  }
   document.body.appendChild(panel)
 }
 
