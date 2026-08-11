@@ -1,23 +1,35 @@
 # header-for-elementor
 
-Zero-runtime-dependency sticky/reveal header **engine** for Elementor, in TypeScript + SCSS. The
-engine watches scroll and layout and toggles state **classes** and CSS **custom properties** on a
-header wrapper; the visible show/hide/shrink animation is done in CSS, not per-frame JS. It is meant
-to ship as an Elementor plugin bundle, but **only the frontend exists so far** (see Status).
+Zero-runtime-dependency sticky/reveal header **engine** for Elementor, in TypeScript + SCSS, shipped
+as a standalone WordPress plugin. The engine watches scroll and layout and toggles state **classes**
+and CSS **custom properties** on a header wrapper; the visible show/hide/shrink animation is done in
+CSS, not per-frame JS. The PHP layer decorates an Elementor **Container** into that header.
 
 Package: `@arts/header` (private, ESM). Consumer entry: `src/ts/index.ts`, also the `@engine` alias.
+Composer: `arts/header-for-elementor`, PSR-4 `Arts\HeaderForElementor\` → `src/php/` — deliberately
+NOT `Arts\Header`: the predecessor framework package still loads under that namespace via
+velum-core, and both may coexist in one process. Zero runtime composer deps; `composer.json` is the
+single version source (the build stamps the plugin header, readme.txt, and package.json from it).
 
 ## Status / scope
 
-Frontend-only at this stage. `project.config.js` points the plugin build at `src/php`,
-`src/wordpress-plugin`, `dist/`, and a `build/index.js` runner — **none of those exist yet**, so
-`pnpm build` and `pnpm dev:plugin` do not run (`archiver`/`chokidar`/`esbuild` are staged for that
-runner and sit in knip/fallow `ignoreDependencies` until it lands). There is no PHP, WordPress
-plugin header, or Elementor widget/control code in the repo; don't document it as if present.
+Frontend engine + Phase-1 PHP layer (bootstrap, `Elementor/{Assets,Markup,Controls}`, build runner)
+exist. Still outstanding (see `docs/superpowers/plans/2026-08-12-php-plugin-layer.md` for the
+phasing): the DualLogo widget + logo-version controls + secondary-logo Customizer/kit sync
+(Phase 2), sticky-state appearance controls + spacing sliders (Phase 3), Velum integration — TGM
+entry, repointing its `@arts/header` links from the old framework package (Phase 4), and CI
+workflows. The only intended consumer is the WIP Velum theme; there are no BC constraints.
 
 ## Commands
 
 - `pnpm dev` — Vite dev server for `playground/`, the visual harness (single configurable page).
+- `pnpm dev:plugin` — build runner watch mode: esbuild `boot.ts` (IIFE) + sass into
+  `src/php/libraries/header-for-elementor/` and, when a gitignored `.env` sets `DEV_TARGET`,
+  mirror the plugin file-by-file into a Local WP site's plugins dir.
+- `pnpm build` — staged release + `dist/header-for-elementor.zip` (assertRelease hard-fails on
+  leaked sourcemaps/composer.lock, missing files, or version drift).
+- `composer phpstan` — PHPStan level max over `src/php` (WordPress + Elementor stubs;
+  `phpstan-bootstrap.php` defines the plugin constants for analysis).
 - `pnpm test` / `test:watch` / `test:coverage` — Vitest over `tests/**/*.test.ts` (istanbul
   coverage — fallow reads istanbul-format `coverage-final.json` only).
 - `pnpm typecheck` — `tsc --noEmit` (strict, `noUncheckedIndexedAccess`,
@@ -87,8 +99,16 @@ src/ts/
   utils/          vendored @arts/utilities subset, one function per file + readTransitionDuration
 src/styles/       SCSS in the `arts-header` cascade layer: index + _tokens (contract file),
                   _modes, _reveal, _logo, _interaction
+src/php/          Plugin (singleton bootstrap, did_action('elementor/loaded') race guard) +
+                  Elementor/{Assets (enqueue + editor-flag inline JSON), Markup (wrapper, bar
+                  attrs, options JSON, pre-paint height script), Controls (panel section +
+                  fluid presets filter)}; libraries/ holds the built bundles (gitignored)
+src/wordpress-plugin/  the shipped main file + readme.txt (headers stamped from composer.json)
+build/            runner (node build/index.js dev|build), ported from cursor-follower —
+                  config/js/sass/sync/meta/package modules, assertRelease gate
 playground/       Vite harness: single configurable page + shared fixtures/lenis
-tests/            mirrors src/ts; support.ts fixture factories; aliasBoundary + styleSync guards
+tests/            mirrors src/ts; support.ts fixture factories; aliasBoundary + styleSync +
+                  phpSync guards
 ```
 
 Interfaces/types/constants: one declaration per file with `index.ts` barrels; consumer modules
@@ -129,11 +149,15 @@ The five real states also have getters (`isSticking/isHidden/isLocked/isReleased
 
 ## Identifier contract
 
-Hand-synced between TS and SCSS — no shared source of truth across the languages, and
-**`tests/styleSync.test.ts` is the mechanical guard**: every engine-styled class/var in
-`defaultConfig` must appear in the styles source and every `arts-header_*` state class in the
-styles must be config-backed (allowlist: `arts-header_hero-bottom`, authored by markup, and the
-consumer-only `revealing`/`has-header-height`).
+Hand-synced between TS, SCSS, **and PHP** — no shared source of truth across the languages.
+**`tests/styleSync.test.ts`** guards TS↔SCSS: every engine-styled class/var in `defaultConfig`
+must appear in the styles source and every `arts-header_*` state class in the styles must be
+config-backed (allowlist: `arts-header_hero-bottom`, authored by markup, and the consumer-only
+`revealing`/`has-header-height`). **`tests/phpSync.test.ts`** guards TS↔PHP: the wrapper/bar
+classes, options attribute, height vars, and panel keys printed by `src/php/Elementor/*` must
+match the TS constants. `Markup::map_panel_settings()` is the PHP mirror of `mapPanelSettings.ts`
+— the editor writes the TS version of the options JSON, the frontend writes the PHP one, and both
+must serialize identically (`reveal => (object) array()` keeps `{}` from collapsing to `[]`).
 
 - **State classes** (defaults, on `.arts-header`): `arts-header_sticky`, `_revealing`,
   `_scrolling-down`, `_hidden`, `_locked`, `_released`, `_reveal-scrub`; plus `has-header-height`
