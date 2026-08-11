@@ -1,0 +1,21 @@
+// Two halves, one contract file:
+// 1. The SCSS-language layer — deliberately tiny: three $values, compile-time only.
+// 2. The runtime contract docs: every CSS custom property the ENGINE writes, declared here so the
+//    JS↔CSS boundary has one home on the styles side. `constants/defaultConfig.ts` holds the TS
+//    side; `tests/styleSync.test.ts` is the mechanical guard keeping the two in step.
+//
+// Engine-written vars (mirror `defaultConfig.vars`):
+// - `--arts-header-height`            live bar height, written on `<html>` (heightObserver)
+// - `--arts-header-height-non-sticky` settled rest height, written on `<html>` (heightObserver);
+//                                     also seeded pre-paint by the consumer for sticky-boot loads
+// - `--arts-header-release-top`       release anchor, written on the wrapper (untilRelease)
+//
+// Styling-side vars (read here, never written by JS): `--arts-header-top`,
+// `--arts-header-{non-sticky,sticky}-spacing-{horizontal,vertical}`, `--spacing-transition`.
+
+// Wrapper stacking context shared by every docking mode.
+$z-index: 100;
+
+// The motion every wrapper transition rides; themes retune it via --spacing-transition.
+$transition-duration: var(--spacing-transition, 0.3s);
+$transform-transition: transform $transition-duration ease;
