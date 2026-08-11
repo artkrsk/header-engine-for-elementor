@@ -4,6 +4,31 @@ import type { IHeader, IHeaderApp, IHeaderAppArgs } from '../interfaces'
 import { logger } from '../utils'
 import { attachContainerHandler } from './containerHandler'
 
+/** De-duplicate concurrent calls onto the same in-flight promise; later arguments are ignored. */
+const singleFlight = <A extends unknown[]>(
+  run: (...callArgs: A) => Promise<void>
+): ((...callArgs: A) => Promise<void>) => {
+  let pending: Promise<void> | null = null
+  return (...callArgs) => {
+    pending ??= run(...callArgs).finally(() => {
+      pending = null
+    })
+    return pending
+  }
+}
+
+/** Explicit editor-passed elements win; otherwise query the default selectors. */
+const resolveElements = (elements: {
+  container?: HTMLElement | null
+  bar?: HTMLElement | null
+}): { container: HTMLElement | null; bar: HTMLElement | null } => {
+  const container =
+    elements.container ?? document.querySelector<HTMLElement>(defaultConfig.selectors.container)
+  const bar =
+    elements.bar ?? container?.querySelector<HTMLElement>(defaultConfig.selectors.bar) ?? null
+  return { container, bar }
+}
+
 /**
  * The app lifecycle around one global header instance. Concurrent `init()`/`destroy()` calls are
  * de-duplicated onto the same in-flight promise — a second caller genuinely awaits the first run
@@ -12,32 +37,18 @@ import { attachContainerHandler } from './containerHandler'
 export async function createHeaderApp(args: IHeaderAppArgs = {}): Promise<IHeaderApp> {
   let header: IHeader | undefined
   let editorHandlerAttached = false
-  let pendingLoad: Promise<void> | null = null
-  let pendingDestroy: Promise<void> | null = null
 
-  const load = (
-    elements: { container?: HTMLElement | null; bar?: HTMLElement | null } = {}
-  ): Promise<void> => {
-    if (pendingLoad) {
-      return pendingLoad
-    }
-    pendingLoad = (async () => {
+  const load = singleFlight(
+    async (elements: { container?: HTMLElement | null; bar?: HTMLElement | null } = {}) => {
       try {
         await args.callbackBefore?.()
 
         // A re-load (editor panel change) replaces the previous instance.
         header?.destroy()
 
-        const containerElement =
-          elements.container ??
-          document.querySelector<HTMLElement>(defaultConfig.selectors.container)
-        const barElement =
-          elements.bar ??
-          containerElement?.querySelector<HTMLElement>(defaultConfig.selectors.bar) ??
-          null
-
-        if (containerElement && barElement) {
-          header = createHeader(containerElement, barElement)
+        const { container, bar } = resolveElements(elements)
+        if (container && bar) {
+          header = createHeader(container, bar)
           header.init()
         }
 
@@ -46,23 +57,14 @@ export async function createHeaderApp(args: IHeaderAppArgs = {}): Promise<IHeade
         logger.error('Error during arts header initialization:', error)
         throw error
       }
-    })()
-    return pendingLoad.finally(() => {
-      pendingLoad = null
-    })
-  }
-
-  const destroyHeader = (revert = false): Promise<void> => {
-    if (pendingDestroy) {
-      return pendingDestroy
     }
-    pendingDestroy = Promise.resolve().then(() => {
+  )
+
+  const destroyHeader = singleFlight((revert: boolean = false) =>
+    Promise.resolve().then(() => {
       header?.destroy(revert)
     })
-    return pendingDestroy.finally(() => {
-      pendingDestroy = null
-    })
-  }
+  )
 
   const app: IHeaderApp = {
     async init() {

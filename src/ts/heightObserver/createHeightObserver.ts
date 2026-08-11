@@ -2,6 +2,34 @@ import { SETTLE_DEBOUNCE_MS } from '../constants'
 import type { IHeightObserver, IHeightObserverArgs } from '../interfaces'
 import { debounce, Resize, readTransitionDurationMs } from '../utils'
 
+/** Set a px var on `<html>`; an empty configured name is a deliberate opt-out. */
+const setRootVar = (name: string, px: number): void => {
+  if (name.length) {
+    document.documentElement.style.setProperty(name, `${px}px`)
+  }
+}
+
+const removeRootVar = (name: string): void => {
+  if (name.length) {
+    document.documentElement.style.removeProperty(name)
+  }
+}
+
+const toggleRootClass = (className: string, toggle: boolean): void => {
+  if (className.length) {
+    document.documentElement.classList.toggle(className, toggle)
+  }
+}
+
+/** Read the pre-paint inline non-sticky height var; 0 when absent or invalid. */
+const readSeededNonStickyHeight = (varName: string): number => {
+  if (!varName.length) {
+    return 0
+  }
+  const parsed = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(varName))
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+}
+
 /**
  * Publishes the bar's live and rest heights as CSS custom properties on `<html>`. The live height
  * tracks a border-box ResizeObserver (the padding-driven sticky shrink fires it too); the
@@ -16,35 +44,16 @@ export function createHeightObserver(args: IHeightObserverArgs): IHeightObserver
   const heightClass = config.classes.hasHeaderHeight
 
   let height = 0
-  let heightNonSticky = 0
+  let heightNonSticky = readSeededNonStickyHeight(varNonSticky)
   let resize: Resize | null = null
   let destroyed = false
 
-  const updateCSSVars = (setProperty = true): void => {
-    const root = document.documentElement
-    if (varCurrent.length) {
-      if (setProperty) {
-        root.style.setProperty(varCurrent, `${height}px`)
-      } else {
-        root.style.removeProperty(varCurrent)
-      }
-    }
-    if (varNonSticky.length) {
-      if (setProperty) {
-        // Never write a 0 non-sticky height — it means no genuine non-sticky state was measured
-        // yet, and 0 would stomp the correct pre-paint value.
-        if (heightNonSticky > 0) {
-          root.style.setProperty(varNonSticky, `${heightNonSticky}px`)
-        }
-      } else {
-        root.style.removeProperty(varNonSticky)
-      }
-    }
-  }
-
-  const toggleHeightClass = (toggle: boolean): void => {
-    if (heightClass.length) {
-      document.documentElement.classList.toggle(heightClass, toggle)
+  const updateCSSVars = (): void => {
+    setRootVar(varCurrent, height)
+    // Never write a 0 non-sticky height — it means no genuine non-sticky state was measured yet,
+    // and 0 would stomp the correct pre-paint value.
+    if (heightNonSticky > 0) {
+      setRootVar(varNonSticky, heightNonSticky)
     }
   }
 
@@ -76,24 +85,12 @@ export function createHeightObserver(args: IHeightObserverArgs): IHeightObserver
     measureNonStickySettled()
   }
 
-  const seedNonStickyFromCSSVar = (): void => {
-    if (!varNonSticky.length) {
-      return
-    }
-    const raw = getComputedStyle(document.documentElement).getPropertyValue(varNonSticky)
-    const parsed = parseFloat(raw)
-    if (Number.isFinite(parsed) && parsed > 0) {
-      heightNonSticky = parsed
-    }
-  }
-
-  seedNonStickyFromCSSVar()
   updateValue()
   updateCSSVars()
   if (options.observe) {
     resize = new Resize({ elements: [bar], callbackResize: updateValue })
   }
-  toggleHeightClass(true)
+  toggleRootClass(heightClass, true)
 
   return {
     update() {
@@ -119,8 +116,9 @@ export function createHeightObserver(args: IHeightObserverArgs): IHeightObserver
       destroyed = true
       resize?.destroy()
       if (revert && options.cleanupOnDestroy) {
-        updateCSSVars(false)
-        toggleHeightClass(false)
+        removeRootVar(varCurrent)
+        removeRootVar(varNonSticky)
+        toggleRootClass(heightClass, false)
       }
     }
   }

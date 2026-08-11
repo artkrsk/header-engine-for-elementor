@@ -44,6 +44,31 @@ export const reduceZones = (
   anyLock: zones.some((zone) => zone.kind === 'lock' && zone.active)
 })
 
+/** One observed zone: its observer flips `active` from the latest entry and reports the change. */
+const createZone = (
+  element: HTMLElement,
+  kind: TZoneKind,
+  rootMargin: string,
+  onActiveChange: () => void
+): IZone => {
+  const zone: IZone = {
+    element,
+    kind,
+    active: false,
+    observer: new IntersectionObserver(onEntries, { rootMargin, threshold: [0] })
+  }
+  function onEntries(entries: IntersectionObserverEntry[]): void {
+    const entry = entries.at(-1)
+    if (!entry) {
+      return
+    }
+    zone.active = entry.isIntersecting
+    onActiveChange()
+  }
+  zone.observer.observe(element)
+  return zone
+}
+
 export function createZoneTracker(args: {
   getStickyTop: () => number
   getBarHeight: () => number
@@ -66,22 +91,7 @@ export function createZoneTracker(args: {
       args.getBarHeight(),
       window.innerHeight
     )
-    const zone: IZone = {
-      element,
-      kind,
-      active: false,
-      observer: new IntersectionObserver(onEntries, { rootMargin, threshold: [0] })
-    }
-    function onEntries(entries: IntersectionObserverEntry[]): void {
-      const entry = entries.at(-1)
-      if (!entry) {
-        return
-      }
-      zone.active = entry.isIntersecting
-      emitChange()
-    }
-    zones.push(zone)
-    zone.observer.observe(element)
+    zones.push(createZone(element, kind, rootMargin, emitChange))
   }
 
   const teardown = (): void => {

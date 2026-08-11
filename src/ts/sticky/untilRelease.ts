@@ -23,6 +23,23 @@ export const resolveReleased = (
 export const releaseAnchor = (scrollY: number, stickyTop: number): number =>
   Math.round(scrollY + stickyTop)
 
+/** Write the release anchor var at the release moment; clear it on re-entry. */
+const applyReleaseAnchor = (
+  container: HTMLElement,
+  varName: string,
+  released: boolean,
+  stickyTop: number
+): void => {
+  if (!varName.length) {
+    return
+  }
+  if (released) {
+    container.style.setProperty(varName, `${releaseAnchor(window.scrollY, stickyTop)}px`)
+  } else {
+    container.style.removeProperty(varName)
+  }
+}
+
 export function createUntilRelease(args: {
   container: HTMLElement
   until: string | HTMLElement | undefined
@@ -35,18 +52,6 @@ export function createUntilRelease(args: {
   let observer: IntersectionObserver | null = null
   let released = false
   let lastStickyTop = 0
-
-  const applyAnchor = (value: boolean): void => {
-    if (!args.releaseTopVar.length) {
-      return
-    }
-    if (value) {
-      const anchor = releaseAnchor(window.scrollY, lastStickyTop)
-      args.container.style.setProperty(args.releaseTopVar, `${anchor}px`)
-    } else {
-      args.container.style.removeProperty(args.releaseTopVar)
-    }
-  }
 
   return {
     // Unconditional per update: the release line is pin + bar height, and the bar can resize
@@ -74,7 +79,7 @@ export function createUntilRelease(args: {
           released = next
           // Anchor var first, then the class/event via the callback — the swap must be continuous
           // by the time consumers observe the state change.
-          applyAnchor(next)
+          applyReleaseAnchor(args.container, args.releaseTopVar, next, lastStickyTop)
           args.onReleaseChange(next)
         },
         { rootMargin: `${-margin}px 0px 0px 0px`, threshold: [0] }

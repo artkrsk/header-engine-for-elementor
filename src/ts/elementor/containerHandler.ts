@@ -14,6 +14,40 @@ import type { IContainerHandler } from '../interfaces'
 import type { TOnDestroyCallback, TOnInitCallback } from '../types'
 import { mapPanelSettings } from './mapPanelSettings'
 
+/** Wrap `el` in the header wrapper div, or adopt an existing one; identification matches unwrap. */
+const wrapHeaderBar = (el: HTMLElement, elementId: string | number): HTMLElement | null => {
+  if (!el.parentNode) {
+    return null
+  }
+  if (
+    el.parentElement?.classList.contains(WRAPPER_CLASS) &&
+    el.parentElement.classList.contains(WRAPPER_JS_CLASS)
+  ) {
+    return el.parentElement
+  }
+  const wrapper = document.createElement('div')
+  wrapper.classList.add(WRAPPER_CLASS, `${WRAPPER_ELEMENT_ID_PREFIX}${elementId}`, WRAPPER_JS_CLASS)
+  el.parentNode.insertBefore(wrapper, el)
+  wrapper.appendChild(el)
+  return wrapper
+}
+
+/** Move `el` back out of its wrapper; the wrapper is removed only if it ends up empty. */
+const unwrapHeaderBar = (el: HTMLElement): void => {
+  const parentElement = el.parentElement
+  if (
+    !parentElement?.classList.contains(WRAPPER_CLASS) ||
+    !parentElement.classList.contains(WRAPPER_JS_CLASS) ||
+    !parentElement.parentNode
+  ) {
+    return
+  }
+  parentElement.parentNode.insertBefore(el, parentElement)
+  if (parentElement.children.length === 0) {
+    parentElement.remove()
+  }
+}
+
 /**
  * Editor-only container handler: wraps an Elementor Container in the `.arts-header` div, syncs
  * panel settings into `data-arts-header-*` attributes on every change, and re-inits/destroys the
@@ -125,46 +159,14 @@ export const createContainerHandler = (onInit: TOnInitCallback, onDestroy: TOnDe
     },
 
     addWrapper(this: IContainerHandler) {
-      if (!this.el.parentNode) {
-        return
+      const wrapper = wrapHeaderBar(this.el, this.getID())
+      if (wrapper) {
+        this.wrapperEl = wrapper
       }
-
-      // Reuse an existing wrapper — match removeWrapper's identification exactly.
-      if (
-        this.el.parentElement?.classList.contains(WRAPPER_CLASS) &&
-        this.el.parentElement.classList.contains(WRAPPER_JS_CLASS)
-      ) {
-        this.wrapperEl = this.el.parentElement
-        return
-      }
-
-      const wrapper = document.createElement('div')
-      const classNameWithId = `${WRAPPER_ELEMENT_ID_PREFIX}${this.getID()}`
-      wrapper.classList.add(WRAPPER_CLASS, classNameWithId, WRAPPER_JS_CLASS)
-
-      this.el.parentNode.insertBefore(wrapper, this.el)
-      wrapper.appendChild(this.el)
-      this.wrapperEl = wrapper
     },
 
     removeWrapper(this: IContainerHandler) {
-      const parentElement = this.el.parentElement
-
-      if (
-        !parentElement?.classList.contains(WRAPPER_CLASS) ||
-        !parentElement.classList.contains(WRAPPER_JS_CLASS) ||
-        !parentElement.parentNode
-      ) {
-        return
-      }
-
-      const grandParent = parentElement.parentNode
-      grandParent.insertBefore(this.el, parentElement)
-
-      // Remove the wrapper only if it ends up empty.
-      if (parentElement.children.length === 0) {
-        parentElement.remove()
-      }
+      unwrapHeaderBar(this.el)
     }
   })
 }
