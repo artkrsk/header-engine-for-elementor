@@ -31,8 +31,13 @@ class Plugin {
 
 	public function init_elementor(): void {
 		$assets = new Elementor\Assets();
+		$markup = new Elementor\Markup();
 
 		add_action( 'wp_enqueue_scripts', array( $assets, 'register' ) );
 		add_action( 'wp_enqueue_scripts', array( $assets, 'enqueue' ) );
+
+		add_action( 'elementor/frontend/container/before_render', array( $markup, 'add_header_wrapper_before' ) );
+		add_action( 'elementor/frontend/container/after_render', array( $markup, 'add_header_wrapper_after' ) );
+		add_action( 'elementor/element/after_add_attributes', array( $markup, 'add_header_bar_attributes' ) );
 	}
 }
