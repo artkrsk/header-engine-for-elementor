@@ -3,12 +3,11 @@ import { createEmitter } from '../core/emitter'
 import { dispatchHeaderEvent } from '../events/headerEvents'
 import type { ISticky, IStickyArgs, IStickyEvents } from '../interfaces'
 import type { THeaderEventName } from '../types'
-import { shouldPublishDeferredStick } from './deferredPublish'
 import { measureBar, measureStickyTop } from './measure'
 import { createStateFlag } from './publish'
 import { decideAutoHide } from './revealAutoHide'
-import { nextScrubOffset, scrubTransform, shouldOwnTransformViaCSS } from './revealScrub'
 import { createScrollTracker } from './scrollTracker'
+import { createScrubState } from './scrubState'
 import { createStickDetection } from './stickDetection'
 import { applyToggleAttributes } from './toggleAttributes'
 import { createUntilRelease } from './untilRelease'
@@ -31,13 +30,12 @@ export const shouldProcessTick = (args: {
  * The sticky orchestrator: wires detection, scroll tracking, reveal, release, and zones, owns the
  * closure state they report into, and publishes classes/events in the exact legacy order (class →
  * side effects → event). The visible animation stays CSS-owned; only scrub writes a per-frame
- * inline transform.
+ * inline transform (see scrubState).
  */
 export function createSticky(args: IStickyArgs): ISticky {
   const { container, bar, options, config } = args
   const reveal = options.reveal
   const revealEnabled = reveal !== false
-  const scrubMode = reveal !== false && reveal.mode === 'scrub'
   const revealOffset = reveal === false ? 0 : reveal.offset
 
   const events = createEmitter<IStickyEvents>()
@@ -48,9 +46,6 @@ export function createSticky(args: IStickyArgs): ISticky {
   // Geometric stuck state (sentinel crossing). Usually published as `sticking` immediately —
   // except during a scrub-mode natural departure, where publishing defers.
   let stuck = false
-  let pendingStickPublish = false
-  let departureAnchorY = 0
-  let scrubOffset = 0
   let displaced = false
   let destroyed = false
 
@@ -74,27 +69,6 @@ export function createSticky(args: IStickyArgs): ISticky {
     notify(EVENTS.DISPLACED, value)
   }
 
-  const applyScrubTransform = (): void => {
-    container.style.transform = scrubTransform(scrubOffset)
-  }
-
-  /**
-   * Scrub-mode transform ownership. JS owns the wrapper transform only while actively scrubbing;
-   * locked and hidden both gate the frame writes, so in those states ownership passes to CSS —
-   * dropping the scrub class re-enables the mode transition and clearing the inline transform lets
-   * the state rules animate the change. Reclaiming restores the parked offset, visually identical
-   * to what CSS was showing, so the swap is seamless.
-   */
-  const syncScrubOwnership = (): void => {
-    if (shouldOwnTransformViaCSS(locked.value, hidden.value)) {
-      revealScrub.set(false)
-      container.style.removeProperty('transform')
-    } else {
-      revealScrub.set(true)
-      applyScrubTransform()
-    }
-  }
-
   const setSticking = (value: boolean): void => {
     if (!sticking.set(value)) {
       return
@@ -108,25 +82,27 @@ export function createSticky(args: IStickyArgs): ISticky {
     } else if (!value) {
       scrollingDown.set(false)
       revealing.set(false)
-      if (scrubMode) {
-        // Reset the accumulator so each stick cycle starts fully shown.
-        scrubOffset = 0
-        applyScrubTransform()
-      }
+      scrub?.resetShown()
       setDisplaced(false)
     }
   }
 
-  /** Publish once the deferred bar either fully departed (swap happens off-screen) or visibly pins. */
-  const resolvePendingStick = (y: number): void => {
-    if (!pendingStickPublish) {
-      return
-    }
-    if (shouldPublishDeferredStick(scrubOffset, barHeight, y - departureAnchorY)) {
-      pendingStickPublish = false
-      setSticking(true)
-    }
-  }
+  const scrub =
+    reveal !== false && reveal.mode === 'scrub'
+      ? createScrubState({
+          container,
+          revealScrub,
+          isLocked: () => locked.value,
+          isHidden: () => hidden.value,
+          getBarHeight: () => barHeight,
+          onDirection: (down, up) => {
+            scrollingDown.set(down)
+            revealing.set(up)
+          },
+          onDisplaced: setDisplaced,
+          onPublishStick: () => setSticking(true)
+        })
+      : null
 
   const updateAutoHide = (delta: number, y: number): void => {
     const decision = decideAutoHide(delta, y, stickyTop, revealOffset)
@@ -138,40 +114,13 @@ export function createSticky(args: IStickyArgs): ISticky {
     setDisplaced(decision.scrollingDown)
   }
 
-  const updateScrub = (delta: number, y: number): void => {
-    resolvePendingStick(y)
-    if (hidden.value) {
-      // A hide-over zone forces fully hidden; frozen until it clears.
-      return
-    }
-    // Gate the hide by the configured offset; reveal (delta < 0) always runs.
-    if (delta > 0 && y <= stickyTop + revealOffset) {
-      return
-    }
-    const next = nextScrubOffset(scrubOffset, delta, barHeight)
-    if (next === scrubOffset) {
-      return
-    }
-    scrubOffset = next
-    applyScrubTransform()
-    resolvePendingStick(y)
-    // Keep the direction classes live for consumer styling (transform is JS-owned in scrub).
-    scrollingDown.set(delta > 0)
-    revealing.set(delta < 0)
-    if (scrubOffset >= barHeight) {
-      setDisplaced(true)
-    } else if (scrubOffset <= 0) {
-      setDisplaced(false)
-    }
-  }
-
   const tracker = revealEnabled
     ? createScrollTracker((y, delta) => {
         if (!shouldProcessTick({ locked: locked.value, stuck, released: released.value, delta })) {
           return
         }
-        if (scrubMode) {
-          updateScrub(delta, y)
+        if (scrub) {
+          scrub.update(delta, y, stickyTop + revealOffset)
         } else {
           updateAutoHide(delta, y)
         }
@@ -188,19 +137,16 @@ export function createSticky(args: IStickyArgs): ISticky {
         // in-flow scrolling, it is visually plain page content — defer the published state until
         // the bar fully departs or visibly pins. A crossing deeper than a bar height (scroll-
         // restored load, programmatic jump) publishes immediately.
-        if (scrubMode && overshoot <= barHeight) {
-          pendingStickPublish = true
-          departureAnchorY = tracker?.readY() ?? 0
+        if (scrub && overshoot <= barHeight) {
+          scrub.beginDeferral(tracker?.readY() ?? 0)
           return
         }
         setSticking(true)
       } else {
-        if (pendingStickPublish) {
+        if (scrub?.cancelDeferral()) {
           // Unstick during a deferral that never published: clear the departure leftovers the
           // published unstick branch would normally reset.
-          pendingStickPublish = false
-          scrubOffset = 0
-          applyScrubTransform()
+          scrub.resetShown()
           scrollingDown.set(false)
           revealing.set(false)
           setDisplaced(false)
@@ -225,10 +171,7 @@ export function createSticky(args: IStickyArgs): ISticky {
   })
   untilRelease.rearm(stickyTop, barHeight)
 
-  if (scrubMode) {
-    // Marks the wrapper so CSS drops its transform transition (per-frame writes own it).
-    revealScrub.set(true)
-  }
+  scrub?.enable()
 
   const zoneTracker = createZoneTracker({
     getStickyTop: () => stickyTop,
@@ -243,16 +186,7 @@ export function createSticky(args: IStickyArgs): ISticky {
     if (!hidden.set(value)) {
       return
     }
-    if (scrubMode) {
-      // Bookkeeping for the eventual reclaim: hidden parks the offset at full-hide (a later
-      // scroll-up reveals); leaving hidden while locked parks it at shown (CSS shows the bar).
-      if (value) {
-        scrubOffset = barHeight
-      } else if (locked.value) {
-        scrubOffset = 0
-      }
-      syncScrubOwnership()
-    }
+    scrub?.handleHiddenChange(value)
     notify(EVENTS.HIDDEN, value)
   }
 
@@ -260,13 +194,7 @@ export function createSticky(args: IStickyArgs): ISticky {
     if (!locked.set(value)) {
       return
     }
-    if (scrubMode) {
-      if (value && !hidden.value) {
-        // Lock reveals: park the offset at shown so a later unlock reclaims from there.
-        scrubOffset = 0
-      }
-      syncScrubOwnership()
-    }
+    scrub?.handleLockedChange(value)
     notify(EVENTS.LOCKED, value)
   }
 
@@ -301,7 +229,7 @@ export function createSticky(args: IStickyArgs): ISticky {
       zoneTracker.destroy()
 
       stuck = false
-      pendingStickPublish = false
+      scrub?.cancelDeferral()
 
       if (revert) {
         setSticking(false)
