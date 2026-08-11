@@ -1,25 +1,24 @@
 {
   // This file is JSONC: fallow reads these comments; generic JSON tools may not.
   "$schema": "./node_modules/fallow/schema.json",
-  // The bundle entry, the library surface package.json#types points at, the stylesheet entry, and
-  // the playground harness (the repo's own primary consumer of the library surface).
+  // The bundle entry, the library surface package.json#types points at, the stylesheet entry,
+  // the playground harness (the repo's own primary consumer of the library surface), and the
+  // build runner's two executables.
   "entry": [
     "src/ts/boot.ts",
     "src/ts/index.ts",
     "project.config.js",
     "src/styles/index.scss",
-    "playground/main.ts"
+    "playground/main.ts",
+    "build/index.js",
+    "build/extract-changelog.js"
   ],
-  // Only paths that exist today — src/php, vendor and a build/ runner don't exist yet in this repo
-  // (see CLAUDE.md's Status); add their ignores when they materialize.
-  "ignorePatterns": ["dist/**"],
+  // dist/ is build staging; src/php is PHP (plus the compiled JS/CSS bundles under libraries/);
+  // vendor* is composer.
+  "ignorePatterns": ["dist/**", "src/php/**", "vendor/**", "vendor-prefixed/**"],
   // Pure module-scope helpers are exported as the unit-test surface while also being used inside
   // their own module — see the convention in CLAUDE.md.
   "ignoreExportsUsedInFile": true,
-  // Staged for the not-yet-created build/ runner that project.config.js points at (see CLAUDE.md's
-  // Status); nothing imports them until that lands. Mirrored in knip.json's ignoreDependencies —
-  // knip.json is plain JSON, so this comment is the shared rationale for both.
-  "ignoreDependencies": ["archiver", "chokidar", "esbuild"],
   "duplicates": {
     // Hide pair-only clones; focus on widespread copy-paste worth refactoring.
     "minOccurrences": 3
