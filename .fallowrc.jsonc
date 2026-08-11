@@ -1,0 +1,37 @@
+{
+  // This file is JSONC: fallow reads these comments; generic JSON tools may not.
+  "$schema": "./node_modules/fallow/schema.json",
+  // The bundle entry, the library surface package.json#types points at, the stylesheet entry, and
+  // the playground harness (the repo's own primary consumer of the library surface).
+  "entry": [
+    "src/ts/boot.ts",
+    "src/ts/index.ts",
+    "project.config.js",
+    "src/styles/index.scss",
+    "playground/main.ts"
+  ],
+  // Only paths that exist today — src/php, vendor and a build/ runner don't exist yet in this repo
+  // (see CLAUDE.md's Status); add their ignores when they materialize.
+  "ignorePatterns": ["dist/**"],
+  // Pure module-scope helpers are exported as the unit-test surface while also being used inside
+  // their own module — see the convention in CLAUDE.md.
+  "ignoreExportsUsedInFile": true,
+  // Staged for the not-yet-created build/ runner that project.config.js points at (see CLAUDE.md's
+  // Status); nothing imports them until that lands. Mirrored in knip.json's ignoreDependencies —
+  // knip.json is plain JSON, so this comment is the shared rationale for both.
+  "ignoreDependencies": ["archiver", "chokidar", "esbuild"],
+  "duplicates": {
+    // Hide pair-only clones; focus on widespread copy-paste worth refactoring.
+    "minOccurrences": 3
+  },
+  "health": {
+    // Test files add nothing here: their "large functions" are describe() bodies and CRAP over a
+    // test file is meaningless.
+    "ignore": ["**/*.test.ts"]
+  },
+  "rules": {
+    // Structurally inapplicable: the package is private, never installed with --prod, and declares
+    // zero runtime dependencies.
+    "dev-dependencies-in-production": "off"
+  }
+}

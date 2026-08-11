@@ -1,0 +1,7 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["src/ts/boot.ts", "src/styles/index.scss", "project.config.js"],
+  "project": ["src/ts/**/*.ts", "tests/**/*.ts", "src/styles/**/*.{scss,sass}", "playground/**/*.ts"],
+  "ignoreExportsUsedInFile": true,
+  "ignoreDependencies": ["archiver", "chokidar", "esbuild"]
+}
