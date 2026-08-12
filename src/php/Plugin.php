@@ -50,6 +50,9 @@ class Plugin {
 		add_action( 'elementor/element/after_add_attributes', array( $markup, 'add_header_bar_attributes' ) );
 
 		add_action( 'elementor/controls/register', array( $controls, 'register_controls' ) );
+		add_action( 'elementor/element/container/section_background/before_section_end', array( $controls, 'add_header_sticky_background_controls' ) );
+		add_action( 'elementor/element/container/section_background_overlay/before_section_end', array( $controls, 'add_header_sticky_background_overlay_controls' ) );
+		add_action( 'elementor/element/container/section_border/before_section_end', array( $controls, 'add_header_sticky_border_controls' ) );
 		add_action(
 			'elementor/widgets/register',
 			function ( \Elementor\Widgets_Manager $widgets_manager ): void {

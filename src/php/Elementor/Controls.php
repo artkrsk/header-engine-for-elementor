@@ -362,6 +362,231 @@ class Controls {
 	}
 
 	/**
+	 * Sticky-only background: injected into the Container's own Background
+	 * section, applies through HEADER_STICKY_BAR_SELECTOR so it wins only
+	 * while pinned and shown.
+	 */
+	public function add_header_sticky_background_controls( Element_Base $element ): void {
+		$header_sticky_bar_selector = self::HEADER_STICKY_BAR_SELECTOR;
+
+		$element->add_control(
+			'background_sticky_heading',
+			array(
+				'label'     => esc_html__( 'Sticky Header Styles', 'header-for-elementor' ),
+				'type'      => Controls_Manager::HEADING,
+				'separator' => 'before',
+				'condition' => self::CONDITION_HEADER_STICKY_ENABLED,
+			)
+		);
+
+		$element->add_group_control(
+			Group_Control_Background::get_type(),
+			array(
+				'name'           => 'background_sticky',
+				'types'          => array( 'classic', 'gradient' ),
+				'selector'       => "{$header_sticky_bar_selector}:not(.elementor-motion-effects-element-type-background), {$header_sticky_bar_selector} > .elementor-motion-effects-container > .elementor-motion-effects-layer",
+				'fields_options' => array(
+					'background' => array(
+						'description'        => esc_html__( 'For the sticky header', 'header-for-elementor' ),
+						'frontend_available' => true,
+					),
+				),
+				'condition'      => self::CONDITION_HEADER_STICKY_ENABLED,
+			)
+		);
+	}
+
+	/** Sticky-only background overlay, CSS filters, and blend mode on the bar's ::before layers. */
+	public function add_header_sticky_background_overlay_controls( Element_Base $element ): void {
+		$header_sticky_bar_selector  = self::HEADER_STICKY_BAR_SELECTOR;
+		$background_overlay_selector = "{$header_sticky_bar_selector}::before, {$header_sticky_bar_selector} > .elementor-background-video-container::before, {$header_sticky_bar_selector} > .e-con-inner > .elementor-background-video-container::before, {$header_sticky_bar_selector} > .elementor-background-slideshow::before, {$header_sticky_bar_selector} > .e-con-inner > .elementor-background-slideshow::before, {$header_sticky_bar_selector} > .elementor-motion-effects-container > .elementor-motion-effects-layer::before";
+
+		$overlay_present_conditions = array(
+			'relation' => 'and',
+			'terms'    => array(
+				array(
+					'relation' => 'and',
+					'terms'    => array(
+						array(
+							'name'     => 'arts_header_enabled',
+							'operator' => '===',
+							'value'    => 'yes',
+						),
+						array(
+							'name'     => 'arts_header_sticky_enabled',
+							'operator' => '===',
+							'value'    => 'yes',
+						),
+					),
+				),
+				array(
+					'relation' => 'or',
+					'terms'    => array(
+						array(
+							'name'     => 'background_overlay_sticky_image[url]',
+							'operator' => '!==',
+							'value'    => '',
+						),
+						array(
+							'name'     => 'background_overlay_sticky_color',
+							'operator' => '!==',
+							'value'    => '',
+						),
+					),
+				),
+			),
+		);
+
+		$element->add_control(
+			'background_overlay_sticky_heading',
+			array(
+				'label'     => esc_html__( 'Sticky Header Styles', 'header-for-elementor' ),
+				'type'      => Controls_Manager::HEADING,
+				'separator' => 'before',
+				'condition' => self::CONDITION_HEADER_STICKY_ENABLED,
+			)
+		);
+
+		$element->add_group_control(
+			Group_Control_Background::get_type(),
+			array(
+				'name'           => 'background_overlay_sticky',
+				'selector'       => $background_overlay_selector,
+				'fields_options' => array(
+					'background' => array(
+						'selectors' => array(
+							// Sets the ::before content so the pseudo-element renders only
+							// when a background overlay is actually configured.
+							$background_overlay_selector => '--background-overlay: \'\';',
+						),
+					),
+				),
+				'condition'      => self::CONDITION_HEADER_STICKY_ENABLED,
+			)
+		);
+
+		$element->add_responsive_control(
+			'background_overlay_opacity_sticky',
+			array(
+				'label'     => esc_html__( 'Opacity', 'header-for-elementor' ),
+				'type'      => Controls_Manager::SLIDER,
+				'default'   => array(
+					'size' => .5,
+				),
+				'range'     => array(
+					'px' => array(
+						'max'  => 1,
+						'step' => 0.01,
+					),
+				),
+				'selectors' => array(
+					$header_sticky_bar_selector => '--overlay-opacity: {{SIZE}};',
+				),
+				'condition' => array_merge(
+					self::CONDITION_HEADER_STICKY_ENABLED,
+					array( 'background_overlay_sticky_background' => array( 'classic', 'gradient' ) )
+				),
+			)
+		);
+
+		$element->add_group_control(
+			Group_Control_Css_Filter::get_type(),
+			array(
+				'name'       => 'css_filters_sticky',
+				'selector'   => "{$header_sticky_bar_selector}::before",
+				'conditions' => $overlay_present_conditions,
+			)
+		);
+
+		$element->add_control(
+			'overlay_blend_mode_sticky',
+			array(
+				'label'      => esc_html__( 'Blend Mode', 'header-for-elementor' ),
+				'type'       => Controls_Manager::SELECT,
+				'options'    => array(
+					''            => esc_html__( 'Normal', 'header-for-elementor' ),
+					'multiply'    => esc_html__( 'Multiply', 'header-for-elementor' ),
+					'screen'      => esc_html__( 'Screen', 'header-for-elementor' ),
+					'overlay'     => esc_html__( 'Overlay', 'header-for-elementor' ),
+					'darken'      => esc_html__( 'Darken', 'header-for-elementor' ),
+					'lighten'     => esc_html__( 'Lighten', 'header-for-elementor' ),
+					'color-dodge' => esc_html__( 'Color Dodge', 'header-for-elementor' ),
+					'saturation'  => esc_html__( 'Saturation', 'header-for-elementor' ),
+					'color'       => esc_html__( 'Color', 'header-for-elementor' ),
+					'luminosity'  => esc_html__( 'Luminosity', 'header-for-elementor' ),
+				),
+				'selectors'  => array(
+					$header_sticky_bar_selector => '--overlay-mix-blend-mode: {{VALUE}}',
+				),
+				'conditions' => $overlay_present_conditions,
+			)
+		);
+	}
+
+	/** Sticky-only border, radius, and box shadow on the bar. */
+	public function add_header_sticky_border_controls( Element_Base $element ): void {
+		$header_sticky_bar_selector = self::HEADER_STICKY_BAR_SELECTOR;
+
+		$element->add_control(
+			'border_sticky_heading',
+			array(
+				'label'     => esc_html__( 'Sticky Header Styles', 'header-for-elementor' ),
+				'type'      => Controls_Manager::HEADING,
+				'separator' => 'before',
+				'condition' => self::CONDITION_HEADER_STICKY_ENABLED,
+			)
+		);
+
+		$element->add_group_control(
+			Group_Control_Border::get_type(),
+			array(
+				'name'           => 'border_sticky',
+				'selector'       => $header_sticky_bar_selector,
+				'fields_options' => array(
+					'width'  => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-width: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}}; --border-top-width: {{TOP}}{{UNIT}}; --border-right-width: {{RIGHT}}{{UNIT}}; --border-bottom-width: {{BOTTOM}}{{UNIT}}; --border-left-width: {{LEFT}}{{UNIT}};',
+						),
+					),
+					'color'  => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-color: {{VALUE}}; --border-color: {{VALUE}};',
+						),
+					),
+					'border' => array(
+						'selectors' => array(
+							'{{SELECTOR}}' => 'border-style: {{VALUE}}; --border-style: {{VALUE}};',
+						),
+					),
+				),
+				'condition'      => self::CONDITION_HEADER_STICKY_ENABLED,
+			)
+		);
+
+		$element->add_responsive_control(
+			'border_radius_sticky',
+			array(
+				'label'      => esc_html__( 'Border Radius', 'header-for-elementor' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', '%', 'em', 'rem', 'custom' ),
+				'selectors'  => array(
+					$header_sticky_bar_selector => '--border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+				'condition'  => self::CONDITION_HEADER_STICKY_ENABLED,
+			)
+		);
+
+		$element->add_group_control(
+			Group_Control_Box_Shadow::get_type(),
+			array(
+				'name'      => 'box_shadow_sticky',
+				'selector'  => $header_sticky_bar_selector,
+				'condition' => self::CONDITION_HEADER_STICKY_ENABLED,
+			)
+		);
+	}
+
+	/**
 	 * Expose the engine-written height vars as pickable values in the Fluid
 	 * Design System dropdown. A silent no-op when that plugin is absent.
 	 * Only globally-inherited vars belong here (both are set on <html>);
