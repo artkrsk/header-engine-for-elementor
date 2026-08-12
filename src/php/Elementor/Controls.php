@@ -16,6 +16,10 @@ use Elementor\Element_Base;
  * missing that flag.
  */
 class Controls {
+	public function register_controls( Controls_Manager $controls_manager ): void {
+		$controls_manager->register( MediaPreviewOnlyControl::instance() );
+	}
+
 	public function add_header_section_controls( Element_Base $element ): void {
 		$element->start_controls_section(
 			'arts_header_section',

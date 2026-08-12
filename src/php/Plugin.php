@@ -41,6 +41,7 @@ class Plugin {
 		add_action( 'elementor/frontend/container/after_render', array( $markup, 'add_header_wrapper_after' ) );
 		add_action( 'elementor/element/after_add_attributes', array( $markup, 'add_header_bar_attributes' ) );
 
+		add_action( 'elementor/controls/register', array( $controls, 'register_controls' ) );
 		add_action( 'elementor/element/container/section_layout_container/after_section_end', array( $controls, 'add_header_section_controls' ) );
 
 		add_filter( 'arts/fluid_design_system/custom_presets', array( $controls, 'add_header_custom_presets' ) );
