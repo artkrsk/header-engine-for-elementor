@@ -49,12 +49,31 @@ const unwrapHeaderBar = (el: HTMLElement): void => {
 }
 
 /**
+ * The slice of Elementor's editor globals this module reaches, typed locally on purpose: consumers
+ * compile this source with their own configs, and the repo's ambient Window augmentation
+ * (global.d.ts) doesn't travel with the module graph.
+ */
+interface IElementorEditorGlobals {
+  elementorModules?: {
+    frontend?: { handlers: { Base: { extend: (props: object) => unknown } } }
+  }
+  elementorFrontend?: {
+    elementsHandler?: {
+      attachHandler: (elementType: string, handler: unknown, skin: unknown) => void
+    }
+  }
+}
+
+const editorGlobals = (): IElementorEditorGlobals =>
+  typeof window === 'undefined' ? {} : (window as IElementorEditorGlobals)
+
+/**
  * Editor-only container handler: wraps an Elementor Container in the `.arts-header` div, syncs
  * panel settings into `data-arts-header-*` attributes on every change, and re-inits/destroys the
  * live header instance.
  */
 export const createContainerHandler = (onInit: TOnInitCallback, onDestroy: TOnDestroyCallback) => {
-  return window?.elementorModules?.frontend?.handlers.Base.extend({
+  return editorGlobals().elementorModules?.frontend?.handlers.Base.extend({
     isLoading: false,
 
     onInit(this: IContainerHandler) {
@@ -176,7 +195,7 @@ export const attachContainerHandler = (
   onInit: TOnInitCallback,
   onDestroy: TOnDestroyCallback
 ): void => {
-  window.elementorFrontend?.elementsHandler?.attachHandler(
+  editorGlobals().elementorFrontend?.elementsHandler?.attachHandler(
     'container',
     createContainerHandler(onInit, onDestroy),
     null
