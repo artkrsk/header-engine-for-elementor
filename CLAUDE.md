@@ -25,7 +25,11 @@ workflows. The only intended consumer is the WIP Velum theme; there are no BC co
 - `pnpm dev` — Vite dev server for `playground/`, the visual harness (single configurable page).
 - `pnpm dev:plugin` — build runner watch mode: esbuild `boot.ts` (IIFE) + sass into
   `src/php/libraries/header-for-elementor/` and, when a gitignored `.env` sets `DEV_TARGET`,
-  mirror the plugin file-by-file into a Local WP site's plugins dir.
+  mirror the plugin file-by-file into a Local WP site's plugins dir. **Gotcha: git
+  checkout/merge can race the mirror** — git's transient unlink of a file can be mirrored as a
+  deletion while the re-add is missed, silently breaking the target plugin (the main .php file
+  vanishing deactivates it functionally). Restart `dev:plugin` after branch switches/merges; the
+  initial mirror restores everything.
 - `pnpm build` — staged release + `dist/header-for-elementor.zip` (assertRelease hard-fails on
   leaked sourcemaps/composer.lock, missing files, or version drift).
 - `composer phpstan` — PHPStan level max over `src/php` (WordPress + Elementor stubs;
