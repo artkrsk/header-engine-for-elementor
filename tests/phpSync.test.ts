@@ -6,7 +6,9 @@ import {
   BAR_FIXED_CLASS,
   BAR_JS_CLASS,
   defaultConfig,
+  NON_STICKY_LOGO_ATTR,
   OPTIONS_ATTR,
+  STICKY_LOGO_ATTR,
   WRAPPER_CLASS,
   WRAPPER_ELEMENT_ID_PREFIX,
   WRAPPER_JS_CLASS
@@ -48,6 +50,13 @@ describe('Markup.php mirrors the TS identifier contract', () => {
     expect(markup).toContain(defaultConfig.vars.headerHeight)
     expect(markup).toContain(defaultConfig.vars.headerHeightNonSticky)
     expect(markup).toContain(defaultConfig.classes.hasHeaderHeight)
+  })
+
+  it.each([
+    NON_STICKY_LOGO_ATTR,
+    STICKY_LOGO_ATTR
+  ])('prints the %s logo-version attribute', (attr) => {
+    expect(markup).toContain(`'${attr}'`)
   })
 
   it.each([

@@ -50,17 +50,29 @@ class Markup {
 
 		$options = self::map_panel_settings( $sticky_enabled, $toggle_reveal_enabled );
 
-		$element->add_render_attribute(
-			'header_wrapper',
-			array(
-				'class'                    => array(
-					'arts-header',
-					'arts-header_elementor-element-' . $element->get_id(),
-					'js-arts-header',
-				),
-				'data-arts-header-options' => wp_json_encode( $options ),
-			)
+		$attributes = array(
+			'class'                    => array(
+				'arts-header',
+				'arts-header_elementor-element-' . $element->get_id(),
+				'js-arts-header',
+			),
+			'data-arts-header-options' => wp_json_encode( $options ),
 		);
+
+		// Logo version tokens, read by CSS only — written only when set, mirroring the
+		// editor-side containerHandler (an absent attribute is the "no swap" state).
+		$non_sticky_logo_version = $settings['arts_header_state_non_sticky_logo_version'] ?? '';
+		$sticky_logo_version     = $settings['arts_header_state_sticky_logo_version'] ?? '';
+
+		if ( is_string( $non_sticky_logo_version ) && $non_sticky_logo_version !== '' ) {
+			$attributes['data-arts-header-non-sticky-logo'] = $non_sticky_logo_version;
+		}
+
+		if ( is_string( $sticky_logo_version ) && $sticky_logo_version !== '' ) {
+			$attributes['data-arts-header-sticky-logo'] = $sticky_logo_version;
+		}
+
+		$element->add_render_attribute( 'header_wrapper', $attributes );
 
 		?><div <?php $element->print_render_attribute_string( 'header_wrapper' ); ?>>
 		<?php
