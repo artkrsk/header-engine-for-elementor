@@ -159,6 +159,22 @@ class Controls {
 		$this->add_header_state_sticky_tab( $element );
 		$element->end_controls_tabs();
 
+		// Lives here rather than the predecessor's section_layout hook (that
+		// section id no longer exists on Containers); its selectors target
+		// {{WRAPPER}}, so the hosting section is irrelevant.
+		$element->add_control(
+			'arts-header-padding-transition',
+			array(
+				'type'       => Controls_Manager::TEXT,
+				'label'      => esc_html__( 'Padding Transition', 'header-for-elementor' ),
+				'default'    => 'yes',
+				'conditions' => $this->generate_fluid_control_conditions( 'padding' ),
+				'selectors'  => array(
+					'{{WRAPPER}}' => 'transition: padding var(--spacing-transition,.3s), margin var(--spacing-transition,.3s), background var(--background-transition,.3s), border var(--border-transition,.3s), box-shadow var(--border-transition,.3s), transform var(--e-con-transform-transition-duration,.4s)',
+				),
+			)
+		);
+
 		$element->end_controls_section();
 	}
 
@@ -610,9 +626,66 @@ class Controls {
 					'value' => 'var(--arts-header-height-non-sticky)',
 					'title' => esc_html__( 'Header Height (Non-Sticky)', 'header-for-elementor' ),
 				),
+				array(
+					'id'    => 'arts-header-spacing-horizontal',
+					'value' => 'var(--arts-header-spacing-horizontal)',
+					'title' => esc_html__( 'Inner Elements Spacing / Horizontal', 'header-for-elementor' ),
+				),
+				array(
+					'id'    => 'arts-header-spacing-vertical',
+					'value' => 'var(--arts-header-spacing-vertical)',
+					'title' => esc_html__( 'Inner Elements Spacing / Vertical', 'header-for-elementor' ),
+				),
 			),
 		);
 
 		return $result;
+	}
+
+	/**
+	 * A silent control whose only job is emitting a transition rule on the
+	 * container while its native padding is fluid-bound to one of the header
+	 * presets — so the padding animates across state changes instead of
+	 * jumping. The var list is hand-synced with add_header_custom_presets.
+	 *
+	 * @param array<int, string> $css_variables
+	 * @return array<string, mixed>
+	 */
+	private function generate_fluid_control_conditions( string $control_name, array $css_variables = array() ): array {
+		if ( empty( $css_variables ) ) {
+			$css_variables = array(
+				'var(--arts-header-spacing-horizontal)',
+				'var(--arts-header-spacing-vertical)',
+				'var(--arts-header-height)',
+				'var(--arts-header-height-non-sticky)',
+			);
+		}
+
+		$dimensions = array( 'top', 'right', 'bottom', 'left' );
+		$terms      = array();
+
+		foreach ( $css_variables as $css_variable ) {
+			foreach ( $dimensions as $dimension ) {
+				$terms[] = array(
+					'terms' => array(
+						array(
+							'name'     => $control_name . '[unit]',
+							'operator' => '===',
+							'value'    => 'fluid',
+						),
+						array(
+							'name'     => $control_name . '[' . $dimension . ']',
+							'operator' => '===',
+							'value'    => $css_variable,
+						),
+					),
+				);
+			}
+		}
+
+		return array(
+			'relation' => 'or',
+			'terms'    => $terms,
+		);
 	}
 }
