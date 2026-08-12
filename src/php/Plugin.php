@@ -31,8 +31,16 @@ class Plugin {
 
 	public function init_elementor(): void {
 		$assets   = new Elementor\Assets();
+		$backend  = new Elementor\Backend();
 		$markup   = new Elementor\Markup();
 		$controls = new Elementor\Controls();
+
+		add_action( 'customize_register', array( $backend, 'add_customizer_settings' ) );
+		add_action( 'elementor/document/before_save', array( $backend, 'update_theme_mods_on_site_settings_save' ), 10, 2 );
+		add_filter( 'pre_set_theme_mod_custom_logo', array( $backend, 'handle_custom_logo_theme_mod' ), 10, 2 );
+		add_filter( 'pre_set_theme_mod_arts_header_custom_logo_secondary', array( $backend, 'handle_secondary_logo_theme_mod' ), 10, 2 );
+		add_filter( 'pre_update_option_site_icon', array( $backend, 'handle_favicon_option' ), 10, 3 );
+		add_action( 'elementor/element/before_section_end', array( $controls, 'add_site_settings_secondary_logo' ), 10, 2 );
 
 		add_action( 'wp_enqueue_scripts', array( $assets, 'register' ) );
 		add_action( 'wp_enqueue_scripts', array( $assets, 'enqueue' ) );
