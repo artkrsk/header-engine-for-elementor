@@ -27,7 +27,17 @@ const php = (file: string): string =>
 const PANEL_KEYS = [
   'arts_header_enabled',
   'arts_header_sticky_enabled',
-  'arts_header_sticky_toggle_reveal_enabled'
+  'arts_header_sticky_toggle_reveal_enabled',
+  'arts_header_state_non_sticky_logo_version',
+  'arts_header_state_sticky_logo_version'
+]
+
+/** Spacing keys are read by Elementor's own CSS selectors pipeline, not by the editor JS. */
+const SPACING_KEYS = [
+  'arts_header_state_non_sticky_spacing_horizontal',
+  'arts_header_state_non_sticky_spacing_vertical',
+  'arts_header_state_sticky_spacing_horizontal',
+  'arts_header_state_sticky_spacing_vertical'
 ]
 
 describe('Markup.php mirrors the TS identifier contract', () => {
@@ -73,6 +83,18 @@ describe('Controls.php defines the frontend_available panel keys', () => {
 
   it.each(PANEL_KEYS)('defines %s', (key) => {
     expect(controls).toContain(`'${key}'`)
+  })
+
+  it.each(SPACING_KEYS)('defines the %s slider', (key) => {
+    expect(controls).toContain(`'${key}'`)
+  })
+
+  it('writes all four state-infixed spacing vars', () => {
+    for (const state of ['non-sticky', 'sticky']) {
+      for (const axis of ['horizontal', 'vertical']) {
+        expect(controls).toContain(`--arts-header-${state}-spacing-${axis}`)
+      }
+    }
   })
 
   it('marks every panel key frontend_available', () => {

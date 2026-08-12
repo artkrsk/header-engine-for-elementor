@@ -8,14 +8,37 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Elementor\Controls_Manager;
 use Elementor\Element_Base;
+use Elementor\Group_Control_Background;
+use Elementor\Group_Control_Border;
+use Elementor\Group_Control_Box_Shadow;
+use Elementor\Group_Control_Css_Filter;
 
 /**
- * Injects the "Create Header" section into the Container's Layout tab.
- * All behavior keys are frontend_available — the editor-side handler
- * reads them via getElementSettings(), which silently drops any control
- * missing that flag.
+ * Injects the "Create Header" section into the Container's Layout tab plus
+ * the sticky-state style sections. Behavior keys the editor-side handler
+ * reads via getElementSettings() must be frontend_available — the flag
+ * gates its key allowlist and unmarked controls silently resolve undefined.
  */
 class Controls {
+	/** Wrapper scoped to one editor element. */
+	const HEADER_SELECTOR = '.arts-header_elementor-element-{{ID}}';
+
+	/**
+	 * "Truly pinned and visible": sticky styles stay off while the auto-hide
+	 * reveal is mid-hide (`_scrolling-down`), so the bar restyles only once
+	 * it is actually shown in its stuck state.
+	 */
+	const HEADER_STICKY_SELECTOR = '.arts-header_sticky:not(.arts-header_scrolling-down)' . self::HEADER_SELECTOR;
+
+	const HEADER_STICKY_BAR_SELECTOR = self::HEADER_STICKY_SELECTOR . ' .arts-header__bar';
+
+	const CONDITION_HEADER_ENABLED = array( 'arts_header_enabled!' => '' );
+
+	const CONDITION_HEADER_STICKY_ENABLED = array(
+		'arts_header_enabled!'        => '',
+		'arts_header_sticky_enabled!' => '',
+	);
+
 	public function register_controls( Controls_Manager $controls_manager ): void {
 		$controls_manager->register( MediaPreviewOnlyControl::instance() );
 	}
@@ -115,7 +138,7 @@ class Controls {
 				'type'               => Controls_Manager::SWITCHER,
 				'default'            => 'yes',
 				'frontend_available' => true,
-				'condition'          => array( 'arts_header_enabled!' => '' ),
+				'condition'          => self::CONDITION_HEADER_ENABLED,
 			)
 		);
 
@@ -127,14 +150,215 @@ class Controls {
 				'type'               => Controls_Manager::SWITCHER,
 				'default'            => 'yes',
 				'frontend_available' => true,
-				'condition'          => array(
-					'arts_header_enabled!'        => '',
-					'arts_header_sticky_enabled!' => '',
-				),
+				'condition'          => self::CONDITION_HEADER_STICKY_ENABLED,
 			)
 		);
 
+		$element->start_controls_tabs( 'tabs_theme_header_sticky' );
+		$this->add_header_state_non_sticky_tab( $element );
+		$this->add_header_state_sticky_tab( $element );
+		$element->end_controls_tabs();
+
 		$element->end_controls_section();
+	}
+
+	/**
+	 * Every control id and CSS var below stays a literal string on purpose —
+	 * the phpSync guard greps for them, matching the hand-synced identifier
+	 * contract convention (see CLAUDE.md). Don't parameterize.
+	 */
+	private function add_header_state_non_sticky_tab( Element_Base $element ): void {
+		$element->start_controls_tab(
+			'tab_arts_header_non_sticky',
+			array(
+				'label'     => esc_html__( 'Non-Sticky State', 'header-for-elementor' ),
+				'condition' => self::CONDITION_HEADER_ENABLED,
+			)
+		);
+
+		$element->add_control(
+			'arts_header_state_non_sticky_logo_version',
+			array(
+				'label'              => esc_html__( 'Logo to Display', 'header-for-elementor' ),
+				'type'               => Controls_Manager::SELECT,
+				'options'            => array(
+					'primary'   => esc_html__( 'Primary', 'header-for-elementor' ),
+					'secondary' => esc_html__( 'Secondary', 'header-for-elementor' ),
+				),
+				'default'            => 'primary',
+				'frontend_available' => true,
+				'condition'          => self::CONDITION_HEADER_ENABLED,
+			)
+		);
+
+		$element->add_control(
+			'arts_header_state_non_sticky_heading_spacing',
+			array(
+				'label'     => esc_html__( 'Inner Elements Spacing', 'header-for-elementor' ),
+				'type'      => Controls_Manager::HEADING,
+				'separator' => 'before',
+				'condition' => self::CONDITION_HEADER_ENABLED,
+			)
+		);
+
+		$element->add_responsive_control(
+			'arts_header_state_non_sticky_spacing_horizontal',
+			array(
+				'label'              => esc_html__( 'Horizontal', 'header-for-elementor' ),
+				'type'               => Controls_Manager::SLIDER,
+				'size_units'         => array( 'px', 'em', 'rem', 'custom' ),
+				'range'              => array(
+					'px' => array(
+						'min'  => 0,
+						'max'  => 200,
+						'step' => 1,
+					),
+				),
+				'selectors'          => array(
+					self::HEADER_SELECTOR => '--arts-header-non-sticky-spacing-horizontal: {{SIZE}}{{UNIT}};',
+				),
+				'frontend_available' => true,
+				'default'            => array(
+					'size' => 40,
+					'unit' => 'px',
+				),
+				'desktop_default'    => array(
+					'size' => 40,
+					'unit' => 'px',
+				),
+				'render_type'        => 'template',
+				'condition'          => self::CONDITION_HEADER_ENABLED,
+			)
+		);
+
+		$element->add_responsive_control(
+			'arts_header_state_non_sticky_spacing_vertical',
+			array(
+				'label'              => esc_html__( 'Vertical', 'header-for-elementor' ),
+				'type'               => Controls_Manager::SLIDER,
+				'size_units'         => array( 'px', 'em', 'rem', 'custom' ),
+				'range'              => array(
+					'px' => array(
+						'min'  => 0,
+						'max'  => 200,
+						'step' => 1,
+					),
+				),
+				'selectors'          => array(
+					self::HEADER_SELECTOR => '--arts-header-non-sticky-spacing-vertical: {{SIZE}}{{UNIT}};',
+				),
+				'frontend_available' => true,
+				'default'            => array(
+					'size' => 30,
+					'unit' => 'px',
+				),
+				'desktop_default'    => array(
+					'size' => 30,
+					'unit' => 'px',
+				),
+				'render_type'        => 'template',
+				'condition'          => self::CONDITION_HEADER_ENABLED,
+			)
+		);
+
+		$element->end_controls_tab();
+	}
+
+	private function add_header_state_sticky_tab( Element_Base $element ): void {
+		$element->start_controls_tab(
+			'tab_arts_header_sticky',
+			array(
+				'label'     => esc_html__( 'Sticky State', 'header-for-elementor' ),
+				'condition' => self::CONDITION_HEADER_STICKY_ENABLED,
+			)
+		);
+
+		$element->add_control(
+			'arts_header_state_sticky_logo_version',
+			array(
+				'label'              => esc_html__( 'Logo to Display', 'header-for-elementor' ),
+				'type'               => Controls_Manager::SELECT,
+				'options'            => array(
+					'primary'   => esc_html__( 'Primary', 'header-for-elementor' ),
+					'secondary' => esc_html__( 'Secondary', 'header-for-elementor' ),
+				),
+				'default'            => 'primary',
+				'frontend_available' => true,
+				'condition'          => self::CONDITION_HEADER_STICKY_ENABLED,
+			)
+		);
+
+		$element->add_control(
+			'arts_header_state_sticky_heading_spacing',
+			array(
+				'label'     => esc_html__( 'Inner Elements Spacing', 'header-for-elementor' ),
+				'type'      => Controls_Manager::HEADING,
+				'separator' => 'before',
+				'condition' => self::CONDITION_HEADER_STICKY_ENABLED,
+			)
+		);
+
+		$element->add_responsive_control(
+			'arts_header_state_sticky_spacing_horizontal',
+			array(
+				'label'              => esc_html__( 'Horizontal', 'header-for-elementor' ),
+				'type'               => Controls_Manager::SLIDER,
+				'size_units'         => array( 'px', 'em', 'rem', 'custom' ),
+				'range'              => array(
+					'px' => array(
+						'min'  => 0,
+						'max'  => 200,
+						'step' => 1,
+					),
+				),
+				'selectors'          => array(
+					self::HEADER_SELECTOR => '--arts-header-sticky-spacing-horizontal: {{SIZE}}{{UNIT}};',
+				),
+				'frontend_available' => true,
+				'default'            => array(
+					'size' => 40,
+					'unit' => 'px',
+				),
+				'desktop_default'    => array(
+					'size' => 40,
+					'unit' => 'px',
+				),
+				'render_type'        => 'template',
+				'condition'          => self::CONDITION_HEADER_STICKY_ENABLED,
+			)
+		);
+
+		$element->add_responsive_control(
+			'arts_header_state_sticky_spacing_vertical',
+			array(
+				'label'              => esc_html__( 'Vertical', 'header-for-elementor' ),
+				'type'               => Controls_Manager::SLIDER,
+				'size_units'         => array( 'px', 'em', 'rem', 'custom' ),
+				'range'              => array(
+					'px' => array(
+						'min'  => 0,
+						'max'  => 200,
+						'step' => 1,
+					),
+				),
+				'selectors'          => array(
+					self::HEADER_SELECTOR => '--arts-header-sticky-spacing-vertical: {{SIZE}}{{UNIT}};',
+				),
+				'frontend_available' => true,
+				'default'            => array(
+					'size' => 30,
+					'unit' => 'px',
+				),
+				'desktop_default'    => array(
+					'size' => 30,
+					'unit' => 'px',
+				),
+				'render_type'        => 'template',
+				'condition'          => self::CONDITION_HEADER_STICKY_ENABLED,
+			)
+		);
+
+		$element->end_controls_tab();
 	}
 
 	/**
