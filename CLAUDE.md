@@ -13,12 +13,15 @@ single version source (the build stamps the plugin header, readme.txt, and packa
 
 ## Status / scope
 
-Frontend engine + Phase-1 PHP layer (bootstrap, `Elementor/{Assets,Markup,Controls}`, build runner)
-exist. Still outstanding (see `docs/superpowers/plans/2026-08-12-php-plugin-layer.md` for the
-phasing): the DualLogo widget + logo-version controls + secondary-logo Customizer/kit sync
-(Phase 2), sticky-state appearance controls + spacing sliders (Phase 3), Velum integration — TGM
-entry, repointing its `@arts/header` links from the old framework package (Phase 4), and CI
-workflows. The only intended consumer is the WIP Velum theme; there are no BC constraints.
+Feature-complete against the predecessor package: frontend engine, PHP layer (bootstrap,
+`Elementor/{Assets,Markup,Controls,Backend,DualLogoWidget,MediaPreviewOnlyControl}`), build
+runner, and Velum integration (TGM optional entry, `@arts/header` links repointed, `IHeaderApp`
+type, `arts/header` removed from velum-core's composer — all landed in the Velum monorepo).
+Still outstanding: CI workflows (`test.yml`/`release.yml` per the siblings' pattern) and the
+WP.org submission story — the plugin is headed for the WordPress.org directory, which is also why
+Velum's TGM entry is slug-only. The only intended consumer is the WIP Velum theme; there are no
+BC constraints. Explicitly deferred: a reveal-mode panel select (off/auto-hide/scrub) — no Velum
+demand; hand-authored `data-arts-header-options` covers exotic cases.
 
 ## Commands
 
@@ -105,8 +108,11 @@ src/styles/       SCSS in the `arts-header` cascade layer: index + _tokens (cont
                   _modes, _reveal, _logo, _interaction
 src/php/          Plugin (singleton bootstrap, did_action('elementor/loaded') race guard) +
                   Elementor/{Assets (enqueue + editor-flag inline JSON), Markup (wrapper, bar
-                  attrs, options JSON, pre-paint height script), Controls (panel section +
-                  fluid presets filter)}; libraries/ holds the built bundles (gitignored)
+                  attrs, logo attrs, options JSON, pre-paint height script), Controls (panel
+                  section + state tabs + sticky style sections + fluid presets + padding
+                  transition), Backend (secondary-logo Customizer control + bidirectional
+                  theme_mod⇄kit sync), DualLogoWidget, MediaPreviewOnlyControl};
+                  libraries/ holds the built bundles (gitignored)
 src/wordpress-plugin/  the shipped main file + readme.txt (headers stamped from composer.json)
 build/            runner (node build/index.js dev|build), ported from cursor-follower —
                   config/js/sass/sync/meta/package modules, assertRelease gate
@@ -178,11 +184,24 @@ must serialize identically (`reveal => (object) array()` keeps `{}` from collaps
   `arts-header_elementor-element-<id>` prefix.
 - **Editor panel setting keys** read by `containerHandler`: `arts_header_enabled`,
   `arts_header_sticky_enabled`, `arts_header_sticky_toggle_reveal_enabled`,
-  `arts_header_state_{non_sticky,sticky}_logo_version`.
+  `arts_header_state_{non_sticky,sticky}_logo_version`. PHP-only keys (Elementor-CSS-read, not
+  editor-JS-read): `arts_header_state_{non_sticky,sticky}_spacing_{horizontal,vertical}` sliders
+  writing the state-infixed spacing vars, plus the sticky style sections
+  (`background_sticky*`, `background_overlay_sticky*`, `border_sticky*`, `box_shadow_sticky`)
+  scoped via `Controls::HEADER_STICKY_BAR_SELECTOR` (sticky AND not scrolling-down).
 - **Globals**: `window.artsHeaderForElementor` (the `IHeaderApp`),
   `window.artsHeaderOptions.isElementorEditor`.
+- **Widget**: `arts-header-dual-site-logo` (name frozen — old Velum layouts reference it);
+  secondary logo lives in the `arts_header_custom_logo_secondary` theme mod, two-way synced with
+  the kit's `site_secondary_logo` (`Elementor/Backend.php`).
 
 ## Gotchas / invariants
+
+- **Library-surface modules must not lean on `global.d.ts`** — Velum's monorepo tsc compiles this
+  source through the `@arts/header` link, and ambient Window augmentations don't travel with the
+  module graph. Any module reachable from `src/ts/index.ts` types its `window` reaches with a
+  local structural interface (`elementorEditorLoaded.ts`, `containerHandler.ts` are the pattern);
+  bundle-only modules (`boot.ts`, `elementor/init.ts`) may keep using the ambient types.
 
 - **The wrapper positions in every mode; the bar's modifier class only *signals* the mode**
   (`__bar_sticky`→flow/native sticky, `__bar_fixed`/`__bar_absolute`→overlay, plus the
