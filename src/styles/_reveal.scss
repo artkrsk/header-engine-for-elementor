@@ -6,7 +6,7 @@
   // Scrolling up removes `_scrolling-down` and it slides back. `_locked` freezes the current
   // state. `:not(_reveal-scrub)` — in scrub mode JS writes the wrapper transform inline
   // (authoritative), so CSS must not co-drive it.
-  .arts-header.arts-header_sticky.arts-header_scrolling-down:not(.arts-header_locked):not(.arts-header_reveal-scrub) {
+  .arts-header.arts-header_sticky.arts-header_scrolling-down:not(.arts-header_locked, .arts-header_reveal-scrub) {
     transform: translateY(-100%);
   }
 

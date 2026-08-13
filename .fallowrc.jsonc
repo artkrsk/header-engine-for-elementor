@@ -3,7 +3,6 @@
   "$schema": "./node_modules/fallow/schema.json",
   // The bundle entry, the library surface package.json#types points at, the stylesheet entry,
   // the playground harness (the repo's own primary consumer of the library surface), and the
-  // build runner's two executables.
   "entry": [
     "src/ts/boot.ts",
     "src/ts/index.ts",

@@ -1,0 +1,26 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Supersede in-flight runs for the same ref so pushes don't pile up on the
+# single self-hosted runner.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    uses: artkrsk/wordpress-plugin-workflows/.github/workflows/test.yml@main
+    with:
+      # 41 KB actual — 0.1 MB is ~2.5x headroom
+      zip_budget_mb: '0.1'
+      # coverage: true after the repo goes public (Codecov)
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

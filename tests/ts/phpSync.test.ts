@@ -21,7 +21,7 @@ import { describe, expect, it } from 'vitest'
  */
 
 const php = (file: string): string =>
-  readFileSync(resolve(__dirname, `../src/php/Elementor/${file}`), 'utf8')
+  readFileSync(resolve(__dirname, `../../src/php/Elementor/${file}`), 'utf8')
 
 /** Panel keys the editor-side handler reads; PHP must define and read the same names. */
 const PANEL_KEYS = [

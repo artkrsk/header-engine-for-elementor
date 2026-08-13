@@ -39,11 +39,11 @@ demand; hand-authored `data-arts-header-options` covers exotic cases.
   `phpstan-bootstrap.php` defines the plugin constants for analysis).
 - `pnpm test` / `test:watch` / `test:coverage` — Vitest over `tests/**/*.test.ts` (istanbul
   coverage — fallow reads istanbul-format `coverage-final.json` only).
-- `pnpm typecheck` — `tsc --noEmit` (strict, `noUncheckedIndexedAccess`,
+- `pnpm exec tsc --noEmit` — `tsc --noEmit` (strict, `noUncheckedIndexedAccess`,
   `exactOptionalPropertyTypes`).
 - `pnpm lint` — `biome check .`; `pnpm format` — `biome format --write .`.
-- `pnpm knip` / `pnpm fallow` — paired static analyzers (unused files/exports/deps; fallow adds
-  circular-dependency + health passes). `pnpm fallow:health` regenerates coverage first so CRAP
+- `pnpm exec knip` / `pnpm exec fallow` — paired static analyzers (unused files/exports/deps; fallow adds
+  circular-dependency + health passes). `pnpm test:coverage && pnpm exec fallow health --coverage coverage/coverage-final.json` regenerates coverage first so CRAP
   scores are real rather than `static_estimated`.
 
 Biome is linter + formatter: single quotes, no semicolons, 2-space indent, width 100; `noExplicitAny`
@@ -114,7 +114,7 @@ src/php/          Plugin (singleton bootstrap, did_action('elementor/loaded') ra
                   theme_mod⇄kit sync), DualLogoWidget, MediaPreviewOnlyControl};
                   libraries/ holds the built bundles (gitignored)
 src/wordpress-plugin/  the shipped main file + readme.txt (headers stamped from composer.json)
-build/            runner (node build/index.js dev|build), ported from cursor-follower —
+build/            runner (arts-wp dev|build), ported from cursor-follower —
                   config/js/sass/sync/meta/package modules, assertRelease gate
 playground/       Vite harness: single configurable page + shared fixtures/lenis
 tests/            mirrors src/ts; support.ts fixture factories; aliasBoundary + styleSync +

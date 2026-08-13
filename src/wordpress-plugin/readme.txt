@@ -20,4 +20,4 @@ properties — no per-frame JavaScript styling.
 == Changelog ==
 
 = 0.1.0 =
-* Initial release.
+Initial release.

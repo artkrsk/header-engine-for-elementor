@@ -6,6 +6,7 @@
 @layer arts-header {
   .arts-header {
     position: static;
+
     --arts-header-spacing-horizontal: var(--arts-header-non-sticky-spacing-horizontal, 0px);
     --arts-header-spacing-vertical: var(--arts-header-non-sticky-spacing-vertical, 0px);
 
@@ -33,7 +34,7 @@
   .arts-header .arts-header__bar,
   .arts-header .arts-header__bar.e-con:not(.e-div-block-base),
   .arts-header .arts-header__bar.elementor-element:not(.e-div-block-base) .elementor-widget-container,
-  .arts-header .arts-header__bar.elementor-element:not(.e-div-block-base):not(:has(.elementor-widget-container)) {
+  .arts-header .arts-header__bar.elementor-element:not(.e-div-block-base, :has(.elementor-widget-container)) {
     transition-property: background, box-shadow, border-color, border-width, border-radius, opacity, padding;
     transition-duration: tokens.$transition-duration;
     transition-timing-function: ease;
@@ -48,14 +49,14 @@
   //   overlay (_absolute) → out of flow, absolute within the nearest positioned ancestor
   .arts-header:has(> .arts-header__bar_sticky) {
     position: sticky;
-    top: var(--arts-header-top, 0px);
+    top: var(--arts-header-top, 0);
     z-index: tokens.$z-index;
     transition: tokens.$transform-transition;
   }
 
   .arts-header:has(> .arts-header__bar_fixed),
   .arts-header:has(> .arts-header__bar_absolute) {
-    top: var(--arts-header-top, 0px);
+    top: var(--arts-header-top, 0);
     left: 0;
     right: 0;
     z-index: tokens.$z-index;
@@ -76,17 +77,14 @@
   // shift and is seamless at the crossover (the header's top is at the sticky line in both).
   .arts-header.arts-header_hero-bottom {
     position: absolute;
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    inset: auto 0 0;
     z-index: tokens.$z-index;
     transition: tokens.$transform-transition;
   }
 
   .arts-header.arts-header_hero-bottom.arts-header_sticky {
     position: fixed;
-    top: var(--arts-header-top, 0px);
+    top: var(--arts-header-top, 0);
     bottom: auto;
   }
 
@@ -98,7 +96,7 @@
   // would reflow its reserved space, so release pairs with an out-of-flow mode.
   .arts-header.arts-header_sticky.arts-header_released {
     position: absolute;
-    top: var(--arts-header-release-top, 0px);
+    top: var(--arts-header-release-top, 0);
     bottom: auto;
   }
 

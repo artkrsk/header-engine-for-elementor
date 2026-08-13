@@ -1,8 +1,7 @@
 includes:
-	- vendor/szepeviktor/phpstan-wordpress/extension.neon
+	- vendor/arts/wp-plugin-standards/phpstan/base.neon
+
 parameters:
-	level: max
-	phpVersion: 80000
 	paths:
 		- src/php
 	bootstrapFiles:
@@ -10,8 +9,3 @@ parameters:
 		- phpstan-bootstrap.php
 	scanFiles:
 		- vendor/arts/elementor-stubs/elementor-stubs.php
-	# Elementor's Plugin::$instance and its manager properties are typed only via
-	# @var docblocks with a null default. At the default (true), PHPStan would
-	# treat "! Plugin::$instance" guards as always-false dead code — wrong before
-	# Elementor boots.
-	treatPhpDocTypesAsCertain: false
