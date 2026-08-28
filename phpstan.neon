@@ -1,0 +1,11 @@
+includes:
+	- vendor/arts/wp-plugin-standards/phpstan/base.neon
+
+parameters:
+	paths:
+		- src/php
+	bootstrapFiles:
+		- vendor/autoload.php
+		- phpstan-bootstrap.php
+	scanFiles:
+		- vendor/arts/elementor-stubs/elementor-stubs.php

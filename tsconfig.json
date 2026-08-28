@@ -1,0 +1,11 @@
+{
+  "extends": "@arts/wp-plugin-tooling/tsconfig",
+  "compilerOptions": {
+    "paths": {
+      "@engine": ["./src/ts/index.ts"],
+      "@styles/*": ["./src/styles/*"],
+      "@ts/*": ["./src/ts/*"]
+    }
+  },
+  "include": ["src/ts/**/*", "playground/**/*", "tests/**/*", "vite.config.ts", "vitest.config.ts"]
+}

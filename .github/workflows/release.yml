@@ -1,0 +1,27 @@
+name: Release Plugin
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  release:
+    uses: artkrsk/wordpress-plugin-workflows/.github/workflows/release.yml@main
+    with:
+      node_version: '24'
+      php_version: '8.4'
+      build_command: 'composer install --prefer-dist --no-progress && pnpm build'
+      plugin_slug: 'artem-semkin-header-engine-for-elementor'
+      main_plugin_file: 'src/wordpress-plugin/artem-semkin-header-engine-for-elementor.php'
+      use_arts_changelog: true
+      assets_directory: '.wordpress-org'
+      version_files: '["plugin_header", "readme.txt", "package.json"]'
+      deploy_to_wordpress: true
+    secrets:
+      SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+      SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}

@@ -1,0 +1,120 @@
+// `.arts-header-logo` is the DualLogo Elementor widget's own BEM block (a separate component),
+// not an element of `.arts-header` — do not rename to `.arts-header__logo`. These rules only
+// reach its descendant classes via ancestor-state attribute selectors on `.arts-header`.
+
+@layer arts-header {
+  // Base layout for the DualLogo widget markup — it rides this bundle, there is no separate
+  // widget style handle. The secondary image stacks over the primary, hidden until a state
+  // rule below reveals it.
+  .arts-header-logo {
+    position: relative;
+    display: inline-flex;
+    gap: 12px;
+    align-items: center;
+    vertical-align: middle;
+  }
+
+  a.arts-header-logo {
+    transition:
+      color 0.3s ease,
+      opacity 0.3s ease;
+
+    &:hover {
+      opacity: 0.75;
+    }
+  }
+
+  .arts-header-logo__wrapper-img {
+    position: relative;
+    align-items: center;
+    flex: 1 0 auto;
+    max-width: 100%;
+    overflow: hidden;
+
+    img {
+      object-fit: contain;
+      object-position: center center;
+      width: auto;
+
+      // Only what the version swap animates — `all` also transitioned layout (width/height)
+      // on responsive changes and late-loading image dimensions.
+      transition:
+        opacity 0.2s ease,
+        visibility 0.2s ease;
+      display: block;
+    }
+  }
+
+  .arts-header-logo__text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .arts-header-logo__text-title,
+  .arts-header-logo__text-tagline {
+    display: block;
+  }
+
+  .arts-header-logo__img-secondary {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .arts-header:not(.arts-header_sticky) {
+    &[data-arts-header-non-sticky-logo='primary'] {
+      .arts-header-logo__img-primary {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .arts-header-logo__img-secondary {
+        opacity: 0;
+        visibility: hidden;
+      }
+    }
+
+    &[data-arts-header-non-sticky-logo='secondary'] {
+      .arts-header-logo__img-primary {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .arts-header-logo__img-secondary {
+        opacity: 1;
+        visibility: visible;
+      }
+    }
+  }
+
+  // The logo tracks the sticky state only — never scroll direction. A hiding/locked bar
+  // is still sticky ("pseudo sticky"), so no `_scrolling-down` variant here.
+  .arts-header.arts-header_sticky {
+    &[data-arts-header-sticky-logo='primary'] {
+      .arts-header-logo__img-primary {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .arts-header-logo__img-secondary {
+        opacity: 0;
+        visibility: hidden;
+      }
+    }
+
+    &[data-arts-header-sticky-logo='secondary'] {
+      .arts-header-logo__img-primary {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .arts-header-logo__img-secondary {
+        opacity: 1;
+        visibility: visible;
+      }
+    }
+  }
+}

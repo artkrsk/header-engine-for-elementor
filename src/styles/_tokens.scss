@@ -1,0 +1,45 @@
+// Two halves, one contract file:
+// 1. The SCSS-language layer — deliberately tiny: three $values, compile-time only.
+// 2. The runtime contract docs: every CSS custom property the ENGINE writes, declared here so the
+//    JS↔CSS boundary has one home on the styles side. `constants/defaultConfig.ts` holds the TS
+//    side; `tests/ts/styleSync.test.ts` is the mechanical guard keeping the two in step.
+//
+// Engine-written vars (mirror `defaultConfig.vars`):
+// - `--arts-header-height`            live bar height, written on `<html>` (heightObserver)
+// - `--arts-header-height-non-sticky` settled rest height, written on `<html>` (heightObserver);
+//                                     also seeded pre-paint by the consumer for sticky-boot loads
+// - `--arts-header-natural-height`    the wrapper's rest height, written on the wrapper and
+//                                     frozen while stuck — the flow modes consume it as a
+//                                     constant slot so a sticky bar resize never reflows the page
+// - `--arts-header-release-top`       release anchor, written on the wrapper (release)
+//
+// Engine-READ vars (the arrows pointing the other way — the styles/panel write them, JS resolves
+// them at measure time):
+// - `--arts-header-reveal-offset`     scroll distance past the sticky line before auto-hide
+//                                     engages; Elementor/theme-written, registered as an
+//                                     inheriting `<length>` so vh/calc() arrive as absolute px
+// - `--arts-header-top-pinned`        the admin-bar allowance for VIEWPORT-PINNED consumers (flow
+//                                     sticky, stuck _fixed, stuck hero-bottom), derived from
+//                                     `--arts-header-top` in `_modes.scss` and zeroed at <=600px
+//                                     where WP's bar stops being viewport-pinned. SCSS-derived,
+//                                     not panel-authored and not registered: it always resolves to
+//                                     a plain px token. Deliberately NOT in `IResolvedConfig` — an
+//                                     implementation detail of pin-line measurement, not a
+//                                     renameable/opt-out-able contract
+//
+// Styling-side vars (read here, never written by JS): `--arts-header-top` (the DOCUMENT-space
+// allowance the var above derives from),
+// `--arts-header-pin-offset` (panel-written pin distance; negative = compact-header trick — the
+// engine reads the RESULTING computed top/bottom, never this var),
+// `--spacing-transition`,
+// `--arts-header-hide-direction` (reveal transform sign; bottom dock and bottom pin set `1`).
+// Per-state padding is NOT a var contract anymore: the native Padding control is the rest
+// state and `Controls.php`'s `padding_sticky` overrides Elementor's own `--padding-*` custom
+// properties on the sticky-scoped bar.
+
+// Wrapper stacking context shared by every docking mode.
+$z-index: 100;
+
+// The motion every wrapper transition rides; themes retune it via --spacing-transition.
+$transition-duration: var(--spacing-transition, 0.3s);
+$transform-transition: transform $transition-duration ease;

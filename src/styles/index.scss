@@ -1,0 +1,18 @@
+// Artem Semkin Header Engine for Elementor — the engine stylesheet.
+//
+// Architecture:
+// - All rules live in the `arts-header` cascade layer: any unlayered theme CSS wins by default,
+//   no specificity wars.
+// - The WRAPPER positions in every docking mode and carries the reveal transform; the bar's
+//   modifier class only signals which mode. One code path for flow + overlay keeps the engine
+//   mode-agnostic.
+// - The show/hide animation is a CSS state machine: JS publishes state classes and a few custom
+//   properties; transitions on the wrapper transform do the animating.
+// - State-class strings mirror `constants/defaultConfig.ts` by hand — no shared source of truth
+//   exists across the two languages; `tests/ts/styleSync.test.ts` is the mechanical guard.
+
+@use 'tokens';
+@use 'modes';
+@use 'reveal';
+@use 'logo';
+@use 'interaction';

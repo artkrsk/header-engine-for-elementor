@@ -1,0 +1,178 @@
+@use 'tokens';
+
+// Wrapper positioning per docking mode, plus the structural pieces that ride it (bar surface
+// transitions, release override).
+
+@layer arts-header {
+  .arts-header {
+    position: static;
+
+    // The VIEWPORT-PINNED reading of --arts-header-top, and the only one a pinned header may use.
+    // WordPress drops #wpadminbar to `position: absolute` at <=600px (it scrolls away with the
+    // document) but never zeroes --wp-admin--admin-bar--height, so the two readings diverge there
+    // — the media block below is the one place that happens.
+    --arts-header-top-pinned: var(--arts-header-top, 0px);
+
+    &.customize-partial-refreshing {
+      position: relative;
+      z-index: 500;
+    }
+  }
+
+  // The bar's allowance in DOCUMENT space — it mirrors the `<html>` margin-top bump WP core
+  // applies, so it is correct at every viewport and scroll position for document-anchored modes.
+  body.admin-bar {
+    .arts-header {
+      --arts-header-top: var(--wp-admin--admin-bar--height, 0px);
+    }
+  }
+
+  // Bar visual-state transitions (background/border/etc. when toggling per-state sticky styles).
+  // Sticky padding lives in Controls.php (`padding_sticky` → `--padding-*` on the sticky-scoped
+  // bar, `_sticky` alone — "pseudo sticky": a hiding/locked bar keeps its sticky padding).
+  .arts-header .arts-header__bar,
+  .arts-header .arts-header__bar.e-con:not(.e-div-block-base) > .e-con-inner,
+  .arts-header .arts-header__bar.e-con:not(.e-div-block-base),
+  .arts-header .arts-header__bar.elementor-element:not(.e-div-block-base) .elementor-widget-container,
+  .arts-header .arts-header__bar.elementor-element:not(.e-div-block-base, :has(.elementor-widget-container)) {
+    transition-property: background, box-shadow, border-color, border-width, border-radius, opacity, padding;
+    transition-duration: tokens.$transition-duration;
+    transition-timing-function: ease;
+  }
+
+  // Ink motion for the sticky global-color remaps: remapped `--e-global-color-*` values flip on
+  // the state class, and the consuming widgets rarely transition text/icon color themselves —
+  // without this the bar surface fades while its content snaps. `:where()` keeps it at zero
+  // specificity: any widget or theme transition rule (unlayered, or just more specific) wins.
+  .arts-header .arts-header__bar :where(a, button, i, svg, path, span, div, p, li, h1, h2, h3, h4, h5, h6) {
+    transition-property: color, fill, stroke;
+    transition-duration: tokens.$transition-duration;
+    transition-timing-function: ease;
+  }
+
+  // The WRAPPER carries positioning in EVERY mode (its containing block is the page), so the
+  // reveal transform always rides the wrapper — one code path for flow + overlay, and the engine
+  // stays mode-agnostic. The bar's modifier class only signals which mode; the wrapper positions.
+  //   flow    (_sticky)   → in flow, native sticky (reserves space, zero content offsets); pins
+  //                         from ANY page position — mid-page filter bars included
+  //   flow    (no modifier, sticky off) → plain static in-flow header, scrolls away
+  //   overlay (_fixed)    → out of flow, fixed over content (transparent-over-hero; no layout
+  //                         shift when the bar shrinks, since it no longer occupies flow)
+  //   overlay (_absolute) → out of flow, absolute within the nearest positioned ancestor
+  //   bottom  (_bottom)   → out of flow, fixed to the viewport bottom (mobile-app bar)
+  // `--arts-header-pin-offset` composes onto the base line — --arts-header-top for the
+  // document-anchored modes, --arts-header-top-pinned for the viewport-pinned ones:
+  // positive pins lower (e.g. stacked under a site header), negative pins above the viewport top
+  // — the compact-header trick (a 150px bar with -90px offset keeps a 60px strip pinned).
+  // The natural-height slot: the engine writes the wrapper's rest height and freezes it while
+  // stuck, so sticky styling that resizes the bar animates INSIDE a constant flow slot — the
+  // document height never breathes and content below never jumps. Falls back to auto (the
+  // pre-slot behavior) until the first un-stuck measure writes the var.
+  .arts-header:has(> .arts-header__bar_sticky) {
+    position: sticky;
+    top: calc(var(--arts-header-top-pinned, 0px) + var(--arts-header-pin-offset, 0px));
+    height: var(--arts-header-natural-height, auto);
+    z-index: tokens.$z-index;
+    transition: tokens.$transform-transition;
+  }
+
+  // Bottom-pinned flow: rides in flow and pins at the viewport BOTTOM while its natural position
+  // is still below it (submenu bars approached from above). Hides DOWNWARD like the bottom dock.
+  // Column flex (not an absolute bar) anchors the bar to the pinned edge of the slot: a flex
+  // child keeps intrinsic sizing for the auto fallback, where an out-of-flow bar would collapse
+  // the wrapper to 0 before the engine boots.
+  .arts-header:has(> .arts-header__bar_sticky-bottom) {
+    --arts-header-hide-direction: 1;
+
+    position: sticky;
+    inset-block: auto var(--arts-header-pin-offset, 0);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: var(--arts-header-natural-height, auto);
+    z-index: tokens.$z-index;
+    transition: tokens.$transform-transition;
+  }
+
+  .arts-header:has(> .arts-header__bar_fixed),
+  .arts-header:has(> .arts-header__bar_absolute) {
+    left: 0;
+    right: 0;
+    z-index: tokens.$z-index;
+    transition: tokens.$transform-transition;
+  }
+
+  // Fixed resolves its top against the VIEWPORT, so it reads the pinned line.
+  .arts-header:has(> .arts-header__bar_fixed) {
+    position: fixed;
+    top: calc(var(--arts-header-top-pinned, 0px) + var(--arts-header-pin-offset, 0px));
+  }
+
+  // Absolute resolves its top in DOCUMENT space, where WP's `<html>` margin-top already starts the
+  // content below the bar — so it keeps the full allowance at every viewport.
+  .arts-header:has(> .arts-header__bar_absolute) {
+    position: absolute;
+    top: calc(var(--arts-header-top, 0px) + var(--arts-header-pin-offset, 0px));
+  }
+
+  // At <=600px the admin bar is document-anchored, so nothing pinned to the viewport may reserve
+  // its height — by the time anything pins, the bar has scrolled off. An un-stuck overlay bar
+  // rides the SAME document position as the bar instead, which puts the hand-off to pinned exactly
+  // where the bar clears: the seamless absolute→fixed crossover hero-bottom uses below.
+  @media screen and (width <= 600px) {
+    body.admin-bar {
+      .arts-header {
+        --arts-header-top-pinned: 0px;
+      }
+
+      .arts-header:has(> .arts-header__bar_fixed):not(.arts-header_sticky) {
+        position: absolute;
+        top: calc(var(--arts-header-top, 0px) + var(--arts-header-pin-offset, 0px));
+      }
+    }
+  }
+
+  // Bottom dock (mobile-app bar): fixed to the viewport bottom, riding above the iOS home
+  // indicator via the safe-area inset (Safari's shrinking toolbar is handled natively for
+  // bottom-fixed elements). Inherently fixed — no absolute variant; the sticky toggle only
+  // governs the state machinery. The hide-direction token flips the reveal transform's sign so
+  // this bar hides DOWNWARD (see _reveal.scss).
+  .arts-header:has(> .arts-header__bar_bottom) {
+    --arts-header-hide-direction: 1;
+
+    position: fixed;
+    inset: auto 0 0;
+    padding-block-end: env(safe-area-inset-bottom, 0);
+    z-index: tokens.$z-index;
+    transition: tokens.$transform-transition;
+  }
+
+  // Hero-bottom mode: the header is docked (absolute) over the bottom of a positioned hero,
+  // transparent, riding up with it; once stuck (via a `sticky.trigger` marker at its top) it pins
+  // to the top (fixed). Both states are out of flow, so the absolute↔fixed swap causes no layout
+  // shift and is seamless at the crossover (the header's top is at the sticky line in both).
+  .arts-header.arts-header_hero-bottom {
+    position: absolute;
+    inset: auto 0 0;
+    z-index: tokens.$z-index;
+    transition: tokens.$transform-transition;
+  }
+
+  .arts-header.arts-header_hero-bottom.arts-header_sticky {
+    position: fixed;
+    top: var(--arts-header-top-pinned, 0);
+    bottom: auto;
+  }
+
+  // Sticky-until release: past the boundary the header stops pinning and scrolls away with the
+  // page, anchored at the document Y it held when released (`--arts-header-release-top`) so the
+  // hand-off has no jump. `_released` only ever coexists with `_sticky`; this 3-class selector
+  // wins over every mode's positioning (overlay fixed, flow sticky, hero-bottom fixed) by
+  // specificity + source order. Out-of-flow modes release with zero layout shift; a flow header
+  // would reflow its reserved space, so release pairs with an out-of-flow mode.
+  .arts-header.arts-header_sticky.arts-header_released {
+    position: absolute;
+    top: var(--arts-header-release-top, 0);
+    bottom: auto;
+  }
+}

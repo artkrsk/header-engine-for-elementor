@@ -1,0 +1,242 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+// --- Header fixture visuals (the engine owns positioning/transform) ---
+.arts-header__bar {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  background: #111;
+  color: #fff;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.pg-logo {
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  font-size: 14px;
+}
+
+// Dual-logo crossfade: the engine only flips opacity/visibility per sticky state — nothing
+// animates the flip, so the consuming theme supplies the crossfade transition, like a real
+// integration would.
+.arts-header-logo {
+  position: relative;
+  display: inline-block;
+
+  &__img-primary,
+  &__img-secondary {
+    transition: opacity 0.3s ease;
+  }
+
+  &__img-secondary {
+    position: absolute;
+    inset: 0;
+  }
+}
+
+// flow (`_sticky` bar): constant-height background/color swap on stick — height never changes,
+// so the in-flow bar never reflows the page. Height-changing switches belong in overlay mode.
+.arts-header__bar.arts-header__bar_sticky {
+  background: #fff;
+  color: #111;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.arts-header_sticky .arts-header__bar.arts-header__bar_sticky {
+  background: #0b1220;
+  color: #fff;
+  border-bottom-color: transparent;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+
+// overlay (`_fixed` bar): transparent over the hero, gains a background and shrinks its vertical
+// padding once stuck (the theme's own padding pair — spacing is the consumer's, not the engine's;
+// on Elementor pages the `padding_sticky` control plays this role). Out of flow, so the shrink
+// never reflows the page.
+.arts-header__bar.arts-header__bar_fixed {
+  height: auto;
+  padding-top: 34px;
+  padding-bottom: 34px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.arts-header_sticky .arts-header__bar.arts-header__bar_fixed {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background: #0b1220;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+}
+
+// hero-bottom (no bar modifier): transparent header docked over the hero bottom, opaque once
+// pinned; the trigger marker sits at the header's top (bar is 72px, docked at bottom:0).
+.stick-trigger {
+  position: absolute;
+  left: 0;
+  bottom: 72px;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.arts-header_hero-bottom .arts-header__bar {
+  background: transparent;
+  color: #fff;
+}
+
+.arts-header_hero-bottom.arts-header_sticky .arts-header__bar {
+  background: #0b1220;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+}
+
+// --- Page sections ---
+.pg-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #eee;
+  font-size: 2rem;
+  color: #c4c4c4;
+}
+
+// Stripe only plain sections — the zone/until colors must survive any position, and this rule's
+// specificity would otherwise beat them when a hero shifts the section parity (overlay/hero-bottom).
+.pg-section:nth-child(even):not(.pg-zone):not(.pg-until) {
+  background: #fafafa;
+}
+
+.pg-zone {
+  background: #1d4ed8;
+  color: #fff;
+  text-align: center;
+  padding: 40px;
+  font-size: 1.25rem;
+  line-height: 1.5;
+}
+
+// --- Chrome ---
+.pg-lenis {
+  position: fixed;
+  bottom: 76px;
+  right: 12px;
+  z-index: 9999;
+  cursor: pointer;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font: 12px/1 ui-monospace, monospace;
+  background: #1f2937;
+  color: #cbd5e1;
+
+  &_on {
+    background: #0e7490;
+    color: #fff;
+    border-color: #22d3ee;
+  }
+}
+
+.pg-panel {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  z-index: 10000;
+  width: 220px;
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  background: rgba(17, 24, 39, 0.95);
+  color: #e5e7eb;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 12px;
+  font: 12px/1.4 ui-monospace, monospace;
+
+  &__title {
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #93c5fd;
+  }
+}
+
+.pg-ctl {
+  margin-bottom: 10px;
+
+  &__label {
+    display: block;
+    margin-bottom: 4px;
+    color: #9ca3af;
+  }
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+
+  &__opt {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+  }
+
+  &__btn {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid #374151;
+    border-radius: 4px;
+    background: #1f2937;
+    color: #e5e7eb;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  input[type='range'] {
+    width: 100%;
+  }
+
+  &_inline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+}
+
+.pg-zone_lock {
+  background: #7c2d12;
+}
+
+// sticky.until release boundary — distinct so the release point is obvious while scrolling.
+.pg-until {
+  background: #4a044e;
+  color: #fff;
+  text-align: center;
+  padding: 40px;
+  font-size: 1.25rem;
+  line-height: 1.5;
+}
+
+// Full-viewport tinted hero — a gradient stands in for a hero photo (no external asset).
+// position:relative so hero-bottom mode can dock the header (absolute) + trigger marker inside it.
+.pg-hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 3rem;
+  letter-spacing: 0.05em;
+  text-align: center;
+  background:
+    linear-gradient(rgba(10, 15, 30, 0.5), rgba(10, 15, 30, 0.72)),
+    repeating-linear-gradient(45deg, #4b6cb7, #4b6cb7 40px, #182848 40px, #182848 80px);
+}

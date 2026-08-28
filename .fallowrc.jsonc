@@ -1,0 +1,34 @@
+{
+  // This file is JSONC: fallow reads these comments; generic JSON tools may not.
+  "$schema": "./node_modules/fallow/schema.json",
+  // The bundle entry, the library surface package.json#types points at, the arts-wp build config,
+  // the stylesheet entry, and the playground harness (the repo's own primary consumer of the
+  // library surface).
+  "entry": [
+    "src/ts/boot.ts",
+    "src/ts/index.ts",
+    "project.config.js",
+    "src/styles/index.scss",
+    "playground/main.ts"
+  ],
+  // dist/ is build staging; src/php is PHP (plus the compiled JS/CSS bundles under libraries/);
+  // vendor* is composer.
+  "ignorePatterns": ["dist/**", "src/php/**", "vendor/**", "vendor-prefixed/**"],
+  // Pure module-scope helpers are exported as the unit-test surface while also being used inside
+  // their own module — see the convention in CLAUDE.md.
+  "ignoreExportsUsedInFile": true,
+  "duplicates": {
+    // Hide pair-only clones; focus on widespread copy-paste worth refactoring.
+    "minOccurrences": 3
+  },
+  "health": {
+    // Test files add nothing here: their "large functions" are describe() bodies and CRAP over a
+    // test file is meaningless.
+    "ignore": ["**/*.test.ts"]
+  },
+  "rules": {
+    // Structurally inapplicable: the package is private, never installed with --prod, and declares
+    // zero runtime dependencies.
+    "dev-dependencies-in-production": "off"
+  }
+}

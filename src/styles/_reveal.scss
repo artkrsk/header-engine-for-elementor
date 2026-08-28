@@ -1,0 +1,18 @@
+// How the bar visually hides — CSS owns the transform on the sticky wrapper (compositor-friendly,
+// no per-frame JS writes); the state machine only drives the classes.
+
+@layer arts-header {
+  // The hide direction is a mode concern: top-docked modes slide up (-1, the default); the bottom
+  // dock and the bottom-pinned flow variant slide down (they set the token to 1 in _modes.scss).
+  // Auto-hide reveal: hide while scrolling down and stuck; the transition animates it. Scrolling
+  // up removes `_scrolling-down` and it slides back. `_locked` exempts the bar from AUTO-HIDE
+  // only (the engine also clears the direction state on lock); the full hide below still wins.
+  .arts-header.arts-header_sticky.arts-header_scrolling-down:not(.arts-header_locked) {
+    transform: translateY(calc(var(--arts-header-hide-direction, -1) * 100%));
+  }
+
+  // Zone- / API-driven full hide (hide-over zones, toggleHidden()).
+  .arts-header.arts-header_hidden {
+    transform: translateY(calc(var(--arts-header-hide-direction, -1) * 100%));
+  }
+}
