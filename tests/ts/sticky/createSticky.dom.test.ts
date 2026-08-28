@@ -13,8 +13,8 @@ import {
 } from '../support'
 
 /**
- * Orchestrator integration: the hand-stepped rAF drives scroll ticks against stubbed geometry
- * (the fixture container rect reads zeros, so the natural position is 0 and any scroll pins), and
+ * Orchestrator integration: the hand-stepped rAF drives scroll ticks against stubbed geometry (the
+ * fixture container rect tracks scroll, so the natural position stays 0 and any scroll pins), and
  * the assertions read the published classes/events — the same surface CSS and consumers key on.
  */
 

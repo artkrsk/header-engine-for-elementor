@@ -55,6 +55,7 @@
   // stays mode-agnostic. The bar's modifier class only signals which mode; the wrapper positions.
   //   flow    (_sticky)   → in flow, native sticky (reserves space, zero content offsets); pins
   //                         from ANY page position — mid-page filter bars included
+  //   flow    (_sticky-bottom) → in flow, native sticky pinned at the viewport BOTTOM edge
   //   flow    (no modifier, sticky off) → plain static in-flow header, scrolls away
   //   overlay (_fixed)    → out of flow, fixed over content (transparent-over-hero; no layout
   //                         shift when the bar shrinks, since it no longer occupies flow)

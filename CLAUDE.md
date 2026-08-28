@@ -17,8 +17,10 @@ Build and CI run on the shared tooling; `release.yml` deploys to the wp.org SVN 
 The Live Preview blueprint ships: `dev/seed/demo-page.php` → `arts-wp blueprint build` → committed
 `.wordpress-org/blueprints/blueprint.json`, gated by CI `blueprint_check`.
 
-The only consumer so far is one unreleased in-house theme, so there are no BC constraints — don't
-add compatibility shims for old option or config shapes.
+Published on wp.org since 1.0.0, so everything a saved Elementor layout references is now a
+compatibility boundary: panel control ids, the widget name, the wrapper/bar classes, and the
+options JSON `Markup.php` emits. The TS **library** surface is not — its only consumer is one
+unreleased in-house theme, so don't add shims for old option or config shapes there.
 
 **Names.** The display name is `Artem Semkin Header Engine for Elementor`, the slug
 `artem-semkin-header-engine-for-elementor` — the slug is frozen, the display name is not. The
@@ -159,8 +161,9 @@ tests/ts/          mirrors src/ts; support.ts factories; aliasBoundary/styleSync
 ```
 
 Interfaces/types/constants: one declaration per file with `index.ts` barrels; consumer modules
-import through the barrels, but **declaration files import each other directly** (routing through a
-barrel would close a types↔interfaces cycle).
+import through the barrels (lone exception: `TPinLine`, internal to the sticky measure path, is
+imported by path), but **declaration files import each other directly** (routing through a barrel
+would close a types↔interfaces cycle).
 
 ## Two-layer configuration
 
