@@ -1,3 +1,4 @@
+import type { ElementorFrontend, ElementorModules } from '@artemsemkin/elementor-types'
 import {
   BAR_ABSOLUTE_CLASS,
   BAR_BOTTOM_CLASS,
@@ -54,23 +55,17 @@ const unwrapHeaderBar = (el: HTMLElement): void => {
 }
 
 /**
- * The slice of Elementor's editor globals this module reaches, typed locally on purpose: consumers
- * compile this source with their own configs, and the repo's ambient Window augmentation
- * (global.d.ts) doesn't travel with the module graph.
+ * The editor globals this module reaches, typed via the package as a plain
+ * Window intersection (not ambient) so consumers compiling this source with
+ * their own configs still resolve the types through the module graph.
  */
-interface IElementorEditorGlobals {
-  elementorModules?: {
-    frontend?: { handlers: { Base: { extend: (props: object) => unknown } } }
-  }
-  elementorFrontend?: {
-    elementsHandler?: {
-      attachHandler: (elementType: string, handler: unknown, skin: unknown) => void
-    }
-  }
+type TElementorEditorGlobals = Window & {
+  elementorModules?: ElementorModules
+  elementorFrontend?: ElementorFrontend
 }
 
-const editorGlobals = (): IElementorEditorGlobals =>
-  typeof window === 'undefined' ? {} : (window as IElementorEditorGlobals)
+const editorGlobals = (): Partial<TElementorEditorGlobals> =>
+  typeof window === 'undefined' ? {} : (window as TElementorEditorGlobals)
 
 /**
  * Editor-only container handler: wraps an Elementor Container in the `.arts-header` div, syncs

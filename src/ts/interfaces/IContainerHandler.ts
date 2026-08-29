@@ -7,6 +7,8 @@ import type { TOnInitCallback } from '../types/TOnInitCallback'
  * `Base.extend()` object-literal pattern can't be expressed with class inheritance.
  */
 export interface IContainerHandler extends Frontend.Handlers.Base {
+  /** Non-null by the time handler callbacks run (isActive() defaults to true) */
+  $element: JQuery<HTMLElement>
   isLoading: boolean
   wrapperEl?: HTMLElement | null
   el: HTMLElement
