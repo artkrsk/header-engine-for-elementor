@@ -84,6 +84,30 @@ describe('createHeightObserver', () => {
     expect(root().style.getPropertyValue(HEIGHT_VAR)).toBe('64px')
   })
 
+  it('publishes a caller-measured initialHeight and update(height) without reading the bar rect', () => {
+    fakeResizeObserver()
+    const bar = document.createElement('div')
+    const rect = vi.fn(() => ({ height: 80 }) as DOMRect)
+    bar.getBoundingClientRect = rect
+    document.body.appendChild(bar)
+    const observer = createHeightObserver({
+      bar,
+      options: { observe: true, cleanupOnDestroy: false },
+      config: resolveConfig(),
+      isSticking: () => false,
+      initialHeight: 64
+    })
+    expect(root().style.getPropertyValue(HEIGHT_VAR)).toBe('64px')
+    expect(rect).not.toHaveBeenCalled()
+    observer.update(72)
+    expect(root().style.getPropertyValue(HEIGHT_VAR)).toBe('72px')
+    expect(rect).not.toHaveBeenCalled()
+    // The settled rest capture still measures on its own clock.
+    vi.advanceTimersByTime(150)
+    expect(rect).toHaveBeenCalledTimes(1)
+    expect(root().style.getPropertyValue(NON_STICKY_VAR)).toBe('80px')
+  })
+
   it('captures the rest height once settled, ignoring mid-transition frames', () => {
     const { setBarHeight, fireResize } = makeRig()
     vi.advanceTimersByTime(150)

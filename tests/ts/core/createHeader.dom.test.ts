@@ -119,6 +119,44 @@ describe('createHeader', () => {
     expect(header.isDisplaced).toBe(false)
   })
 
+  it('init() and refresh() read every layout metric before their first DOM write', () => {
+    const { container, bar, header } = makeRig()
+    const log: string[] = []
+    const tap = <T extends object, K extends keyof T>(
+      target: T,
+      key: K,
+      kind: 'read' | 'write',
+      skip?: (...args: unknown[]) => boolean
+    ): void => {
+      const original = target[key] as unknown as (...args: unknown[]) => unknown
+      ;(target as Record<K, unknown>)[key] = function (this: unknown, ...args: unknown[]) {
+        if (!skip?.(...args)) {
+          log.push(kind)
+        }
+        return original.apply(this, args)
+      }
+    }
+    // Layout-forcing reads. A computed-style read of <html> is exempt: the root is never the
+    // dirtied node, so it flushes nothing (measured: 0 ms with a dirty descendant subtree).
+    tap(bar, 'getBoundingClientRect', 'read')
+    tap(container, 'getBoundingClientRect', 'read')
+    tap(window, 'getComputedStyle', 'read', (el) => el === document.documentElement)
+    tap(container.style, 'setProperty', 'write')
+    tap(container.classList, 'toggle', 'write')
+    tap(document.documentElement.style, 'setProperty', 'write')
+    tap(document.documentElement.classList, 'toggle', 'write')
+    const expectOneFlush = (): void => {
+      const firstWrite = log.indexOf('write')
+      expect(firstWrite).toBeGreaterThan(0)
+      expect(log.lastIndexOf('read')).toBeLessThan(firstWrite)
+    }
+    header.init()
+    expectOneFlush()
+    log.length = 0
+    header.refresh()
+    expectOneFlush()
+  })
+
   it('re-measures the height through the sticky change wiring end to end', () => {
     vi.useFakeTimers()
     const { bar, header, scrollTo } = makeRig()

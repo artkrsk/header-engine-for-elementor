@@ -11,6 +11,7 @@ import { resolveHeaderOptions } from '../options/headerOptions'
 import { readInlineOptions } from '../options/inlineOptions'
 import { resolveConfig } from '../options/resolveConfig'
 import { createSticky } from '../sticky/createSticky'
+import { measureBar } from '../sticky/measure'
 import { logger } from '../utils'
 
 /**
@@ -46,6 +47,9 @@ export function createHeader(
         return
       }
 
+      // One layout flush for the whole boot: the bar is measured here, before the sticky engine's
+      // writes, and handed to the height publisher — its own rect read would land after them.
+      const barHeight = measureBar(bar)
       const stickyOptions = options.sticky
       if (stickyOptions !== false) {
         sticky = createSticky({
@@ -62,6 +66,7 @@ export function createHeader(
           bar,
           options: options.heightObserver,
           config,
+          initialHeight: barHeight,
           isSticking: () => sticky?.isSticking ?? false,
           // A settled height-var change re-runs the sticky measurement pass: the pin/reveal
           // offset vars may chain to the height vars, and the sticky engine's own debounce can
@@ -87,8 +92,10 @@ export function createHeader(
       initialized = false
     },
     refresh() {
+      // Same rule as init: read before the sticky pass writes.
+      const barHeight = measureBar(bar)
       sticky?.update()
-      heightObserver?.update()
+      heightObserver?.update(barHeight)
     },
     toggleHidden(hidden) {
       sticky?.setHidden(hidden)

@@ -34,6 +34,21 @@ describe('init', () => {
     expect(window.artsHeaderForElementor).toBeDefined()
   })
 
+  it('registers the reveal-offset property at boot, before any header exists', async () => {
+    const registerProperty = vi.fn()
+    vi.stubGlobal('CSS', { registerProperty })
+    const init = await freshInit()
+    init()
+    expect(registerProperty).toHaveBeenCalledTimes(1)
+    expect(registerProperty).toHaveBeenCalledWith({
+      name: '--arts-header-reveal-offset',
+      syntax: '<length>',
+      inherits: true,
+      initialValue: '0px'
+    })
+    await flush()
+  })
+
   it('defers the boot in the editor and attaches the container handler once edit mode resolves', async () => {
     const attachHandler = vi.fn()
     const w = window as TGlobals

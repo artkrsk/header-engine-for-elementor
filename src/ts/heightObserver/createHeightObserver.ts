@@ -44,7 +44,7 @@ const readSeededNonStickyHeight = (varName: string): number => {
  * bar animates its own consuming property instead.
  */
 export function createHeightObserver(args: IHeightObserverArgs): IHeightObserver {
-  const { bar, options, config, isSticking } = args
+  const { bar, options, config, isSticking, initialHeight } = args
   const varCurrent = config.vars.headerHeight
   const varNonSticky = config.vars.headerHeightNonSticky
   const heightClass = config.classes.hasHeaderHeight
@@ -113,7 +113,7 @@ export function createHeightObserver(args: IHeightObserverArgs): IHeightObserver
     return blockSize === undefined ? null : Math.round(blockSize)
   }
 
-  updateValue()
+  updateValue(initialHeight)
   updateCSSVars()
   if (options.observe) {
     resize = new Resize({
@@ -132,8 +132,8 @@ export function createHeightObserver(args: IHeightObserverArgs): IHeightObserver
   toggleRootClass(heightClass, true)
 
   return {
-    update() {
-      updateValue()
+    update(height) {
+      updateValue(height)
     },
     handleStickyChange() {
       // Both edges animate the bar (sticky styles in, or back to rest), so both suppress the
