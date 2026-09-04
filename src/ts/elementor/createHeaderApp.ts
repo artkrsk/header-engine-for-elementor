@@ -32,6 +32,7 @@ const byDocumentOrder = (a: HTMLElement, b: HTMLElement): number =>
 export async function createHeaderApp(args: IHeaderAppArgs = {}): Promise<IHeaderApp> {
   const registry = new Map<HTMLElement, IHeader>()
   let editorHandlerAttached = false
+  let teardowns = 0
 
   const upsert = (container: HTMLElement, bar: HTMLElement | null): void => {
     registry.get(container)?.destroy()
@@ -58,7 +59,13 @@ export async function createHeaderApp(args: IHeaderAppArgs = {}): Promise<IHeade
 
   const scan = singleFlight(async () => {
     try {
+      const generation = teardowns
       await args.callbackBefore?.()
+      // A `destroy()` ordered into that await means the page is on its way out: booting engines
+      // for it now would leave instances the teardown can never have seen.
+      if (teardowns !== generation) {
+        return
+      }
 
       // Prune entries whose containers left the DOM (AJAX page swaps), then one engine per
       // wrapper. A re-scan replaces existing instances (re-discover semantics).
@@ -111,13 +118,21 @@ export async function createHeaderApp(args: IHeaderAppArgs = {}): Promise<IHeade
     return run
   }
 
-  const destroyAll = singleFlight((revert: boolean = false) =>
-    Promise.resolve().then(() => {
+  // Counts teardowns so an in-flight `scan()` can tell its work became obsolete mid-await. Bumped
+  // SYNCHRONOUSLY — `singleFlight` runs the body on the calling turn, the promise only defers the
+  // registry walk.
+  const destroyAll = singleFlight((revert: boolean = false) => {
+    teardowns += 1
+    return Promise.resolve().then(() => {
       for (const header of registry.values()) {
         header.destroy(revert)
       }
+      // Emptied, like `destroyOne` does per container: `instances` promises LIVE instances, and a
+      // torn-down entry would keep its container (a detached page's, after an AJAX swap) reachable
+      // until the next scan pruned it.
+      registry.clear()
     })
-  )
+  })
 
   const destroyOne = async (container?: HTMLElement | null, revert = false): Promise<void> => {
     if (!container) {

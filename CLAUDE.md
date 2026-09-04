@@ -137,7 +137,9 @@ rounded to whole px everywhere (sub-pixel RO jitter must not become root var wri
 `elementor/` holds `createHeaderApp` — **multi-instance**: a registry keyed by container,
 one engine per `.js-arts-header` wrapper; `init()`/`destroy()` are aggregates (concurrent calls
 await the same in-flight promise — the single-header consumer contract an AJAX page-transition
-cycle calls is unchanged), the editor upserts per
+cycle calls is unchanged; `destroy()` empties the registry, so `instances` only ever reports live
+ones, and a `destroy()` ordered into a scan's `callbackBefore` await drops that scan rather than
+booting engines the teardown could not have seen), the editor upserts per
 container, `app.artsHeader` is the PRIMARY (first wrapper in DOM order), `app.instances` is all
 of them. The primary owns the page globals: `Markup.php` classifies by first-rendered element id —
 secondaries get `"heightObserver":false` + `"sticky":{"zones":false}` in their options JSON, no

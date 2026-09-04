@@ -123,21 +123,44 @@ describe('createHeaderApp', () => {
     expect(app.instances[0]?.isInitialized).toBe(true)
   })
 
-  it('destroys every instance through the aggregate destroy', async () => {
+  it('destroys every instance through the aggregate destroy and empties the registry', async () => {
     makeHeaderFixture()
     makeHeaderFixture()
     const app = await createHeaderApp()
     apps.push(app)
+    const booted = app.instances
+    expect(booted).toHaveLength(2)
     await app.destroy(true)
-    expect(app.instances.every((h) => !h.isInitialized)).toBe(true)
+    expect(booted.every((h) => !h.isInitialized)).toBe(true)
+    // `instances` promises LIVE instances — a torn-down one is not one.
+    expect(app.instances).toHaveLength(0)
   })
 
   it('destroys the live header through the app', async () => {
     makeHeaderFixture()
     const app = await createHeaderApp()
     apps.push(app)
+    const primary = app.artsHeader
     await app.destroy(true)
-    expect(app.artsHeader?.isInitialized).toBe(false)
+    expect(primary?.isInitialized).toBe(false)
+    expect(app.artsHeader).toBeUndefined()
+  })
+
+  it('drops a scan whose page was torn down mid-await', async () => {
+    makeHeaderFixture()
+    let release: () => void = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const app = await createHeaderApp({ autoInit: false, callbackBefore: () => gate })
+    apps.push(app)
+    const booting = app.init()
+    await app.destroy(false)
+    release()
+    await booting
+    // The teardown could not have seen instances the scan had not created yet, so the scan must
+    // not create them behind it.
+    expect(app.instances).toHaveLength(0)
   })
 
   it("propagates one instance's settled height vars to the other instances", async () => {
