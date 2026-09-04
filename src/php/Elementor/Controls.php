@@ -492,8 +492,9 @@ class Controls {
 		);
 
 		// Remaps Elementor Global Colors within the stuck bar: the kit defines
-		// `--e-global-color-{id}` on body, widgets consume it via var(), and a
-		// custom property resolves from the nearest ancestor that defines it —
+		// `--e-global-color-{id}` on its own `.elementor-kit-{id}` wrapper (a
+		// body class), widgets consume it via var(), and a custom property
+		// resolves from the nearest ancestor that defines it —
 		// so redefining it here re-colors every widget inside the header that
 		// uses that global, with no per-widget wiring. Same repeater-selector
 		// idiom as the kit's own Global Colors panel (`{{_id.VALUE}}`).

@@ -14,8 +14,10 @@ use Elementor\Includes\Elements\Container;
  * around it, adds the bar classes to the container's own tag, and emits
  * the pre-paint height script for the page's PRIMARY header.
  *
- * Every callback fires for EVERY element Elementor renders — the
- * is_header_element() guard is load-bearing, keep it first and cheap.
+ * The two elementor/frontend/container/* hooks are type-scoped, but
+ * elementor/element/after_add_attributes fires for EVERY element
+ * Elementor renders — the guard opening each callback is load-bearing
+ * there, keep it first and cheap.
  */
 class Markup {
 	/**

@@ -57,7 +57,8 @@ repo's entire build config. There is no local `build/` directory.
   blueprint after ANY `dev/seed/demo-page.php` change (the seed is inlined verbatim; `check` is
   the CI staleness gate). Local preview: `npx @wp-playground/cli server --blueprint=<copy with an
   activatePlugin step> --mount=./dist/artem-semkin-header-engine-for-elementor:/wordpress/wp-content/plugins/…`
-  (the committed blueprint omits plugin install — wp.org adds it).
+  (the committed blueprint provisions Elementor + a theme but never installs THIS plugin — wp.org
+  injects it).
 - `pnpm exec` for the rest: `tsc --noEmit` (strict, `noUncheckedIndexedAccess`,
   `exactOptionalPropertyTypes`), `biome check`, `stylelint 'src/styles/**/*.scss'`, `knip`,
   `fallow` (run `test:coverage` first so CRAP scores are real, not `static_estimated`).
@@ -71,9 +72,11 @@ off under `src/ts/**`. SCSS is linted by stylelint (`@arts/wp-plugin-tooling/sty
 
 ## Architecture
 
-Factory/closure style throughout — no classes except where Elementor forces one (see elementor/),
-and ONE deliberate module-scope singleton: `sticky/subscribeScroll.ts`, the refcounted page-level
-scroll bus (per realm — the editor preview iframe gets its own).
+Factory/closure style throughout — `utils/Resize` is the only class (vendored, kept in the
+original's shape), and Elementor forces exactly one non-factory pattern: the `Base.extend({...})`
+object literal in `elementor/`. ONE deliberate module-scope singleton:
+`sticky/subscribeScroll.ts`, the refcounted page-level scroll bus (per realm — the editor preview
+iframe gets its own).
 `core/createHeader.ts` is the **composition root**; every module is a `createX(args)` factory
 returning a small interface, wired by plain callbacks. Pure decision functions are exported at
 module scope as the **unit-test surface** — a module export is internal by convention; the public
@@ -162,10 +165,11 @@ dev/seed/          demo-page.php — the Live Preview demo page seeder (source o
 tests/ts/          mirrors src/ts; support.ts factories; aliasBoundary/styleSync/phpSync guards
 ```
 
-Interfaces/types/constants: one declaration per file with `index.ts` barrels; consumer modules
-import through the barrels (lone exception: `TPinLine`, internal to the sticky measure path, is
-imported by path), but **declaration files import each other directly** (routing through a barrel
-would close a types↔interfaces cycle).
+Interfaces and types: one declaration per file; constants are grouped by topic. All three carry
+`index.ts` barrels and consumer modules import through them — `TPinLine` is the deliberate
+holdout, internal to the sticky measure path and kept out of the barrel entirely. **Declaration
+files import each other directly** (routing through a barrel would close a types↔interfaces
+cycle).
 
 ## Two-layer configuration
 
@@ -358,10 +362,11 @@ an empty `array()` encodes as `[]`, not `{}` — a section that can go empty nee
 
 `tests/ts/` mirrors `src/ts` (not colocated). Tests import through the TEST-ONLY `@ts/*` alias —
 `tests/ts/aliasBoundary.test.ts` fails the suite if it ever leaks into `src/ts` (consumers compile
-the source with their own configs). Environment is per FILE: `x.test.ts` holds pure deciders under
-the `node` default (an accidental `document` reach fails loudly); `x.dom.test.ts` opts into
-happy-dom via a `// @vitest-environment happy-dom` docblock (jsdom is not an option: no
-matchMedia/RO/IO). Explicit `import { … } from 'vitest'` — no globals. No mocking library:
+the source with their own configs). Environment is per FILE and selected by the
+`// @vitest-environment happy-dom` docblock — without it a file runs under the `node` default, so
+an accidental `document` reach fails loudly. The `.dom.test.ts` suffix marks the DOM suites; a few
+`utils/` tests take the docblock without renaming (jsdom is not an option: no matchMedia/RO/IO).
+Explicit `import { … } from 'vitest'` — no globals. No mocking library:
 plain-object fakes plus the `tests/ts/support.ts` factories (observer-constructor stubs driven by
 `instances[i].callback(...)`, `fakeRaf().step()`, `makeHeaderFixture`, `setScroll`,
 `setScrollBounds`). `unstubGlobals: true` reverts stubs between tests. Rigs that register window
@@ -414,8 +419,11 @@ layout the playground exercises.
 ## Dependencies
 
 Runtime: **none** — the engine is self-contained (`utils/` is mostly a vendored `@arts/utilities`
-subset; `Resize` stays a class there on purpose, matching the original's shape). Dev only: the
-`@arts/wp-plugin-tooling` CLI + shared configs (it carries esbuild/sass/archiver/chokidar
-transitively — they are not direct deps here), `vite`, `typescript`, `vitest` + `happy-dom` +
-coverage, `@biomejs/biome`, `stylelint`, `lefthook`, `knip`, `fallow`,
-`@artemsemkin/elementor-types`, `@types/node`, `lenis` (playground only).
+subset; `Resize` stays a class there on purpose, matching the original's shape).
+`@artemsemkin/elementor-types` is the lone `dependencies` entry and belongs there: it is type-only
+(every import of it is `import type`, so nothing reaches the bundle), but the library surface's
+type graph reaches it through `containerHandler`, so a consumer compiling this source has to
+resolve it. Dev only: the `@arts/wp-plugin-tooling` CLI + shared configs (it carries
+esbuild/sass/archiver/chokidar transitively — they are not direct deps here), `vite`, `typescript`,
+`vitest` + `happy-dom` + coverage, `@biomejs/biome`, `stylelint`, `lefthook`, `knip`, `fallow`,
+`@types/node`, `lenis` (playground only).
