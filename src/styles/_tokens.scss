@@ -37,6 +37,16 @@
 // state and `Controls.php`'s `padding_sticky` overrides Elementor's own `--padding-*` custom
 // properties on the sticky-scoped bar.
 
+// The reveal-offset registration lives HERE, in the head stylesheet, so it lands in the page's
+// first style pass. A registration any later — `CSS.registerProperty()` from the deferred bundle,
+// or this rule in a late stylesheet — invalidates every element's style and forces a
+// whole-document recalc. `createSticky` registers from JS only for a custom var name.
+@property --arts-header-reveal-offset {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+
 // Wrapper stacking context shared by every docking mode.
 $z-index: 100;
 

@@ -215,12 +215,14 @@ an empty `array()` encodes as `[]`, not `{}` — a section that can go empty nee
   `_hidden`, `_locked`, `_released`; plus `has-header-height` on `<html>`.
 - **Engine-READ vars** (the arrows pointing the other way): `--arts-header-reveal-offset` — the
   panel/theme writes it (responsive px, `100vh`, `var(--arts-header-height-non-sticky)`), the
-  engine registers it as an inheriting `<length>` (`CSS.registerProperty`) and reads the RESOLVED
-  px value at measure passes (boot + `update()`), never on ticks. Registered ONCE at plugin boot
-  (`elementor/init.ts`): a registration invalidates every element's style, and left to the first
-  reveal-enabled header of the session (an AJAX swap onto such a page) it landed mid-transition;
-  `createSticky` still registers for a custom var name (a duplicate throws, swallowed). Unregistered fallback parses a
-  trailing-px token only. And `--arts-header-top-pinned` — SCSS-derived, not panel-authored and not
+  stylesheet registers it as an inheriting `<length>` (`@property` in `_tokens.scss`) and the
+  engine reads the RESOLVED px value at measure passes (boot + `update()`), never on ticks. It
+  lives in the head stylesheet because a registration invalidates every element's style: in the
+  first style pass it's free, while a JS `CSS.registerProperty` from the deferred bundle cost a
+  whole-document recalc after first paint (measured on Velum). A JS registration of the SAME name
+  still succeeds on top of `@property` (separate registries) and pays that recalc again, so
+  `createSticky` registers from JS only for a custom var name (a duplicate throws, swallowed).
+  Unregistered fallback parses a trailing-px token only. And `--arts-header-top-pinned` — SCSS-derived, not panel-authored and not
   registered (it always resolves to a plain px token), read at the same measure passes as the pin
   line's admin-bar term; see the admin-bar note under Gotchas.
 - **Engine-written vars** (`defaultConfig.vars`): `--arts-header-height`,

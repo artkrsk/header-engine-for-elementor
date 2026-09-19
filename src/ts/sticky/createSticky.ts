@@ -1,4 +1,4 @@
-import { EVENTS, SETTLE_DEBOUNCE_MS } from '../constants'
+import { defaultConfig, EVENTS, SETTLE_DEBOUNCE_MS } from '../constants'
 import { dispatchHeaderEvent } from '../events/headerEvents'
 import type { ISticky, IStickyArgs } from '../interfaces'
 import type { THeaderEventName } from '../types'
@@ -46,7 +46,9 @@ export function createSticky(args: IStickyArgs): ISticky {
   const revealEnabled = options.reveal
   const trigger = resolveElementRef(options.trigger, 'trigger')
 
-  if (revealEnabled) {
+  // The default name is registered by the stylesheet (`_tokens.scss`) — a JS registration of it
+  // would still succeed on top and cost a whole-document style recalc.
+  if (revealEnabled && config.vars.revealOffset !== defaultConfig.vars.revealOffset) {
     registerRevealOffsetProperty(config.vars.revealOffset)
   }
 

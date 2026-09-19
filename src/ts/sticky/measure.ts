@@ -120,9 +120,9 @@ export const measureRevealOffset = (container: HTMLElement, varName: string): nu
   parseRevealOffset(getComputedStyle(container).getPropertyValue(varName))
 
 /**
- * Register the reveal-offset var as an inheriting `<length>` so its computed value resolves to
- * absolute px. Safe to call per instance: re-registration throws and is swallowed — the first
- * registration in a realm stands.
+ * Register a CUSTOM reveal-offset var name as an inheriting `<length>` so its computed value
+ * resolves to absolute px (the default name is registered by `_tokens.scss`). Safe to call per
+ * instance: re-registration throws and is swallowed — the first registration in a realm stands.
  */
 export const registerRevealOffsetProperty = (name: string): void => {
   if (typeof CSS === 'undefined' || typeof CSS.registerProperty !== 'function') {
