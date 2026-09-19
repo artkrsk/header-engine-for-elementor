@@ -27,13 +27,14 @@ const applyReleaseAnchor = (
   container: HTMLElement,
   varName: string,
   released: boolean,
+  y: number,
   stickyTop: number
 ): void => {
   if (!varName.length) {
     return
   }
   if (released) {
-    container.style.setProperty(varName, `${releaseAnchor(window.scrollY, stickyTop)}px`)
+    container.style.setProperty(varName, `${releaseAnchor(y, stickyTop)}px`)
   } else {
     container.style.removeProperty(varName)
   }
@@ -77,7 +78,7 @@ export function createRelease(args: {
       released = next
       // Anchor var first, then the class/event via the callback — the swap must be continuous
       // by the time consumers observe the state change.
-      applyReleaseAnchor(args.container, args.releaseTopVar, next, pinOffset)
+      applyReleaseAnchor(args.container, args.releaseTopVar, next, y, pinOffset)
       args.onReleaseChange(next)
     },
     destroy() {

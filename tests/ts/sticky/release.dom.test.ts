@@ -59,6 +59,26 @@ describe('createRelease', () => {
     expect(onReleaseChange).toHaveBeenCalledTimes(1)
   })
 
+  it('anchors to the evaluated y without reading live scroll after measurement', () => {
+    const { container, release, onReleaseChange } = makeRig()
+    release.measure(32, 80)
+    Object.defineProperty(window, 'scrollY', {
+      get: () => {
+        throw new Error('Viewport read during release evaluation')
+      },
+      configurable: true
+    })
+    onReleaseChange.mockImplementation((released: boolean) => {
+      expect(container.style.getPropertyValue('--arts-header-release-top')).toBe(
+        released ? '932px' : ''
+      )
+    })
+    release.evaluate(900)
+    expect(onReleaseChange).toHaveBeenCalledExactlyOnceWith(true)
+    release.evaluate(500)
+    expect(onReleaseChange).toHaveBeenLastCalledWith(false)
+  })
+
   it('re-measures against the CURRENT bar height — the bar can resize without the pin moving', () => {
     const { release, onReleaseChange } = makeRig()
     release.measure(0, 80)

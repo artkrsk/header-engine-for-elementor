@@ -47,6 +47,34 @@ describe('subscribeScroll — single-subscriber contract', () => {
     expect(spy).toHaveBeenCalledWith(25, 25)
   })
 
+  it('reads y only in scroll events and keeps the last event sample through the tick', () => {
+    const raf = fakeRaf()
+    const spy = vi.fn()
+    subscribe({ onTick: spy })
+    let actualY = 10
+    const readY = vi.fn(() => actualY)
+    Object.defineProperty(window, 'scrollY', { get: readY, configurable: true })
+    window.dispatchEvent(new Event('scroll'))
+    actualY = 25
+    window.dispatchEvent(new Event('scroll'))
+    expect(readY).toHaveBeenCalledTimes(2)
+
+    // A producer can advance after event delivery. The tick must consume the sample, without
+    // touching viewport getters after another animation's writes.
+    actualY = 80
+    const unexpectedRead = (): never => {
+      throw new Error('Viewport read during the scroll tick')
+    }
+    Object.defineProperty(window, 'innerHeight', { get: unexpectedRead, configurable: true })
+    Object.defineProperty(document.documentElement, 'scrollHeight', {
+      get: unexpectedRead,
+      configurable: true
+    })
+    raf.step()
+    expect(readY).toHaveBeenCalledTimes(2)
+    expect(spy).toHaveBeenCalledWith(25, 25)
+  })
+
   it('reports per-tick deltas against the previous tick', () => {
     const raf = fakeRaf()
     const spy = vi.fn()
@@ -83,6 +111,23 @@ describe('subscribeScroll — single-subscriber contract', () => {
     scrollTo(6000)
     raf.step()
     expect(spy).toHaveBeenLastCalledWith(6000, 6000)
+  })
+
+  it('clamps the raw event sample against bounds refreshed before the tick', () => {
+    const raf = fakeRaf()
+    const spy = vi.fn()
+    const subscription = subscribe({ onTick: spy })
+    scrollTo(6000)
+    setScrollBounds(10000, 800)
+    subscription.refreshBounds()
+    raf.step()
+    expect(spy).toHaveBeenLastCalledWith(6000, 6000)
+
+    scrollTo(7000)
+    setScrollBounds(3000, 800)
+    subscription.refreshBounds()
+    raf.step()
+    expect(spy).toHaveBeenLastCalledWith(2200, -3800)
   })
 
   it('refreshes the cached bounds when the document grows without a resize (lazy content)', () => {
@@ -123,6 +168,23 @@ describe('subscribeScroll — single-subscriber contract', () => {
     raf.step()
     expect(spy).not.toHaveBeenCalled()
   })
+
+  it('cancels a pending sample on teardown and reseeds a new installation', () => {
+    const raf = fakeRaf()
+    const gone = vi.fn()
+    const subscription = subscribe({ onTick: gone })
+    scrollTo(100)
+    expect(raf.pendingCount).toBe(1)
+    subscription.destroy()
+    expect(raf.pendingCount).toBe(0)
+    setScroll(0, 400)
+    const fresh = vi.fn()
+    subscribe({ onTick: fresh })
+    scrollTo(410)
+    raf.step()
+    expect(gone).not.toHaveBeenCalled()
+    expect(fresh).toHaveBeenCalledExactlyOnceWith(410, 10)
+  })
 })
 
 describe('subscribeScroll — shared singleton', () => {
@@ -150,6 +212,31 @@ describe('subscribeScroll — shared singleton', () => {
     expect(observers).toHaveLength(1)
     expect(adds.mock.calls.filter(([name]) => name === 'scroll')).toHaveLength(1)
     expect(adds.mock.calls.filter(([name]) => name === 'resize')).toHaveLength(1)
+  })
+
+  it('keeps fan-out stable when a subscriber scrolls and replaces another subscriber', () => {
+    const raf = fakeRaf()
+    const first = vi.fn()
+    const second = vi.fn()
+    const late = vi.fn()
+    subscribe({ onTick: first })
+    const secondSubscription = subscribe({ onTick: second })
+    first.mockImplementationOnce(() => {
+      scrollTo(40)
+      secondSubscription.destroy()
+      subscribe({ onTick: late })
+    })
+
+    scrollTo(25)
+    raf.step()
+    expect(first).toHaveBeenCalledExactlyOnceWith(25, 25)
+    expect(second).toHaveBeenCalledExactlyOnceWith(25, 25)
+    expect(late).not.toHaveBeenCalled()
+    expect(raf.pendingCount).toBe(1)
+    raf.step()
+    expect(first).toHaveBeenLastCalledWith(40, 15)
+    expect(second).toHaveBeenCalledTimes(1)
+    expect(late).toHaveBeenCalledExactlyOnceWith(40, 15)
   })
 
   it('unsubscribing one of two keeps the survivor ticking; the last unsubscribe detaches', () => {

@@ -9,11 +9,14 @@ import { clampScroll, readMaxScroll } from './scrollBounds'
  * subscriptions are refcounted, and the last destroy detaches everything. Per realm by
  * construction, so the Elementor editor's preview iframe gets its own.
  *
- * Every subscriber receives the identical `(y, delta)` stream, clamped against the CACHED bounds
- * (never a layout read on the tick path). Bounds refresh on every subscribe (a late-booted
- * instance must not clamp against a document that has since grown), on `refreshBounds()`, on a
- * settled window resize — which then fans out `onSettledResize` — and on settled document growth,
- * which refreshes bounds ONLY (lazy content is a clamping concern, never a measure-pass trigger).
+ * Scroll events capture raw y; the rAF only clamps that sample against the CACHED bounds and
+ * fans the identical `(y, delta)` out to subscribers, without viewport reads. A smooth-scroll
+ * producer writing later in the frame reaches headers on its next scroll event (up to one frame
+ * later); this standalone bus has no dependency on the producer's ticker. Bounds refresh on
+ * every subscribe (a late-booted instance must not clamp against a document that has since grown),
+ * on `refreshBounds()`, on a settled window resize — which then fans out `onSettledResize` — and
+ * on settled document growth, which refreshes bounds ONLY (lazy content is a clamping concern,
+ * never a measure-pass trigger).
  */
 
 interface IScrollSubscriber {
@@ -31,8 +34,9 @@ const refreshBounds = (): void => {
 }
 
 const install = (): void => {
+  let rawY = lastY
   const tick = coalesceToFrame((): void => {
-    const y = clampScroll(window.scrollY, maxScroll)
+    const y = clampScroll(rawY, maxScroll)
     const delta = y - lastY
     lastY = y
     // Snapshot: a callback destroying another subscription must not disturb this fan-out.
@@ -41,6 +45,7 @@ const install = (): void => {
     }
   })
   const onScroll = (): void => {
+    rawY = window.scrollY
     tick.schedule()
   }
   const onGrowthSettled = debounce(refreshBounds, SETTLE_DEBOUNCE_MS)

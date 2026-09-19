@@ -109,14 +109,18 @@ each measure pass. Tick deciders and sub-modules:
   the wrapper's own rect is ambiguous (pinned sticky, out-of-flow modes) — the caller keeps the
   previous value, seeded by `estimateNaturalTop` (prev-sibling bottom / parent top).
 - `subscribeScroll` — the SHARED page-level scroll bus (the one module-scope singleton): one
-  passive scroll listener + `coalesceToFrame` rAF tick fanning the identical `(y, delta)` to every
-  instance, one cached bounds value (clamped on the tick path — never a layout read), one settled
+  passive scroll listener captures raw y; the `coalesceToFrame` rAF tick clamps that event sample
+  against current cached bounds and fans the identical `(y, delta)` to every instance, without
+  viewport reads. A smooth-scroll producer writing later in the frame is observed at its next
+  scroll event (up to one frame later); the standalone header does not join its ticker. Boot and
+  settled measurements keep the fresh `readY()` API. There is one settled
   window-resize signal (fans out `onSettledResize` → each instance's full measure pass), one
   document-growth RO (bounds refresh ONLY). Refcounted: last unsubscribe detaches everything;
   every subscribe refreshes bounds so a late-booted secondary never clamps stale.
 - `revealAutoHide` — the pure decider for the hide/reveal direction classes.
 - `release` — cached `until`-boundary doc position; released ⇔ `y + pin + barHeight ≥ boundaryTop`.
-  Owns the release-anchor CSS var (written BEFORE the callback so consumers can resolve it).
+  Owns the release-anchor CSS var, derived from the same evaluated y and written BEFORE the
+  callback so consumers can resolve it without another viewport read.
 - `zones` — doc-space zone rects cached at scan/refresh, per-tick pure geometry
   (`resolveZoneActive`: at-top / overlap / in-view); a body-wide MutationObserver rAF-coalesces
   attribute-driven rescans. Trade-off (accepted): zone liveness is settle-based — a rect that
