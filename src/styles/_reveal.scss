@@ -4,15 +4,19 @@
 @layer arts-header {
   // The hide direction is a mode concern: top-docked modes slide up (-1, the default); the bottom
   // dock and the bottom-pinned flow variant slide down (they set the token to 1 in _modes.scss).
+  // Both hides stand down while keyboard focus is inside the bar: a focused control must never
+  // sit off-screen (WCAG 2.4.11, failure F110). `:focus-visible` keeps a mouse click from
+  // pinning the bar; once focus leaves, the current scroll / zone state applies again.
+  //
   // Auto-hide reveal: hide while scrolling down and stuck; the transition animates it. Scrolling
   // up removes `_scrolling-down` and it slides back. `_locked` exempts the bar from AUTO-HIDE
   // only (the engine also clears the direction state on lock); the full hide below still wins.
-  .arts-header.arts-header_sticky.arts-header_scrolling-down:not(.arts-header_locked) {
+  .arts-header.arts-header_sticky.arts-header_scrolling-down:not(.arts-header_locked, :has(:focus-visible)) {
     transform: translateY(calc(var(--arts-header-hide-direction, -1) * 100%));
   }
 
   // Zone- / API-driven full hide (hide-over zones, toggleHidden()).
-  .arts-header.arts-header_hidden {
+  .arts-header.arts-header_hidden:not(:has(:focus-visible)) {
     transform: translateY(calc(var(--arts-header-hide-direction, -1) * 100%));
   }
 }
