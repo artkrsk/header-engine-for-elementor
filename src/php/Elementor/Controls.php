@@ -25,7 +25,7 @@ class Controls {
 
 	/**
 	 * "Visible and stuck": reserved for styling that paints OUTSIDE the bar's
-	 * box — box-shadow only. A hidden bar sits at `translateY(-100%)`, where an
+	 * box — box-shadow only. A hidden bar sits at `translateY(±100%)`, where an
 	 * outside-the-box shadow would still bleed a sliver into the viewport, so
 	 * the shadow fades out with the hide leg. Everything in-box belongs on the
 	 * state selector below — scoping in-box styles here makes them flash back

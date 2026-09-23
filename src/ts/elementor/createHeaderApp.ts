@@ -25,9 +25,8 @@ const byDocumentOrder = (a: HTMLElement, b: HTMLElement): number =>
  * The app lifecycle around the page's header instances — one engine per `.js-arts-header`
  * wrapper, keyed by container. Aggregate `init()`/`destroy()` keep the single-header consumer
  * contract unchanged — the shape an AJAX page-transition cycle calls; the editor upserts per
- * container. Concurrent
- * aggregate calls are de-duplicated onto the same in-flight promise — a second caller genuinely
- * awaits the first run instead of being told "done" before it is.
+ * container. Concurrent aggregate calls are de-duplicated onto the same in-flight promise — a
+ * second caller genuinely awaits the first run instead of being told "done" before it is.
  */
 export async function createHeaderApp(args: IHeaderAppArgs = {}): Promise<IHeaderApp> {
   const registry = new Map<HTMLElement, IHeader>()
