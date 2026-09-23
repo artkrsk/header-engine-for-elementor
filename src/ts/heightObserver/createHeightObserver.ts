@@ -125,7 +125,11 @@ export function createHeightObserver(args: IHeightObserverArgs): IHeightObserver
         if (suppressed) {
           return
         }
-        updateValue(readEntryHeight(entries) ?? undefined)
+        // Next frame, never inside this delivery: a consumer turning the var into page height
+        // resizes `<html>`, which the scroll bus (and Lenis) observe — a shallower target resized
+        // mid-delivery is skipped and the browser reports the RO loop error.
+        const height = readEntryHeight(entries) ?? undefined
+        requestAnimationFrame(() => updateValue(height))
       }
     })
   }

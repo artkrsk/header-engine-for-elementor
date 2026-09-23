@@ -180,6 +180,7 @@ describe('createHeaderApp', () => {
     const primaryHeightRO = ro.filter((o) => o.observed.some((e) => e.target === primary.bar))[1]
     expect(primaryHeightRO).toBeDefined()
     primaryHeightRO?.callback([], {} as ResizeObserver)
+    raf.step()
     vi.advanceTimersByTime(600)
     vi.useRealTimers()
     const scrollTo = (y: number): void => {

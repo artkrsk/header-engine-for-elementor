@@ -44,7 +44,7 @@ const makeRig = (
     window.dispatchEvent(new Event('scroll'))
     raf.step()
   }
-  return { container, bar, header, scrollTo, ro }
+  return { container, bar, header, scrollTo, ro, raf }
 }
 
 describe('createHeader', () => {
@@ -175,7 +175,7 @@ describe('createHeader', () => {
 
   it('re-measures the sticky pass when the published height vars settle while stuck', () => {
     vi.useFakeTimers()
-    const { container, bar, header, scrollTo, ro } = makeRig()
+    const { container, bar, header, scrollTo, ro, raf } = makeRig()
     header.init()
     vi.advanceTimersByTime(300)
     scrollTo(50)
@@ -187,6 +187,7 @@ describe('createHeader', () => {
     const heightObserverRecord = ro.filter((o) => o.observed.some((e) => e.target === bar))[1]
     expect(heightObserverRecord).toBeDefined()
     heightObserverRecord?.callback([], {} as ResizeObserver)
+    raf.step()
     vi.advanceTimersByTime(300)
     // Reveal (upward tick), then move down again inside the new 500px slack.
     scrollTo(40)

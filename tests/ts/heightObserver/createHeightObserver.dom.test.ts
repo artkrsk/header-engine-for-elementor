@@ -3,7 +3,7 @@ import { createHeightObserver } from '@ts/heightObserver/createHeightObserver'
 import type { IHeightObserverArgs } from '@ts/interfaces'
 import { resolveConfig } from '@ts/options/resolveConfig'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fakeResizeObserver } from '../support'
+import { fakeRaf, fakeResizeObserver } from '../support'
 
 const HEIGHT_VAR = '--arts-header-height'
 const NON_STICKY_VAR = '--arts-header-height-non-sticky'
@@ -24,6 +24,7 @@ afterEach(() => {
 
 const makeRig = (over: Partial<IHeightObserverArgs> = {}) => {
   const instances = fakeResizeObserver()
+  const raf = fakeRaf()
   const bar = document.createElement('div')
   let rectHeight = 80
   bar.getBoundingClientRect = () => ({ height: rectHeight }) as DOMRect
@@ -38,10 +39,12 @@ const makeRig = (over: Partial<IHeightObserverArgs> = {}) => {
   const setBarHeight = (height: number): void => {
     rectHeight = height
   }
+  /** Deliver the RO, then run the frame the RO-driven write is deferred to. */
   const fireResize = (): void => {
     instances[0]?.callback([], {} as ResizeObserver)
+    raf.step()
   }
-  return { bar, observer, instances, setBarHeight, fireResize }
+  return { bar, observer, instances, raf, setBarHeight, fireResize }
 }
 
 describe('createHeightObserver', () => {
@@ -75,13 +78,40 @@ describe('createHeightObserver', () => {
   })
 
   it('prefers the RO entry size over a rect re-read on the observer path', () => {
-    const { instances } = makeRig()
+    const { instances, raf } = makeRig()
     // The rect stub still reports 80 — only the entry carries the new border-box size.
     const entry = {
       borderBoxSize: [{ blockSize: 64, inlineSize: 300 }]
     } as unknown as ResizeObserverEntry
     instances[0]?.callback([entry], {} as ResizeObserver)
+    raf.step()
     expect(root().style.getPropertyValue(HEIGHT_VAR)).toBe('64px')
+  })
+
+  // A root var write inside the delivery can resize <html> (a consumer turning the var into page
+  // height), which other ROs observe — the browser then reports the RO loop error.
+  it('publishes RO-driven heights on the next frame, never inside the observer callback', () => {
+    const { instances, raf } = makeRig()
+    const entry = {
+      borderBoxSize: [{ blockSize: 64, inlineSize: 300 }]
+    } as unknown as ResizeObserverEntry
+    instances[0]?.callback([entry], {} as ResizeObserver)
+    expect(root().style.getPropertyValue(HEIGHT_VAR)).toBe('80px')
+    raf.step()
+    expect(root().style.getPropertyValue(HEIGHT_VAR)).toBe('64px')
+  })
+
+  it('a frame still queued at destroy writes nothing', () => {
+    const { instances, raf, observer } = makeRig({
+      options: { observe: true, cleanupOnDestroy: true }
+    })
+    const entry = {
+      borderBoxSize: [{ blockSize: 64, inlineSize: 300 }]
+    } as unknown as ResizeObserverEntry
+    instances[0]?.callback([entry], {} as ResizeObserver)
+    observer.destroy(true)
+    raf.step()
+    expect(root().style.getPropertyValue(HEIGHT_VAR)).toBe('')
   })
 
   it('publishes a caller-measured initialHeight and update(height) without reading the bar rect', () => {
@@ -230,11 +260,12 @@ describe('createHeightObserver', () => {
   })
 
   it('rounds RO entry heights to whole pixels', () => {
-    const { instances } = makeRig()
+    const { instances, raf } = makeRig()
     const entry = {
       borderBoxSize: [{ blockSize: 64.4, inlineSize: 300 }]
     } as unknown as ResizeObserverEntry
     instances[0]?.callback([entry], {} as ResizeObserver)
+    raf.step()
     expect(root().style.getPropertyValue(HEIGHT_VAR)).toBe('64px')
   })
 

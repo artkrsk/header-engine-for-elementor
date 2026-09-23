@@ -136,7 +136,10 @@ endpoint-only across the bar's OWN state transition: a sticky flip suppresses th
 for the bar's measured transition duration and publishes once, settled — the vars inherit from
 `<html>`, so a per-frame write style-recalcs every consumer (profiled as the sticky-shrink FPS
 drop); a consumer hugging the shrink transitions its own consuming property instead. Heights are
-rounded to whole px everywhere (sub-pixel RO jitter must not become root var writes).
+rounded to whole px everywhere (sub-pixel RO jitter must not become root var writes). RO-driven
+writes land on the NEXT frame, never inside the delivery: a consumer turning the var into page
+height resizes `<html>`, which the scroll bus and Lenis observe, and the browser reports the RO
+loop error (#4).
 
 `elementor/` holds `createHeaderApp` — **multi-instance**: a registry keyed by container,
 one engine per `.js-arts-header` wrapper; `init()`/`destroy()` are aggregates (concurrent calls
