@@ -30,3 +30,29 @@ Everything else (lint, typecheck, phpstan, phpcs, knip, fallow) runs via `pnpm e
 ## License
 
 GPL-3.0-or-later.
+
+## TypeScript package entries
+
+Themes integrating with the installed WordPress plugin use `@arts/header/contract` for public
+types and passive values. This entry does not import the engine, initialize browser globals,
+load assets, install listeners, or depend on producer build defines. Keep the existing optional
+browser discovery checks: updating these compile-time imports does not require a newer installed
+WordPress plugin.
+
+The package root `@arts/header` remains the passive library entry with its existing named
+factory API and root type exports. Direct library hosts explicitly create and initialize engines;
+WordPress continues to boot through its separate `boot.ts` bundle. The package ships TypeScript
+source for linked consumers, so a host needs a TypeScript-aware compiler. Existing
+`/package.json`, `/src/ts/*`, and `/src/styles/*` paths remain available for compatibility.
+
+`pnpm exec vitest run tests/ts/packageEntries.test.ts` checks isolated consumers with
+`skipLibCheck: false`, inspects bundled contract graphs, and invokes the public root factory
+without building or synchronizing WordPress assets.
+
+```ts
+import { EVENTS } from '@arts/header/contract'
+import type { IHeader, IHeaderApp, IHeaderEventDetail } from '@arts/header/contract'
+```
+
+`EVENTS` reuses the engine's canonical event names. Older installed Header versions can lack
+`getInstance`; retain capability detection before using that optional integration.
