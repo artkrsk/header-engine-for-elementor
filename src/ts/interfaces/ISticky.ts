@@ -9,7 +9,11 @@ export interface ISticky {
    * keeps running underneath — so leaving a hide-over zone lands on the correct state.
    */
   setHidden(value: boolean): void
-  /** Reveal the bar and hold it shown, reveal frozen (zone- or API-driven). */
+  /**
+   * Reveal the bar and hold it shown, reveal frozen. The API lock is held apart from the
+   * lock-over zone lock and the two publish as their OR: a zone flip never drops it, and
+   * unlocking never releases an active zone.
+   */
   setLocked(value: boolean): void
   /** Tear down. `revert` restores mutated DOM and fires the accompanying state events. */
   destroy(revert: boolean): void

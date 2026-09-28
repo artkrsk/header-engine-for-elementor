@@ -12,7 +12,10 @@ export interface IHeader {
   refresh(): void
   /** Hide/show the whole header (drives the same state as hide-over zones). */
   toggleHidden(hidden: boolean): void
-  /** Lock reveals the bar and holds it shown, reveal frozen (same state as lock-over zones). */
+  /**
+   * Lock reveals the bar and holds it shown, reveal frozen. Held apart from lock-over zones:
+   * a zone change never drops this lock, and unlocking never releases an active zone.
+   */
   lockSticky(locked: boolean): void
   /** Re-scan the DOM for hide-over / lock-over zones. */
   refreshZones(): void

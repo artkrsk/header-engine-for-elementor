@@ -83,6 +83,12 @@ export function createSticky(args: IStickyArgs): ISticky {
   const locked = createStateFlag(container, config.classes.locked)
   const released = createStateFlag(container, config.classes.released)
 
+  // The API lock and the zone lock are held apart and published as their OR: a zone flip never
+  // drops a lock a consumer holds through `setLocked`, and a consumer's unlock never releases an
+  // active lock-over zone.
+  let apiLocked = false
+  let zoneLocked = false
+
   const notify = (name: THeaderEventName, value: boolean): void => {
     dispatchHeaderEvent(name, { value, header: container })
   }
@@ -144,7 +150,8 @@ export function createSticky(args: IStickyArgs): ISticky {
         getViewportH: () => viewportH,
         onChange: (anyHide, anyLock) => {
           setHidden(anyHide)
-          setLocked(anyLock)
+          zoneLocked = anyLock
+          publishLocked(apiLocked || zoneLocked)
         }
       })
     : null
@@ -155,7 +162,7 @@ export function createSticky(args: IStickyArgs): ISticky {
     }
   }
 
-  function setLocked(value: boolean): void {
+  function publishLocked(value: boolean): void {
     if (!locked.set(value)) {
       return
     }
@@ -257,7 +264,10 @@ export function createSticky(args: IStickyArgs): ISticky {
       zoneTracker?.refresh()
     },
     setHidden,
-    setLocked,
+    setLocked(value) {
+      apiLocked = value
+      publishLocked(apiLocked || zoneLocked)
+    },
     destroy(revert) {
       if (destroyed) {
         return
@@ -282,7 +292,7 @@ export function createSticky(args: IStickyArgs): ISticky {
         revealing.set(false)
         scrollingDown.set(false)
         setHidden(false)
-        setLocked(false)
+        publishLocked(false)
         if (released.set(false)) {
           notify(EVENTS.RELEASED, false)
         }

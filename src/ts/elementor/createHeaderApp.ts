@@ -163,6 +163,10 @@ export async function createHeaderApp(args: IHeaderAppArgs = {}): Promise<IHeade
     },
     get instances() {
       return [...registry.keys()].sort(byDocumentOrder).map((key) => registry.get(key) as IHeader)
+    },
+    getInstance(element) {
+      const wrapper = element.closest<HTMLElement>(defaultConfig.selectors.container)
+      return wrapper ? registry.get(wrapper) : undefined
     }
   }
 

@@ -12,4 +12,10 @@ export interface IHeaderApp {
   readonly artsHeader: IHeader | undefined
   /** Every live instance, primary first (DOM order). */
   readonly instances: IHeader[]
+  /**
+   * The live instance owning `element` — the wrapper itself, its bar or any descendant.
+   * `undefined` outside a managed header and after `destroy()`; a re-scan replaces the instance,
+   * so resolve at use time rather than caching across an AJAX visit.
+   */
+  getInstance(element: Element): IHeader | undefined
 }

@@ -103,6 +103,10 @@ No. The script and stylesheet together weigh about 25 KB, and the engine does it
 
 == Changelog ==
 
+= 1.0.3 =
+* added: a getInstance( element ) lookup on the global app, resolving the header instance that owns any element inside a managed header.
+* fixed: a lock-over or hide-over zone change no longer drops a lock held through lockSticky(), and lockSticky( false ) no longer releases an active lock-over zone.
+
 = 1.0.2 =
 * fixed: a hidden header now slides back into view when it holds keyboard focus, so tabbing never lands on an off-screen logo or menu link.
 * fixed: "ResizeObserver loop completed with undelivered notifications" errors in the browser console when page spacing is bound to the header height.

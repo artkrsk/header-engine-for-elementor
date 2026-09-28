@@ -148,7 +148,9 @@ cycle calls is unchanged; `destroy()` empties the registry, so `instances` only 
 ones, and a `destroy()` ordered into a scan's `callbackBefore` await drops that scan rather than
 booting engines the teardown could not have seen), the editor upserts per
 container, `app.artsHeader` is the PRIMARY (first wrapper in DOM order), `app.instances` is all
-of them. The primary owns the page globals: `Markup.php` classifies by first-rendered element id —
+of them, `app.getInstance(el)` is the one owning `el` (`closest('.js-arts-header')` against the
+registry — `undefined` outside a wrapper or after destroy; a re-scan replaces instances, so
+consumers resolve at use time, never across an AJAX visit). The primary owns the page globals: `Markup.php` classifies by first-rendered element id —
 secondaries get `"heightObserver":false` + `"sticky":{"zones":false}` in their options JSON, no
 pre-paint seed (the seed query is element-scoped), and multi-header consumers filter events by
 `detail.header`. Also here: `mapPanelSettings` (pure panel→options, `isPrimary`-aware), `init`
@@ -202,7 +204,9 @@ but unparseable **warns and is ignored** (constructor options survive); absent i
 Subscribe via `onHeaderEvent` / `offHeaderEvent` or plain `document.addEventListener`:
 `arts/header/sticky` (published sticky state), `arts/header/hidden` (full-hide, zone or
 `toggleHidden`), `arts/header/locked` (bar revealed and held shown, reveal frozen — lock also
-clears the direction/displaced state; zone or `lockSticky`), `arts/header/released`
+clears the direction/displaced state; the `lockSticky` API lock and the lock-over zone lock are
+held apart in `createSticky` and published as their OR, so a zone flip never drops a consumer's
+lock and an API unlock never releases an active zone), `arts/header/released`
 (sticky-until release), `arts/header/displaced` (bar vacates its space). The same five have getters
 (`isSticking/isHidden/isLocked/isReleased/isDisplaced`); `revealing`/`scrollingDown` are
 deliberately class-only styling signals (per-tick frequency).
