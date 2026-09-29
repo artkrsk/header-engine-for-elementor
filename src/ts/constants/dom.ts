@@ -7,6 +7,11 @@
 export const WRAPPER_CLASS = 'arts-header'
 export const WRAPPER_JS_CLASS = 'js-arts-header'
 
+/** Nonanimated owner of resolved Elementor layout values. */
+export const VALUE_HOST_CLASS = 'arts-header-values'
+export const VALUE_HOST_JS_CLASS = 'js-arts-header-values'
+export const VALUE_HOST_ELEMENT_ID_PREFIX = 'arts-header-values_elementor-element-'
+
 /** Bar element + hook + the mode-signaling modifier classes the editor toggles. */
 export const BAR_CLASS = 'arts-header__bar'
 export const BAR_JS_CLASS = 'js-arts-header__bar'

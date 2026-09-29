@@ -1,3 +1,4 @@
+import { VALUE_HOST_JS_CLASS } from '../constants/dom'
 import type { TPinLine } from '../types/TPinLine'
 
 /**
@@ -91,8 +92,11 @@ export const measureNaturalTop = (
  * measure corrects it.
  */
 export const estimateNaturalTop = (container: HTMLElement): number => {
-  const sibling = container.previousElementSibling
-  const anchor = sibling ?? container.parentElement
+  const slot = container.parentElement?.classList.contains(VALUE_HOST_JS_CLASS)
+    ? container.parentElement
+    : container
+  const sibling = slot.previousElementSibling
+  const anchor = sibling ?? slot.parentElement
   if (!anchor) {
     return 0
   }
@@ -115,7 +119,7 @@ export const parseRevealOffset = (raw: string): number => {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-/** The reveal offset var, resolved at the container (the panel writes it there; themes may too). */
+/** The wrapper inherits the resolved offset from its nonanimated Elementor value host. */
 export const measureRevealOffset = (container: HTMLElement, varName: string): number =>
   parseRevealOffset(getComputedStyle(container).getPropertyValue(varName))
 

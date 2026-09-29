@@ -45,14 +45,22 @@ describe('createContainerHandler', () => {
     expect(wrapper?.classList.contains('arts-header_elementor-element-abc123')).toBe(true)
     expect(el.classList.contains('arts-header__bar')).toBe(true)
     expect(el.classList.contains('js-arts-header__bar')).toBe(true)
+    expect(wrapper?.parentElement?.classList.contains('arts-header-values')).toBe(true)
+    expect(wrapper?.parentElement?.classList.contains('js-arts-header-values')).toBe(true)
+    expect(
+      wrapper?.parentElement?.classList.contains('arts-header-values_elementor-element-abc123')
+    ).toBe(true)
   })
 
   it('reuses an existing wrapper instead of double-wrapping', () => {
     const { handler, el } = makeHandler({ arts_header_enabled: 'yes' })
     handler.setHeader()
     const wrapper = el.parentElement
+    const host = wrapper?.parentElement
     handler.setHeader()
     expect(el.parentElement).toBe(wrapper)
+    expect(wrapper?.parentElement).toBe(host)
+    expect(document.querySelectorAll('.arts-header-values')).toHaveLength(1)
     expect(wrapper?.parentElement?.classList.contains('arts-header')).toBe(false)
   })
 
@@ -64,6 +72,35 @@ describe('createContainerHandler', () => {
     handler.setHeader()
     expect(el.parentElement).toBe(document.body)
     expect(document.querySelector('.arts-header')).toBeNull()
+    expect(document.querySelector('.arts-header-values')).toBeNull()
+  })
+
+  it('adopts a legacy wrapper and adds only its missing value host', () => {
+    const { handler, el } = makeHandler({ arts_header_enabled: 'yes' })
+    const wrapper = document.createElement('div')
+    wrapper.className = 'arts-header js-arts-header arts-header_elementor-element-abc123'
+    el.replaceWith(wrapper)
+    wrapper.appendChild(el)
+    handler.setHeader()
+    expect(el.parentElement).toBe(wrapper)
+    expect(wrapper.parentElement?.classList.contains('js-arts-header-values')).toBe(true)
+    expect(document.querySelectorAll('.arts-header')).toHaveLength(1)
+  })
+
+  it('preserves unexpected wrapper/host siblings when disabling the header', () => {
+    const settings = { arts_header_enabled: 'yes' }
+    const { handler, el } = makeHandler(settings)
+    handler.setHeader()
+    const wrapper = el.parentElement
+    const host = wrapper?.parentElement
+    if (!wrapper || !host) throw new Error('Header was not wrapped')
+    const sibling = document.createElement('span')
+    wrapper.appendChild(sibling)
+    settings.arts_header_enabled = ''
+    handler.setHeader()
+    expect(el.parentElement).toBe(document.body)
+    expect(sibling.parentElement).toBe(wrapper)
+    expect(host.parentElement).toBe(document.body)
   })
 
   it('signals the docking mode on the bar — never both modifier classes at once', () => {

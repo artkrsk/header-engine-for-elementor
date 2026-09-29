@@ -1,0 +1,65 @@
+// Resolve viewport lengths on an unanimated, boxless ancestor. Safari loses transition
+// interpolation when the animated element itself resolves a viewport-dependent length.
+// Typed inheritance delivers pixels (or a preserved percentage) to the original consumers.
+@property --arts-header-pin-offset {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+
+@each $side in top, right, bottom, left {
+  @property --arts-header-padding-#{$side} {
+    syntax: '<length-percentage>';
+    inherits: true;
+    initial-value: 0px;
+  }
+
+  @property --arts-header-padding-#{$side}-sticky {
+    syntax: '<length-percentage>';
+    inherits: true;
+    initial-value: 0px;
+  }
+}
+
+@each $axis in row, column {
+  @property --arts-header-#{$axis}-gap {
+    syntax: '<length-percentage> | normal';
+    inherits: true;
+    initial-value: normal;
+  }
+}
+
+@layer arts-header {
+  .arts-header-values {
+    display: contents;
+
+    @each $side in top, right, bottom, left {
+      // Registered properties always have an initial value: declare the defaults explicitly,
+      // including sticky fallback, instead of relying on var()'s missing-property fallback.
+      --arts-header-padding-#{$side}: var(--arts-header-padding-#{$side}-default, 10px);
+      --arts-header-padding-#{$side}-sticky: var(--arts-header-padding-#{$side});
+    }
+
+    --arts-header-row-gap: var(--arts-header-row-gap-default, 20px);
+    --arts-header-column-gap: var(--arts-header-column-gap-default, 20px);
+  }
+}
+
+// Elementor's generated native variables are unlayered. This compatibility boundary must be
+// unlayered too, and outrank the normal/sticky generated selectors. It only matches headers
+// with the new host; ordinary containers and standalone engine markup retain native behavior.
+.arts-header-values > .arts-header > .arts-header__bar.elementor-element.e-con {
+  --row-gap: var(--arts-header-row-gap);
+  --column-gap: var(--arts-header-column-gap);
+  --gap: var(--arts-header-row-gap) var(--arts-header-column-gap);
+
+  @each $side in top, right, bottom, left {
+    --padding-#{$side}: var(--arts-header-padding-#{$side});
+  }
+}
+
+.arts-header-values > .arts-header.arts-header_sticky > .arts-header__bar.elementor-element.e-con {
+  @each $side in top, right, bottom, left {
+    --padding-#{$side}: var(--arts-header-padding-#{$side}-sticky);
+  }
+}

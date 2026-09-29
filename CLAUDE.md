@@ -293,6 +293,8 @@ an empty `array()` encodes as `[]`, not `{}` — a section that can go empty nee
 
 ## Gotchas / invariants
 
+- **Safari viewport lengths (Velum #290):** Elementor headers are `.arts-header-values` (`display: contents`) → `.arts-header` → native Container/bar. The host owns typed reveal/pin offsets, normal/sticky padding and gaps; `_values.scss` aliases computed inherited lengths into Elementor's native variables through an unlayered, header-only compatibility rule. Native control IDs and original selectors stay; extra host selectors use the same responsive/FDS pipeline, including Kit defaults. Empty sticky padding follows the normal token. Percentages stay percentages through `<length-percentage>`; em uses the host's inherited font context (custom bar-only typography is outside this layout adapter). The wrapper remains the state, geometry and event owner. `estimateNaturalTop` skips only the known host. WebKit caches viewport lengths on a boxless host when viewport size changes, so `createValueHostInvalidation` coalesces resize events into one host-local style invalidation per frame, with no layout reads or root-variable writes; init/refresh invalidate before measuring and destroy releases the listener/queued frame. Regenerate Elementor CSS after deploying these selector changes. The `/contract` exports `VALUE_HOST_JS_CLASS` for snapshot integrations: Canvas header scenery must clone the host while measuring/hiding the boxed wrapper.
+
 - **Library-surface modules must not lean on `global.d.ts`** — a consumer that `link:`s this
   package compiles the source with its own tsc, and ambient Window augmentations don't travel with
   the module graph. Any module reachable from `src/ts/index.ts` types its `window` reaches with a

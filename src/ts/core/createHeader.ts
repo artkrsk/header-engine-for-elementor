@@ -13,6 +13,7 @@ import { resolveConfig } from '../options/resolveConfig'
 import { createSticky } from '../sticky/createSticky'
 import { measureBar } from '../sticky/measure'
 import { logger } from '../utils'
+import { createValueHostInvalidation } from './createValueHostInvalidation'
 
 /**
  * The composition root: resolves options/config once, and `init()` wires the sticky engine and the
@@ -40,6 +41,7 @@ export function createHeader(
   let sticky: ISticky | null = null
   let heightObserver: IHeightObserver | null = null
   let initialized = false
+  let values: ReturnType<typeof createValueHostInvalidation> | null = null
 
   return {
     init() {
@@ -47,8 +49,10 @@ export function createHeader(
         return
       }
 
-      // One layout flush for the whole boot: the bar is measured here, before the sticky engine's
-      // writes, and handed to the height publisher — its own rect read would land after them.
+      // Invalidate the value host before the single measurement pass. The bar height is then
+      // handed to the publisher so it does not read layout after the sticky engine's writes.
+      values = createValueHostInvalidation(container)
+      values.refresh()
       const barHeight = measureBar(bar)
       const stickyOptions = options.sticky
       if (stickyOptions !== false) {
@@ -87,12 +91,15 @@ export function createHeader(
       }
       sticky?.destroy(revert)
       heightObserver?.destroy(revert)
+      values?.destroy(revert)
+      values = null
       sticky = null
       heightObserver = null
       initialized = false
     },
     refresh() {
-      // Same rule as init: read before the sticky pass writes.
+      // Resolve host values before reading geometry, then let the sticky pass publish state.
+      values?.refresh()
       const barHeight = measureBar(bar)
       sticky?.update()
       heightObserver?.update(barHeight)

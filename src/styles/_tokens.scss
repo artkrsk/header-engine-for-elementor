@@ -33,14 +33,14 @@
 // engine reads the RESULTING computed top/bottom, never this var),
 // `--spacing-transition`,
 // `--arts-header-hide-direction` (reveal transform sign; bottom dock and bottom pin set `1`).
-// Per-state padding is NOT a var contract anymore: the native Padding control is the rest
-// state and `Controls.php`'s `padding_sticky` overrides Elementor's own `--padding-*` custom
-// properties on the sticky-scoped bar.
+// _values.scss resolves Elementor's normal/sticky padding and gaps on a nonanimated value host,
+// then aliases the inherited results into Elementor's native variables on the animated bar.
 
 // The reveal-offset registration lives HERE, in the head stylesheet, so it lands in the page's
 // first style pass. A registration any later — `CSS.registerProperty()` from the deferred bundle,
 // or this rule in a late stylesheet — invalidates every element's style and forces a
-// whole-document recalc. `createSticky` registers from JS only for a custom var name.
+// whole-document recalc. `createSticky` registers from JS only for a custom var name. Elementor
+// authors the value on .arts-header-values so the animated wrapper only inherits computed pixels.
 @property --arts-header-reveal-offset {
   syntax: '<length>';
   inherits: true;

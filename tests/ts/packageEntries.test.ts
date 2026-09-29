@@ -71,8 +71,10 @@ describe('published source package entries', () => {
 import type { IHeader as Contract } from '@arts/header/contract'
 declare const api: Contract
 void api
-import { EVENTS } from '@arts/header/contract'
+import { EVENTS, VALUE_HOST_JS_CLASS } from '@arts/header/contract'
 const event: 'arts/header/hidden' = EVENTS.HIDDEN
+const host: 'js-arts-header-values' = VALUE_HOST_JS_CLASS
+void host
 void event
 // @ts-expect-error Contract consumers do not acquire producer env declarations.
 import.meta.env
@@ -94,7 +96,7 @@ void accepts; void createHeader
   it('bundles contracts without engines, boot, DOM or host defines', async () => {
     const result = await bundle(`${packageName}/contract`)
     const inputs = Object.keys(result.metafile.inputs)
-    const allowed = ['/contract/index.ts', '/constants/events.ts']
+    const allowed = ['/contract/index.ts', '/constants/events.ts', '/constants/dom.ts']
     expect(
       inputs
         .filter((path) => path !== '<stdin>')
@@ -104,7 +106,10 @@ void accepts; void createHeader
     expect(code).not.toMatch(/__ARTS_|\b(?:window|document)\b|addEventListener/)
     const context: Record<string, unknown> = {}
     runInNewContext(code, context)
-    expect(Object.keys(context.Provider as object).sort()).toEqual(['EVENTS'])
+    expect(Object.keys(context.Provider as object).sort()).toEqual([
+      'EVENTS',
+      'VALUE_HOST_JS_CLASS'
+    ])
   })
 
   it('keeps root import passive and invokes the factory under its host contract', async () => {

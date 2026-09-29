@@ -12,6 +12,9 @@ import {
   NON_STICKY_LOGO_ATTR,
   OPTIONS_ATTR,
   STICKY_LOGO_ATTR,
+  VALUE_HOST_CLASS,
+  VALUE_HOST_ELEMENT_ID_PREFIX,
+  VALUE_HOST_JS_CLASS,
   WRAPPER_CLASS,
   WRAPPER_ELEMENT_ID_PREFIX,
   WRAPPER_JS_CLASS
@@ -25,16 +28,32 @@ const wrapHeaderBar = (el: HTMLElement, elementId: string | number): HTMLElement
   if (!el.parentNode) {
     return null
   }
+  let wrapper: HTMLElement
   if (
     el.parentElement?.classList.contains(WRAPPER_CLASS) &&
     el.parentElement.classList.contains(WRAPPER_JS_CLASS)
   ) {
-    return el.parentElement
+    wrapper = el.parentElement
+  } else {
+    wrapper = el.ownerDocument.createElement('div')
+    wrapper.classList.add(
+      WRAPPER_CLASS,
+      `${WRAPPER_ELEMENT_ID_PREFIX}${elementId}`,
+      WRAPPER_JS_CLASS
+    )
+    el.parentNode.insertBefore(wrapper, el)
+    wrapper.appendChild(el)
   }
-  const wrapper = document.createElement('div')
-  wrapper.classList.add(WRAPPER_CLASS, `${WRAPPER_ELEMENT_ID_PREFIX}${elementId}`, WRAPPER_JS_CLASS)
-  el.parentNode.insertBefore(wrapper, el)
-  wrapper.appendChild(el)
+  if (!wrapper.parentElement?.classList.contains(VALUE_HOST_JS_CLASS)) {
+    const host = el.ownerDocument.createElement('div')
+    host.classList.add(
+      VALUE_HOST_CLASS,
+      `${VALUE_HOST_ELEMENT_ID_PREFIX}${elementId}`,
+      VALUE_HOST_JS_CLASS
+    )
+    wrapper.parentNode?.insertBefore(host, wrapper)
+    host.appendChild(wrapper)
+  }
   return wrapper
 }
 
@@ -48,9 +67,16 @@ const unwrapHeaderBar = (el: HTMLElement): void => {
   ) {
     return
   }
-  parentElement.parentNode.insertBefore(el, parentElement)
+  const host = parentElement.parentElement?.classList.contains(VALUE_HOST_JS_CLASS)
+    ? parentElement.parentElement
+    : null
+  const outer = host ?? parentElement
+  outer.parentNode?.insertBefore(el, outer)
   if (parentElement.children.length === 0) {
     parentElement.remove()
+  }
+  if (host?.children.length === 0) {
+    host.remove()
   }
 }
 

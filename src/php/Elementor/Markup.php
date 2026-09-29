@@ -10,7 +10,7 @@ use Elementor\Element_Base;
 use Elementor\Includes\Elements\Container;
 
 /**
- * Decorates a header-enabled Container: prints the .arts-header wrapper
+ * Decorates a header-enabled Container: prints a nonanimated value host and .arts-header wrapper
  * around it, adds the bar classes to the container's own tag, and emits
  * the pre-paint height script for the page's PRIMARY header.
  *
@@ -99,8 +99,13 @@ class Markup {
 		}
 
 		$element->add_render_attribute( 'header_wrapper', $attributes );
+		$element->add_render_attribute(
+			'header_values',
+			'class',
+			array( 'arts-header-values', 'arts-header-values_elementor-element-' . $element->get_id(), 'js-arts-header-values' )
+		);
 
-		?><div <?php $element->print_render_attribute_string( 'header_wrapper' ); ?>>
+		?><div <?php $element->print_render_attribute_string( 'header_values' ); ?>><div <?php $element->print_render_attribute_string( 'header_wrapper' ); ?>>
 		<?php
 	}
 
@@ -110,7 +115,7 @@ class Markup {
 		}
 
 		?>
-		</div>
+		</div></div>
 		<?php
 
 		// Only the PRIMARY header seeds the page-global height vars — a secondary bar's height

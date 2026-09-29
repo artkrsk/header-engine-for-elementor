@@ -7,6 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Elementor\Controls_Manager;
+use Elementor\Controls_Stack;
 use Elementor\Element_Base;
 use Elementor\Group_Control_Background;
 use Elementor\Group_Control_Border;
@@ -22,6 +23,42 @@ use Elementor\Group_Control_Css_Filter;
 class Controls {
 	/** Wrapper scoped to one editor element. */
 	const HEADER_SELECTOR = '.arts-header_elementor-element-{{ID}}';
+
+	/** Nonanimated owner of typed lengths (Safari viewport-resize workaround). */
+	const VALUE_SELECTOR = '.arts-header-values_elementor-element-{{ID}}';
+
+	/**
+	 * Keep native selectors and add the header host to the same responsive control. This also
+	 * keeps the fluid/custom unit processing identical in PHP and Elementor's editor preview.
+	 */
+	private function add_value_selector( Controls_Stack $stack, string $control_id, string $selector, string $declarations ): void {
+		$control = $stack->get_controls( $control_id );
+		if ( ! is_array( $control ) ) {
+			return;
+		}
+		$selectors              = isset( $control['selectors'] ) && is_array( $control['selectors'] ) ? $control['selectors'] : array();
+		$selectors[ $selector ] = $declarations;
+		$stack->update_responsive_control( $control_id, array( 'selectors' => $selectors ) );
+	}
+
+	/** Kit defaults normally live on .e-con/.elementor-element, not on our outer host. */
+	public function add_value_defaults( Controls_Stack $stack, string $section_id ): void {
+		if ( 'section_settings-layout' !== $section_id ) {
+			return;
+		}
+		$this->add_value_selector(
+			$stack,
+			'container_padding',
+			'.arts-header-values',
+			'--arts-header-padding-top-default: {{TOP}}{{UNIT}}; --arts-header-padding-right-default: {{RIGHT}}{{UNIT}}; --arts-header-padding-bottom-default: {{BOTTOM}}{{UNIT}}; --arts-header-padding-left-default: {{LEFT}}{{UNIT}};'
+		);
+		$this->add_value_selector(
+			$stack,
+			'space_between_widgets',
+			'.arts-header-values',
+			'--arts-header-row-gap-default: {{ROW}}{{UNIT}}; --arts-header-column-gap-default: {{COLUMN}}{{UNIT}};'
+		);
+	}
 
 	/**
 	 * "Visible and stuck": reserved for styling that paints OUTSIDE the bar's
@@ -123,6 +160,14 @@ class Controls {
 	}
 
 	public function add_header_section_controls( Element_Base $element ): void {
+		foreach ( array( 'flex_gap', 'grid_gaps' ) as $control_id ) {
+			$this->add_value_selector(
+				$element,
+				$control_id,
+				self::VALUE_SELECTOR,
+				'--arts-header-row-gap: {{ROW}}{{UNIT}}; --arts-header-column-gap: {{COLUMN}}{{UNIT}};'
+			);
+		}
 		$element->start_controls_section(
 			'arts_header_section',
 			array(
@@ -229,7 +274,7 @@ class Controls {
 					'header-non-sticky' => 'var(--arts-header-height-non-sticky)',
 				),
 				'selectors'            => array(
-					self::HEADER_SELECTOR => '--arts-header-pin-offset: {{VALUE}};',
+					self::VALUE_SELECTOR => '--arts-header-pin-offset: {{VALUE}};',
 				),
 				'render_type'          => 'template',
 				'condition'            => array_merge(
@@ -257,7 +302,7 @@ class Controls {
 					'unit' => 'px',
 				),
 				'selectors'   => array(
-					self::HEADER_SELECTOR => '--arts-header-pin-offset: {{SIZE}}{{UNIT}};',
+					self::VALUE_SELECTOR => '--arts-header-pin-offset: {{SIZE}}{{UNIT}};',
 				),
 				'render_type' => 'template',
 				'condition'   => array_merge(
@@ -270,9 +315,8 @@ class Controls {
 			)
 		);
 
-		// Both offset controls write the --arts-header-reveal-offset var (the engine registers it
-		// as a <length> and reads the RESOLVED px value at measure time) — so px is responsive via
-		// Elementor's own breakpoint pipeline, and the presets are just var values.
+		// Resolve offsets on the nonanimated value host; the engine reads inherited pixels on
+		// the wrapper. A viewport length registered on the animated wrapper trips Safari #290.
 		$element->add_control(
 			'arts_header_sticky_reveal_offset_preset',
 			array(
@@ -290,7 +334,7 @@ class Controls {
 					'header'   => 'var(--arts-header-height-non-sticky)',
 				),
 				'selectors'            => array(
-					self::HEADER_SELECTOR => '--arts-header-reveal-offset: {{VALUE}};',
+					self::VALUE_SELECTOR => '--arts-header-reveal-offset: {{VALUE}};',
 				),
 				'render_type'          => 'template',
 				'condition'            => array_merge(
@@ -318,7 +362,7 @@ class Controls {
 					'unit' => 'px',
 				),
 				'selectors'   => array(
-					self::HEADER_SELECTOR => '--arts-header-reveal-offset: {{SIZE}}{{UNIT}};',
+					self::VALUE_SELECTOR => '--arts-header-reveal-offset: {{SIZE}}{{UNIT}};',
 				),
 				'render_type' => 'template',
 				'condition'   => array_merge(
@@ -559,9 +603,16 @@ class Controls {
 	 * padding) through HEADER_STICKY_STATE_BAR_SELECTOR — sticky alone, no
 	 * `:not(_scrolling-down)`: a hiding or locked bar keeps its sticky padding.
 	 * Native-control quirk applies: all four sides must be filled or the rule
-	 * emits nothing (an empty control cleanly falls through to native padding).
+	 * emits nothing (an empty control cleanly falls through to native padding). The additional
+	 * host selector resolves typed sticky lengths; the compatibility CSS consumes those results.
 	 */
 	public function add_header_sticky_layout_controls( Element_Base $element ): void {
+		$this->add_value_selector(
+			$element,
+			'padding',
+			self::VALUE_SELECTOR,
+			'--arts-header-padding-top: {{TOP}}{{UNIT}}; --arts-header-padding-right: {{RIGHT}}{{UNIT}}; --arts-header-padding-bottom: {{BOTTOM}}{{UNIT}}; --arts-header-padding-left: {{LEFT}}{{UNIT}};'
+		);
 		$element->add_control(
 			'padding_sticky_heading',
 			array(
@@ -581,6 +632,7 @@ class Controls {
 				'size_units'  => array( 'px', '%', 'em', 'rem', 'vw', 'custom' ),
 				'selectors'   => array(
 					self::HEADER_STICKY_STATE_BAR_SELECTOR => '--padding-top: {{TOP}}{{UNIT}}; --padding-bottom: {{BOTTOM}}{{UNIT}}; --padding-left: {{LEFT}}{{UNIT}}; --padding-right: {{RIGHT}}{{UNIT}};',
+					self::VALUE_SELECTOR                   => '--arts-header-padding-top-sticky: {{TOP}}{{UNIT}}; --arts-header-padding-right-sticky: {{RIGHT}}{{UNIT}}; --arts-header-padding-bottom-sticky: {{BOTTOM}}{{UNIT}}; --arts-header-padding-left-sticky: {{LEFT}}{{UNIT}};',
 				),
 				'condition'   => self::CONDITION_HEADER_SCROLL_ENABLED,
 			)

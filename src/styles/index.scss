@@ -1,8 +1,8 @@
 // Artem Semkin Header Engine for Elementor — the engine stylesheet.
 //
 // Architecture:
-// - All rules live in the `arts-header` cascade layer: any unlayered theme CSS wins by default,
-//   no specificity wars.
+// - Engine rules live in `arts-header`; the Elementor value aliases in _values are unlayered
+//   so they can replace Elementor's generated raw lengths on the animated bar.
 // - The WRAPPER positions in every docking mode and carries the reveal transform; the bar's
 //   modifier class only signals which mode. One code path for flow + overlay keeps the engine
 //   mode-agnostic.
@@ -12,6 +12,7 @@
 //   exists across the two languages; `tests/ts/styleSync.test.ts` is the mechanical guard.
 
 @use 'tokens';
+@use 'values';
 @use 'modes';
 @use 'reveal';
 @use 'logo';
