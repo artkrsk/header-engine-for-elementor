@@ -44,7 +44,7 @@
   // the state class, and the consuming widgets rarely transition text/icon color themselves —
   // without this the bar surface fades while its content snaps. `:where()` keeps it at zero
   // specificity: any widget or theme transition rule (unlayered, or just more specific) wins.
-  .arts-header .arts-header__bar :where(a, button, i, svg, path, span, div, p, li, h1, h2, h3, h4, h5, h6) {
+  :where(.arts-header .arts-header__bar) :where(a, button, i, svg, path, span, div, p, li, h1, h2, h3, h4, h5, h6) {
     transition-property: color, fill, stroke;
     transition-duration: tokens.$transition-duration;
     transition-timing-function: ease;
