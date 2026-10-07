@@ -29,8 +29,7 @@ permissions:
 
 jobs:
   prepare:
-    # Pilot pin: the feature branch of the shared repo. Switch to @main once it is merged.
-    uses: artkrsk/wordpress-plugin-workflows/.github/workflows/prepare-release.yml@72ee7c40032d79802a17a56a77d7a915ebf16b75
+    uses: artkrsk/wordpress-plugin-workflows/.github/workflows/prepare-release.yml@main
     with:
       client_id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
       version: ${{ inputs.version }}
