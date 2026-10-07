@@ -1,0 +1,32 @@
+name: Cut Release
+
+# When a release/x.y.z PR is merged, verify the merge commit and tag it vX.Y.Z. The tag push
+# starts release.yml (GitHub Release + wp.org SVN). dry_run is TRUE while piloting: it reports
+# what it would tag and creates nothing. Flip it to false to enable real tagging.
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+concurrency:
+  group: cut-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  cut:
+    # Cheap pre-check only; the shared workflow re-validates everything before it tags.
+    if: >-
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release/') &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    # Pilot pin: the feature branch of the shared repo. Switch to @main once it is merged.
+    uses: artkrsk/wordpress-plugin-workflows/.github/workflows/cut-release.yml@72ee7c40032d79802a17a56a77d7a915ebf16b75
+    with:
+      client_id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+      dry_run: true # flip to false to let a merged release PR create the tag
+    secrets:
+      RELEASE_BOT_PRIVATE_KEY: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
