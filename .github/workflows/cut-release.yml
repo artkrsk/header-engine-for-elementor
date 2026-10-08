@@ -1,13 +1,26 @@
 name: Cut Release
 
 # When a release/x.y.z PR is merged, verify the merge commit and tag it vX.Y.Z. The tag push
-# starts release.yml (GitHub Release + wp.org SVN). dry_run is TRUE while piloting: it reports
-# what it would tag and creates nothing. Flip it to false to enable real tagging.
+# starts release.yml (GitHub Release + wp.org SVN), so merging a release PR is the whole release.
+#
+# Manual run: tag an already-merged release PR on demand (recovery, or a PR merged before this
+# workflow existed). Dry run by default; untick it to tag for real.
 
 on:
   pull_request:
     types: [closed]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Merged release PR to tag (number)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Verify and report only; create no tag'
+        required: false
+        type: boolean
+        default: true
 
 concurrency:
   group: cut-release
@@ -15,17 +28,21 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   cut:
     # Cheap pre-check only; the shared workflow re-validates everything before it tags.
     if: >-
-      github.event.pull_request.merged == true &&
-      startsWith(github.event.pull_request.head.ref, 'release/') &&
-      github.event.pull_request.head.repo.full_name == github.repository
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+       startsWith(github.event.pull_request.head.ref, 'release/') &&
+       github.event.pull_request.head.repo.full_name == github.repository)
     uses: artkrsk/wordpress-plugin-workflows/.github/workflows/cut-release.yml@main
     with:
       client_id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
-      dry_run: true # flip to false to let a merged release PR create the tag
+      pr_number: ${{ inputs.pr_number }}
+      # pull_request events have no inputs: false (live) on merge, true (dry) by default on manual runs
+      dry_run: ${{ inputs.dry_run == true }}
     secrets:
       RELEASE_BOT_PRIVATE_KEY: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
