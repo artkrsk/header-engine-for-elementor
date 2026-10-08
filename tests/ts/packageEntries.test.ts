@@ -26,6 +26,7 @@ writeFileSync(
       target: 'ES2022',
       module: 'ESNext',
       moduleResolution: 'Bundler',
+      customConditions: ['arts-source'],
       lib: ['ES2022', 'DOM', 'DOM.Iterable'],
       strict: true,
       noEmit: true,
@@ -60,6 +61,7 @@ const bundle = (specifier: string, define: Record<string, string> = {}) =>
     format: 'iife',
     globalName: 'Provider',
     platform: 'browser',
+    conditions: ['arts-source'],
     metafile: true,
     logLevel: 'silent',
     define

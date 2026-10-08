@@ -5,9 +5,13 @@ export const init = (): void => {
   const elementorLoaded = elementorEditorLoaded()
   const isElementorEditor = !!window.artsHeaderOptions?.isElementorEditor
 
-  createHeaderApp({ autoInit: !isElementorEditor })
-    .then((instance) => {
+  createHeaderApp({ autoInit: false })
+    .then(async (instance) => {
       window.artsHeaderForElementor = instance
+
+      if (!isElementorEditor) {
+        await instance.init()
+      }
 
       elementorLoaded
         .then((isEditMode) => {

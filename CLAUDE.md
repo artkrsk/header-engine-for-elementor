@@ -48,6 +48,7 @@ repo's entire build config. There is no local `build/` directory.
   the target (a vanished main .php file deactivates it). Restart after branch switches.
 - `pnpm build` — staged release + `dist/*.zip` (assertRelease hard-fails on leaked
   sourcemaps/composer.lock, missing files, version drift, or a zip over `zip.budgetMb`).
+- `pnpm build:library` — ESM/CSS + declarations in `dist/esm` and `dist/types`, without WordPress mirror writes. Default package imports use this output; editable source selects `arts-source` in the bundler and TypeScript. `/styles.scss` and `/styles.css` are explicit to avoid Sass package-import ambiguity.
 - `pnpm release <patch|minor|major|x.y.z>` — bump, stamp, validate changelog, commit, tag.
 - `pnpm test` / `test:coverage` — Vitest over `tests/**/*.test.ts`; coverage lands as
   istanbul-format `coverage-final.json`, which `fallow --coverage` reads.
@@ -440,7 +441,7 @@ subset; `Resize` stays a class there on purpose, matching the original's shape).
 `@artemsemkin/elementor-types` is the lone `dependencies` entry and belongs there: it is type-only
 (every import of it is `import type`, so nothing reaches the bundle), but the library surface's
 type graph reaches it through `containerHandler`, so a consumer compiling this source has to
-resolve it. Dev only: the `@arts/wp-plugin-tooling` CLI + shared configs (it carries
-esbuild/sass/archiver/chokidar transitively — they are not direct deps here), `vite`, `typescript`,
+resolve it. Dev only: the `@arts/wp-plugin-tooling` CLI + shared configs, direct `esbuild`/`sass`
+for the library build, `vite`, `typescript`,
 `vitest` + `happy-dom` + coverage, `@biomejs/biome`, `stylelint`, `lefthook`, `knip`, `fallow`,
 `@types/node`, `lenis` (playground only).

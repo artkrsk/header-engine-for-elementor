@@ -22,6 +22,7 @@ cp .env.example .env   # set DEV_TARGET to your Local site's plugin dir
 | `pnpm dev` | browser harness (Vite playground) |
 | `pnpm dev:plugin` | watch-compile + mirror the plugin to `DEV_TARGET` |
 | `pnpm build` | release build into `dist/` |
+| `pnpm build:library` | ESM/CSS in `dist/esm`, declarations in `dist/types`; no WordPress sync |
 | `pnpm test` / `pnpm test:coverage` | Vitest |
 | `pnpm release <patch\|minor\|major>` | bump, stamp, validate changelog, commit, tag |
 
@@ -41,9 +42,26 @@ WordPress plugin.
 
 The package root `@arts/header` remains the passive library entry with its existing named
 factory API and root type exports. Direct library hosts explicitly create and initialize engines;
-WordPress continues to boot through its separate `boot.ts` bundle. The package ships TypeScript
-source for linked consumers, so a host needs a TypeScript-aware compiler. Existing
-`/package.json`, `/src/ts/*`, and `/src/styles/*` paths remain available for compatibility.
+WordPress continues to boot through its separate `boot.ts` bundle. Default imports use ESM and
+declarations produced by `pnpm build:library`; select `arts-source` in both the bundler and TypeScript
+to compile editable source. `/styles.scss` exposes Sass and `/styles.css` exposes compiled CSS.
+Existing `/package.json`, `/src/ts/*`, and `/src/styles/*` paths remain available for compatibility.
+
+Publish the app before initialization so discovery callbacks can resolve it during startup:
+
+```ts
+import { createHeaderApp } from '@arts/header'
+import '@arts/header/styles.css'
+
+const app = await createHeaderApp({ autoInit: false })
+window.artsHeaderForElementor = app // Declare this key with IHeaderApp in the host's Window type.
+await app.init()
+// AJAX teardown keeps visual state; HMR restores the original DOM.
+await app.destroy(false)
+```
+
+Keep the existing `.js-arts-header` wrapper and bar markup and options contract. Call `init()` again
+after replacing page content to discover its headers; use `destroy(true)` when reverting for HMR.
 
 `pnpm exec vitest run tests/ts/packageEntries.test.ts` checks isolated consumers with
 `skipLibCheck: false`, inspects bundled contract graphs, and invokes the public root factory
