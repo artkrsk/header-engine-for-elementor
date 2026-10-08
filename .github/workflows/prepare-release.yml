@@ -4,15 +4,16 @@ name: Prepare Release
 # the release commit. Merging that PR is the release: cut-release.yml then tags it and the
 # tag starts release.yml (GitHub Release + wp.org SVN).
 #
-# Runs every weekday morning, and on demand. It does nothing (no Claude call, no PR) unless
+# Runs every Tuesday at 06:07 Manila time, and on demand. It does nothing (no Claude call, no PR) unless
 # src/ changed since the last tag and no release PR is already open. Scheduled runs are real;
 # a manual run has dry_run ticked by default, which prints the entry and diff to the job
 # summary and opens nothing.
 
 on:
   schedule:
-    # Weekdays 06:17 UTC. Off the hour on purpose: GitHub delays runs scheduled at :00.
-    - cron: '17 6 * * 1-5'
+    # Tuesday 06:07 Manila (UTC+8, no DST) = Monday 22:07 UTC; cron is UTC. Off the hour on
+    # purpose: GitHub delays runs scheduled at :00.
+    - cron: '7 22 * * 1'
   workflow_dispatch:
     inputs:
       version:
