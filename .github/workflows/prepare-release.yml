@@ -42,6 +42,7 @@ jobs:
       client_id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
       version: ${{ inputs.version }}
       dry_run: ${{ inputs.dry_run == true }}
+      reviewers: artkrsk # request your review on each release PR, so GitHub always notifies you
     secrets:
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
       RELEASE_BOT_PRIVATE_KEY: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
