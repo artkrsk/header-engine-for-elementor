@@ -52,6 +52,21 @@
   initial-value: 0px;
 }
 
+// Header Zone vars (kind / geometry) are engine-READ, written per breakpoint on a marked zone
+// element by Elementor's selectors. Non-inheriting so a nested zone with only a tablet value
+// doesn't pick up its ancestor's desktop kind; registered here for the same first-style-pass
+// reason as the reveal offset. No initial value on purpose: unset reads back empty, which the
+// tracker treats as "use the marker's desktop fallback".
+@property --arts-header-zone {
+  syntax: '*';
+  inherits: false;
+}
+
+@property --arts-header-zone-geometry {
+  syntax: '*';
+  inherits: false;
+}
+
 // Wrapper stacking context shared by every docking mode.
 $z-index: 100;
 

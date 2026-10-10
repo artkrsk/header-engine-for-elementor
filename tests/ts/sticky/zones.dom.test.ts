@@ -25,7 +25,50 @@ const makeTracker = (onChange = vi.fn()) => {
   return { tracker, onChange }
 }
 
+const addPanelZone = (kind: string, geometry: string, top: number, bottom: number): HTMLElement => {
+  const el = addZone('data-arts-header-zone', '', top, bottom)
+  el.style.setProperty('--arts-header-zone', kind)
+  el.style.setProperty('--arts-header-zone-geometry', geometry)
+  return el
+}
+
 describe('createZoneTracker', () => {
+  it('resolves a panel zone kind and geometry from its CSS vars, skipping none', () => {
+    addPanelZone('hide', 'at-top', 1000, 2500)
+    addPanelZone('lock', 'in-view', 4000, 4500)
+    addPanelZone('none', 'at-top', 6000, 7000)
+    const { tracker, onChange } = makeTracker()
+    tracker.evaluate(1200)
+    expect(onChange).toHaveBeenLastCalledWith(true, false)
+    tracker.evaluate(3200)
+    expect(onChange).toHaveBeenLastCalledWith(false, true)
+    tracker.evaluate(6200)
+    expect(onChange).toHaveBeenLastCalledWith(false, false)
+  })
+
+  it('falls back to the desktop kind:geometry in the marker while the vars are unwritten', () => {
+    const el = addZone('data-arts-header-zone', 'lock:in-view', 1000, 2500)
+    const { tracker, onChange } = makeTracker()
+    tracker.evaluate(0)
+    expect(onChange).not.toHaveBeenCalled()
+    tracker.evaluate(1200)
+    expect(onChange).toHaveBeenLastCalledWith(false, true)
+    // An explicit var beats the fallback: tablet-style 'none' switches the zone off.
+    el.style.setProperty('--arts-header-zone', 'none')
+    tracker.refresh(1200)
+    expect(onChange).toHaveBeenLastCalledWith(false, false)
+  })
+
+  it('re-reads the vars on refresh, so a breakpoint change flips the zone', () => {
+    const zone = addPanelZone('hide', 'at-top', 1000, 2500)
+    const { tracker, onChange } = makeTracker()
+    tracker.evaluate(1200)
+    expect(onChange).toHaveBeenLastCalledWith(true, false)
+    zone.style.setProperty('--arts-header-zone', 'none')
+    tracker.refresh(1200)
+    expect(onChange).toHaveBeenLastCalledWith(false, false)
+  })
+
   it('caches doc-space rects at scan and drives both kinds from pure geometry on evaluate', () => {
     addZone('data-arts-header-hide-over', 'at-top', 1000, 2500)
     addZone('data-arts-header-lock-over', 'in-view', 4000, 4500)

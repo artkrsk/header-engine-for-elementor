@@ -29,7 +29,7 @@ const makeHandler = (settings: Record<string, unknown>) => {
   const handler = Object.assign(Object.create(proto) as IContainerHandler, {
     el,
     isLoading: false,
-    getElementSettings: (key: string) => settings[key],
+    getElementSettings: (key?: string) => (key === undefined ? settings : settings[key]),
     getID: () => 'abc123'
   })
   return { handler, el, onInit, onDestroy }
@@ -152,7 +152,7 @@ describe('createContainerHandler', () => {
     expect(el.classList.contains('arts-header__bar_sticky')).toBe(true)
   })
 
-  it('syncs the Header Zone attributes on a non-header container, and clears them on None', () => {
+  it('marks a non-header container as a zone when any breakpoint opts in, and clears it otherwise', () => {
     const settings: Record<string, unknown> = {
       arts_header_enabled: '',
       arts_header_zone: 'hide',
@@ -160,16 +160,16 @@ describe('createContainerHandler', () => {
     }
     const { handler, el } = makeHandler(settings)
     handler.setHeader()
-    expect(el.getAttribute('data-arts-header-hide-over')).toBe('overlap')
-    settings.arts_header_zone = 'lock'
-    settings.arts_header_zone_geometry = 'junk'
-    handler.setHeader()
-    expect(el.getAttribute('data-arts-header-hide-over')).toBeNull()
-    expect(el.getAttribute('data-arts-header-lock-over')).toBe('at-top')
+    expect(el.getAttribute('data-arts-header-zone')).toBe('hide:overlap')
+    // Desktop off, tablet-only opt-in still counts; geometry keys never do.
     settings.arts_header_zone = ''
+    settings.arts_header_zone_tablet = 'lock'
     handler.setHeader()
-    expect(el.getAttribute('data-arts-header-hide-over')).toBeNull()
-    expect(el.getAttribute('data-arts-header-lock-over')).toBeNull()
+    expect(el.getAttribute('data-arts-header-zone')).toBe(':overlap')
+    settings.arts_header_zone_tablet = 'none'
+    settings.arts_header_zone_geometry_mobile = 'hide'
+    handler.setHeader()
+    expect(el.hasAttribute('data-arts-header-zone')).toBe(false)
   })
 
   it('never marks a header container as its own zone', () => {
@@ -179,7 +179,7 @@ describe('createContainerHandler', () => {
       arts_header_zone: 'hide'
     })
     handler.setHeader()
-    expect(el.getAttribute('data-arts-header-hide-over')).toBeNull()
+    expect(el.hasAttribute('data-arts-header-zone')).toBe(false)
   })
 
   it('marks the second header container as secondary in its options JSON', () => {

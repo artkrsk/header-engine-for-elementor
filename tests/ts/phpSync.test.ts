@@ -10,14 +10,15 @@ import {
   BAR_STICKY_CLASS,
   defaultConfig,
   EXTENT_ATTR,
-  HIDE_ZONE_ATTR,
-  LOCK_ZONE_ATTR,
   NON_STICKY_LOGO_ATTR,
   OPTIONS_ATTR,
   STICKY_LOGO_ATTR,
   WRAPPER_CLASS,
   WRAPPER_ELEMENT_ID_PREFIX,
-  WRAPPER_JS_CLASS
+  WRAPPER_JS_CLASS,
+  ZONE_ATTR,
+  ZONE_GEOMETRY_VAR,
+  ZONE_KIND_VAR
 } from '@ts/constants'
 import { describe, expect, it } from 'vitest'
 
@@ -90,11 +91,10 @@ describe('Markup.php mirrors the TS identifier contract', () => {
     expect(markup).toContain(`'${attr}'`)
   })
 
-  it('renders the zone attributes from the Header Zone panel keys', () => {
-    expect(markup).toContain(`'${HIDE_ZONE_ATTR}'`)
-    expect(markup).toContain(`'${LOCK_ZONE_ATTR}'`)
-    expect(markup).toContain("'arts_header_zone'")
-    expect(markup).toContain("'arts_header_zone_geometry'")
+  it('renders the zone marker from the Header Zone panel keys', () => {
+    expect(markup).toContain(`'${ZONE_ATTR}'`)
+    expect(markup).toContain('arts_header_zone')
+    expect(markup).toContain("'hide' === $value || 'lock' === $value")
   })
 
   it.each([
@@ -158,6 +158,15 @@ describe('Controls.php defines the frontend_available panel keys', () => {
     for (const geometry of ['at-top', 'overlap', 'in-view']) {
       expect(controls).toContain(`'${geometry}'`)
     }
+  })
+
+  it('makes both Header Zone controls responsive and writes the engine-read vars', () => {
+    expect(controls).toMatch(/add_responsive_control\(\s*'arts_header_zone',/)
+    expect(controls).toMatch(/add_responsive_control\(\s*'arts_header_zone_geometry',/)
+    expect(controls).toContain(`${ZONE_KIND_VAR}: {{VALUE}}`)
+    expect(controls).toContain(`${ZONE_GEOMETRY_VAR}: {{VALUE}}`)
+    // Smaller breakpoints need an explicit neutral value ('' there means inherit).
+    expect(controls).toContain("'none'")
   })
 
   it('marks every panel key frontend_available', () => {

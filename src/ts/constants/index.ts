@@ -4,7 +4,10 @@ export {
   LOCK_ZONE_ATTR,
   NON_STICKY_LOGO_ATTR,
   OPTIONS_ATTR,
-  STICKY_LOGO_ATTR
+  STICKY_LOGO_ATTR,
+  ZONE_ATTR,
+  ZONE_GEOMETRY_VAR,
+  ZONE_KIND_VAR
 } from './dataAttrs'
 export { defaultConfig } from './defaultConfig'
 export {

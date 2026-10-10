@@ -7,8 +7,6 @@ import {
   BAR_JS_CLASS,
   BAR_STICKY_BOTTOM_CLASS,
   BAR_STICKY_CLASS,
-  HIDE_ZONE_ATTR,
-  LOCK_ZONE_ATTR,
   NON_STICKY_LOGO_ATTR,
   OPTIONS_ATTR,
   STICKY_LOGO_ATTR,
@@ -17,11 +15,15 @@ import {
   VALUE_HOST_JS_CLASS,
   WRAPPER_CLASS,
   WRAPPER_ELEMENT_ID_PREFIX,
-  WRAPPER_JS_CLASS
+  WRAPPER_JS_CLASS,
+  ZONE_ATTR
 } from '../constants'
 import type { IContainerHandler } from '../interfaces'
 import type { TOnDestroyCallback, TOnInitCallback } from '../types'
 import { mapPanelSettings } from './mapPanelSettings'
+
+/** `arts_header_zone` plus its per-breakpoint twins, but not `arts_header_zone_geometry*`. */
+const ZONE_KEY_PATTERN = /^arts_header_zone(?:_(?!geometry)\w+)?$/
 
 /** Wrap `el` in the header wrapper div, or adopt an existing one; identification matches unwrap. */
 const wrapHeaderBar = (el: HTMLElement, elementId: string | number): HTMLElement | null => {
@@ -186,22 +188,25 @@ export const createContainerHandler = (onInit: TOnInitCallback, onDestroy: TOnDe
     },
 
     // The editor mirror of Markup::add_zone_attributes — containers render client-side in the
-    // editor, so PHP never gets to print the zone attribute there. The zones MutationObserver
-    // picks the change up; no engine involvement needed.
+    // editor, so PHP never gets to print the marker there. Kind and geometry are responsive CSS
+    // vars the zone tracker resolves at scan time; the marker flips when ANY breakpoint opts in.
     setZoneAttributes(this: IContainerHandler, headerEnabled: boolean) {
-      this.el.removeAttribute(HIDE_ZONE_ATTR)
-      this.el.removeAttribute(LOCK_ZONE_ATTR)
-      if (headerEnabled) {
-        return
+      const isZone =
+        !headerEnabled &&
+        Object.entries(this.getElementSettings() ?? {}).some(
+          ([key, value]) => ZONE_KEY_PATTERN.test(key) && (value === 'hide' || value === 'lock')
+        )
+      // Always a remove + set, never a no-op toggle: the attribute mutation is what makes the
+      // zones observer rescan after a kind/geometry var change.
+      this.el.removeAttribute(ZONE_ATTR)
+      if (isZone) {
+        // Value = the desktop `kind:geometry`, the tracker's fallback for a var not yet written.
+        const kind = this.getElementSettings('arts_header_zone')
+        this.el.setAttribute(
+          ZONE_ATTR,
+          `${kind === 'hide' || kind === 'lock' ? kind : ''}:${this.getElementSettings('arts_header_zone_geometry') ?? ''}`
+        )
       }
-      const zone = this.getElementSettings('arts_header_zone')
-      if (zone !== 'hide' && zone !== 'lock') {
-        return
-      }
-      const geometryRaw = this.getElementSettings('arts_header_zone_geometry')
-      const geometry =
-        geometryRaw === 'overlap' || geometryRaw === 'in-view' ? geometryRaw : 'at-top'
-      this.el.setAttribute(zone === 'hide' ? HIDE_ZONE_ATTR : LOCK_ZONE_ATTR, geometry)
     },
 
     toggleHeaderBarAttributes(this: IContainerHandler, toggle = true) {

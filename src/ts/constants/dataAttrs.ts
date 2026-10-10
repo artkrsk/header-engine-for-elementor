@@ -11,6 +11,16 @@ export const HIDE_ZONE_ATTR = 'data-arts-header-hide-over'
 export const LOCK_ZONE_ATTR = 'data-arts-header-lock-over'
 
 /**
+ * Presence-only marker the Header Zone panel renders: the zone kind and geometry are NOT in the
+ * attribute (they're responsive), they're read from the two CSS vars below at scan time.
+ */
+export const ZONE_ATTR = 'data-arts-header-zone'
+
+/** Engine-READ vars Elementor's selectors write per breakpoint on a marked zone element. */
+export const ZONE_KIND_VAR = '--arts-header-zone'
+export const ZONE_GEOMETRY_VAR = '--arts-header-zone-geometry'
+
+/**
  * Logo version tokens on the wrapper — written by the editor handler in the preview and by
  * `Markup.php` on the frontend; read by CSS only, never by JS.
  */

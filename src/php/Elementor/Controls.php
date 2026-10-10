@@ -13,6 +13,7 @@ use Elementor\Group_Control_Background;
 use Elementor\Group_Control_Border;
 use Elementor\Group_Control_Box_Shadow;
 use Elementor\Group_Control_Css_Filter;
+use Elementor\Plugin as ElementorPlugin;
 
 /**
  * Injects the "Create Header" section into the Container's Layout tab plus
@@ -400,8 +401,9 @@ class Controls {
 	/**
 	 * The inverse of Create Header: marks CONTENT the header reacts to. Injected into every
 	 * Container that is NOT a header (a container is either a header or a zone, never both).
-	 * The keys are PHP-rendered as data attributes (see Markup::add_zone_attributes); the
-	 * engine's body-wide MutationObserver picks up editor re-renders — no editor JS involved.
+	 * Both controls are responsive and write CSS vars; a presence-only marker attribute is
+	 * PHP-rendered (see Markup::add_zone_attributes) and the engine's body-wide MutationObserver
+	 * picks up editor re-renders — no editor JS involved.
 	 */
 	public function add_header_zone_section_controls( Element_Base $element ): void {
 		$element->start_controls_section(
@@ -413,23 +415,50 @@ class Controls {
 			)
 		);
 
-		$element->add_control(
+		$zone_options = array(
+			'hide' => esc_html__( 'Hide Header', 'artem-semkin-header-engine-for-elementor' ),
+			'lock' => esc_html__( 'Reveal & Lock Header', 'artem-semkin-header-engine-for-elementor' ),
+		);
+
+		// Elementor emits no CSS for an empty value, and on a smaller breakpoint empty means
+		// "inherit" — so those devices get an explicit 'none' to switch an inherited zone off.
+		// Desktop keeps '' = None, which is what existing saved layouts hold.
+		$device_args        = array();
+		$active_breakpoints = ElementorPlugin::$instance->breakpoints->get_active_breakpoints();
+		foreach ( is_array( $active_breakpoints ) ? array_keys( $active_breakpoints ) : array() as $device ) {
+			$device_args[ (string) $device ] = array(
+				'options' => array_merge(
+					array(
+						''     => esc_html__( 'Inherit', 'artem-semkin-header-engine-for-elementor' ),
+						'none' => esc_html__( 'None', 'artem-semkin-header-engine-for-elementor' ),
+					),
+					$zone_options
+				),
+			);
+		}
+
+		// Both write CSS vars the engine's zone tracker reads at scan time (the data attribute is
+		// rendered once, so it can't carry per-breakpoint values).
+		$element->add_responsive_control(
 			'arts_header_zone',
 			array(
 				'label'              => esc_html__( 'While Scrolling Over This', 'artem-semkin-header-engine-for-elementor' ),
 				'type'               => Controls_Manager::SELECT,
-				'options'            => array(
-					''     => esc_html__( 'None', 'artem-semkin-header-engine-for-elementor' ),
-					'hide' => esc_html__( 'Hide Header', 'artem-semkin-header-engine-for-elementor' ),
-					'lock' => esc_html__( 'Reveal & Lock Header', 'artem-semkin-header-engine-for-elementor' ),
+				'options'            => array_merge(
+					array( '' => esc_html__( 'None', 'artem-semkin-header-engine-for-elementor' ) ),
+					$zone_options
 				),
+				'device_args'        => $device_args,
 				'default'            => '',
+				'selectors'          => array(
+					'{{WRAPPER}}' => '--arts-header-zone: {{VALUE}};',
+				),
 				'frontend_available' => true,
 				'render_type'        => 'template',
 			)
 		);
 
-		$element->add_control(
+		$element->add_responsive_control(
 			'arts_header_zone_geometry',
 			array(
 				'label'              => esc_html__( 'Zone Counts When', 'artem-semkin-header-engine-for-elementor' ),
@@ -440,9 +469,12 @@ class Controls {
 					'in-view' => esc_html__( 'It Is In View', 'artem-semkin-header-engine-for-elementor' ),
 				),
 				'default'            => 'at-top',
+				'selectors'          => array(
+					'{{WRAPPER}}' => '--arts-header-zone-geometry: {{VALUE}};',
+				),
 				'frontend_available' => true,
 				'render_type'        => 'template',
-				'condition'          => array( 'arts_header_zone!' => '' ),
+				'condition'          => array( 'arts_header_zone!' => array( '', 'none' ) ),
 			)
 		);
 

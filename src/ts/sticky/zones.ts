@@ -1,4 +1,10 @@
-import { HIDE_ZONE_ATTR, LOCK_ZONE_ATTR } from '../constants'
+import {
+  HIDE_ZONE_ATTR,
+  LOCK_ZONE_ATTR,
+  ZONE_ATTR,
+  ZONE_GEOMETRY_VAR,
+  ZONE_KIND_VAR
+} from '../constants'
 import type { TZoneKind, TZoneMode } from '../types'
 import { coalesceToFrame } from '../utils'
 
@@ -13,6 +19,10 @@ import { coalesceToFrame } from '../utils'
 /** Parse a zone attribute value; anything unrecognized falls back to `at-top`. */
 export const readZoneMode = (raw: string | null): TZoneMode =>
   raw === 'overlap' || raw === 'in-view' ? raw : 'at-top'
+
+/** Parse the resolved kind var of a marked zone; `none`, unset, or anything else is no zone. */
+export const readZoneKind = (raw: string): TZoneKind | null =>
+  raw === 'hide' || raw === 'lock' ? raw : null
 
 /**
  * Zone activity per geometry, in document space. `at-top`: the zone spans the viewport's top
@@ -83,6 +93,26 @@ export function createZoneTracker(args: {
     }
     collect(HIDE_ZONE_ATTR, 'hide')
     collect(LOCK_ZONE_ATTR, 'lock')
+    // Panel zones: kind and geometry are responsive CSS vars, so the values resolved at THIS scan
+    // decide (a settled resize re-scans through the measure pass). A var Elementor hasn't written
+    // yet (stale generated CSS after an update) falls back to the desktop value in the marker.
+    for (const element of document.querySelectorAll<HTMLElement>(`[${ZONE_ATTR}]`)) {
+      const style = getComputedStyle(element)
+      const [fallbackKind = '', fallbackGeometry = ''] = (
+        element.getAttribute(ZONE_ATTR) ?? ''
+      ).split(':')
+      const kind = readZoneKind(style.getPropertyValue(ZONE_KIND_VAR).trim() || fallbackKind)
+      if (kind) {
+        zones.push({
+          element,
+          kind,
+          mode: readZoneMode(style.getPropertyValue(ZONE_GEOMETRY_VAR).trim() || fallbackGeometry),
+          top: 0,
+          bottom: 0,
+          active: false
+        })
+      }
+    }
     for (const zone of zones) {
       const rect = zone.element.getBoundingClientRect()
       zone.top = Math.round(rect.top + window.scrollY)
@@ -121,7 +151,7 @@ export function createZoneTracker(args: {
   mutationObserver.observe(document.body, {
     attributes: true,
     subtree: true,
-    attributeFilter: [HIDE_ZONE_ATTR, LOCK_ZONE_ATTR]
+    attributeFilter: [HIDE_ZONE_ATTR, LOCK_ZONE_ATTR, ZONE_ATTR]
   })
 
   scan()

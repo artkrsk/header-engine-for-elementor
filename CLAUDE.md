@@ -124,7 +124,8 @@ each measure pass. Tick deciders and sub-modules:
   callback so consumers can resolve it without another viewport read.
 - `zones` — doc-space zone rects cached at scan/refresh, per-tick pure geometry
   (`resolveZoneActive`: at-top / overlap / in-view); a body-wide MutationObserver rAF-coalesces
-  attribute-driven rescans. Trade-off (accepted): zone liveness is settle-based — a rect that
+  attribute-driven rescans; panel zones resolve kind/geometry from computed CSS vars at scan, so a
+  breakpoint change takes effect on the settled resize's measure pass. Trade-off (accepted): zone liveness is settle-based — a rect that
   changes mid-scroll lags until the next settled measure.
 
 `heightObserver/` publishes live + settled rest bar heights as CSS vars (border-box RO), told about
@@ -260,9 +261,16 @@ an empty `array()` encodes as `[]`, not `{}` — a section that can go empty nee
 - **Data attributes** (`constants/dataAttrs.ts`): `data-arts-header-options` (JSON);
   `data-arts-header-extent` (any element inside the bar: its bottom edge counts toward the rest
   clearance var while it is `visibility`-visible; the consumer's markup writes it);
-  `data-arts-header-hide-over` / `data-arts-header-lock-over` (zones, `at-top|overlap|in-view`;
-  panel: the "Header Zone" section on any NON-header Container — `arts_header_zone` +
-  `arts_header_zone_geometry`, PHP-rendered, editor liveness via the zones MutationObserver);
+  `data-arts-header-hide-over` / `data-arts-header-lock-over` (hand-authored zones,
+  `at-top|overlap|in-view`); panel zones are the "Header Zone" section on any NON-header
+  Container — RESPONSIVE `arts_header_zone` (desktop `''` None; smaller breakpoints get
+  `''` Inherit + explicit `none`, since Elementor emits no CSS for empty) +
+  `arts_header_zone_geometry`. They write `--arts-header-zone` / `--arts-header-zone-geometry`
+  through selectors (engine-READ, `@property` non-inheriting in `_tokens.scss`, no initial value),
+  and a marker `data-arts-header-zone="<desktop kind>:<desktop geometry>"` (PHP + editor handler,
+  rendered when ANY breakpoint is hide/lock) tells the tracker which elements to resolve at scan
+  time. The marker value is the fallback for a var Elementor hasn't written yet (generated CSS
+  predating the responsive controls), so existing sites need no CSS regeneration;
   `data-arts-header-non-sticky-logo` / `data-arts-header-sticky-logo` (written by the editor
   handler in the preview and by `Markup.php` on the frontend; CSS-read, never JS-read).
 - **Structural classes** (`constants/dom.ts`): wrapper/bar classes, the editor's

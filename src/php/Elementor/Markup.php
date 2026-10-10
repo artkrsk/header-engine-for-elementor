@@ -163,8 +163,11 @@ class Markup {
 	}
 
 	/**
-	 * Renders the Header Zone attributes on a non-header Container — the engine's zone tracker
-	 * reads them from ANY element; the body-wide MutationObserver makes editor re-renders live.
+	 * Marks a non-header Container as a Header Zone when ANY breakpoint opts in. Kind and geometry
+	 * are responsive, so Elementor's selectors write them as CSS vars (see
+	 * Controls::add_header_zone_section_controls) and the engine's zone tracker reads the resolved
+	 * values at scan time; the marker's value is only the desktop fallback for a var that isn't
+	 * written yet (generated CSS predating the responsive controls). The body-wide MutationObserver makes editor re-renders live.
 	 */
 	public function add_zone_attributes( Element_Base $element ): void {
 		if ( ! ( $element instanceof Container ) ) {
@@ -173,17 +176,23 @@ class Markup {
 
 		$settings = (array) $element->get_settings_for_display();
 
-		$zone = $settings['arts_header_zone'] ?? '';
-		if ( ( 'hide' !== $zone && 'lock' !== $zone ) || ! empty( $settings['arts_header_enabled'] ) ) {
+		if ( ! empty( $settings['arts_header_enabled'] ) ) {
 			return;
 		}
 
-		$geometry_raw = $settings['arts_header_zone_geometry'] ?? 'at-top';
-		$geometry     = in_array( $geometry_raw, array( 'at-top', 'overlap', 'in-view' ), true ) ? $geometry_raw : 'at-top';
-
-		$attribute = 'hide' === $zone ? 'data-arts-header-hide-over' : 'data-arts-header-lock-over';
-
-		$element->add_render_attribute( '_wrapper', array( $attribute => $geometry ) );
+		foreach ( $settings as $key => $value ) {
+			// 'arts_header_zone' plus its per-breakpoint twins, but not 'arts_header_zone_geometry*'.
+			if ( 1 === preg_match( '/^arts_header_zone(?:_(?!geometry)\w+)?$/', (string) $key ) && ( 'hide' === $value || 'lock' === $value ) ) {
+				// Value = the desktop kind:geometry, the tracker's fallback for a var not yet written.
+				$kind     = $settings['arts_header_zone'] ?? '';
+				$geometry = $settings['arts_header_zone_geometry'] ?? '';
+				$element->add_render_attribute(
+					'_wrapper',
+					array( 'data-arts-header-zone' => ( 'hide' === $kind || 'lock' === $kind ? $kind : '' ) . ':' . ( is_string( $geometry ) ? $geometry : '' ) )
+				);
+				return;
+			}
+		}
 	}
 
 	private function is_header_element( Element_Base $element ): bool {

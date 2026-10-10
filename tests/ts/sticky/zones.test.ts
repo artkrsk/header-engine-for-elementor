@@ -1,4 +1,4 @@
-import { readZoneMode, reduceZones, resolveZoneActive } from '@ts/sticky/zones'
+import { readZoneKind, readZoneMode, reduceZones, resolveZoneActive } from '@ts/sticky/zones'
 import { describe, expect, it } from 'vitest'
 
 describe('readZoneMode', () => {
@@ -12,6 +12,16 @@ describe('readZoneMode', () => {
     expect(readZoneMode('bounce')).toBe('at-top')
     expect(readZoneMode(null)).toBe('at-top')
     expect(readZoneMode('')).toBe('at-top')
+  })
+})
+
+describe('readZoneKind', () => {
+  it('accepts only hide and lock; none, unset and junk are no zone', () => {
+    expect(readZoneKind('hide')).toBe('hide')
+    expect(readZoneKind('lock')).toBe('lock')
+    expect(readZoneKind('none')).toBeNull()
+    expect(readZoneKind('')).toBeNull()
+    expect(readZoneKind('shrink')).toBeNull()
   })
 })
 
