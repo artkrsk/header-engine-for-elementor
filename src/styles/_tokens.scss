@@ -8,6 +8,11 @@
 // - `--arts-header-height`            live bar height, written on `<html>` (heightObserver)
 // - `--arts-header-height-non-sticky` settled rest height, written on `<html>` (heightObserver);
 //                                     also seeded pre-paint by the consumer for sticky-boot loads
+// - `--arts-header-clearance-non-sticky` rest clearance, written on `<html>` (heightObserver): the
+//                                     lowest edge the bar's content reaches from its top, counting
+//                                     visible `[data-arts-header-extent]` descendants the bar's
+//                                     box does not contain; equals the rest height when none is
+//                                     marked; seeded pre-paint with it
 // - `--arts-header-natural-height`    the wrapper's rest height, written on the wrapper and
 //                                     frozen while stuck — the flow modes consume it as a
 //                                     constant slot so a sticky bar resize never reflows the page

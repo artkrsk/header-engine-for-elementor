@@ -2,6 +2,7 @@
 
 ## 1.0.3
 
+* added: a `--arts-header-clearance-non-sticky` variable and a "Header Clearance (Non-Sticky)" preset: how far the header's content reaches from its top, counting elements marked `data-arts-header-extent` that the bar's box does not contain (such as a dropdown list hanging out of a fixed-height row), so page content can clear what the header paints.
 * added: a getInstance( element ) lookup on the global app, resolving the header instance that owns any element inside a managed header.
 * fixed: a lock-over or hide-over zone change no longer drops a lock held through lockSticky(), and lockSticky( false ) no longer releases an active lock-over zone.
 * fixed: header offsets and spacing set in viewport units now update correctly when the browser window is resized, particularly in Safari.

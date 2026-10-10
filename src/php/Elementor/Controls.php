@@ -903,6 +903,11 @@ class Controls {
 				'value' => 'var(--arts-header-height-non-sticky)',
 				'title' => esc_html__( 'Header Height (Non-Sticky)', 'artem-semkin-header-engine-for-elementor' ),
 			),
+			array(
+				'id'    => 'arts-header-clearance-non-sticky',
+				'value' => 'var(--arts-header-clearance-non-sticky, var(--arts-header-height-non-sticky))',
+				'title' => esc_html__( 'Header Clearance (Non-Sticky)', 'artem-semkin-header-engine-for-elementor' ),
+			),
 		);
 	}
 

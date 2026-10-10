@@ -9,6 +9,7 @@ import {
   BAR_STICKY_BOTTOM_CLASS,
   BAR_STICKY_CLASS,
   defaultConfig,
+  EXTENT_ATTR,
   HIDE_ZONE_ATTR,
   LOCK_ZONE_ATTR,
   NON_STICKY_LOGO_ATTR,
@@ -77,6 +78,8 @@ describe('Markup.php mirrors the TS identifier contract', () => {
   it('seeds both engine height vars and the height class pre-paint', () => {
     expect(markup).toContain(defaultConfig.vars.headerHeight)
     expect(markup).toContain(defaultConfig.vars.headerHeightNonSticky)
+    expect(markup).toContain(defaultConfig.vars.clearanceNonSticky)
+    expect(markup).toContain(EXTENT_ATTR)
     expect(markup).toContain(defaultConfig.classes.hasHeaderHeight)
   })
 

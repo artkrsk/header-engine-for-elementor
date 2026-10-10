@@ -176,7 +176,7 @@ describe('createHeaderApp', () => {
     // ...but its reveal offset chains to the PRIMARY's height var.
     secondary.container.style.setProperty('--arts-header-reveal-offset', '500px')
     // The primary's height corrects after boot; only its own publisher observes that.
-    primary.bar.getBoundingClientRect = () => ({ height: 64 }) as DOMRect
+    primary.bar.getBoundingClientRect = () => ({ top: 0, bottom: 64, height: 64 }) as DOMRect
     const primaryHeightRO = ro.filter((o) => o.observed.some((e) => e.target === primary.bar))[1]
     expect(primaryHeightRO).toBeDefined()
     primaryHeightRO?.callback([], {} as ResizeObserver)

@@ -3,6 +3,7 @@ export interface IResolvedConfig {
   vars: {
     headerHeight: string
     headerHeightNonSticky: string
+    clearanceNonSticky: string
     naturalHeight: string
     releaseTop: string
     revealOffset: string

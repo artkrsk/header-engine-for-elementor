@@ -9,6 +9,7 @@ export const defaultConfig: IResolvedConfig = {
   vars: {
     headerHeight: '--arts-header-height',
     headerHeightNonSticky: '--arts-header-height-non-sticky',
+    clearanceNonSticky: '--arts-header-clearance-non-sticky',
     naturalHeight: '--arts-header-natural-height',
     releaseTop: '--arts-header-release-top',
     // The one engine-READ var in this config: Elementor/theme writes it, the engine resolves it

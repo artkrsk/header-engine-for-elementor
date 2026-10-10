@@ -197,7 +197,7 @@ class Markup {
 	}
 
 	/**
-	 * Pre-paint seed: sets the two height vars + the has-header-height class
+	 * Pre-paint seed: sets the two height vars, the rest clearance var + the has-header-height class
 	 * synchronously, immediately after the header markup, so first paint has
 	 * the correct layout and the engine's height observer can trust the
 	 * seeded non-sticky value on scroll-restored loads.
@@ -209,8 +209,17 @@ class Markup {
 				var bar = document.querySelector('.arts-header_elementor-element-<?php echo esc_attr( $element_id ); ?> .arts-header__bar');
 				if (!bar) { return; }
 				var height = bar.clientHeight;
+				// Clearance: the lowest edge the bar's content reaches, counting visible marked
+				// descendants the bar's box does not contain (a dropdown hanging out of a locked row).
+				var rect = bar.getBoundingClientRect();
+				var bottom = rect.bottom;
+				bar.querySelectorAll('[data-arts-header-extent]').forEach(function(el) {
+					if (typeof el.checkVisibility === 'function' && !el.checkVisibility({ visibilityProperty: true })) { return; }
+					bottom = Math.max(bottom, el.getBoundingClientRect().bottom);
+				});
 				document.documentElement.style.setProperty('--arts-header-height', height + 'px');
 				document.documentElement.style.setProperty('--arts-header-height-non-sticky', height + 'px');
+				document.documentElement.style.setProperty('--arts-header-clearance-non-sticky', Math.round(bottom - rect.top) + 'px');
 				document.documentElement.classList.add('has-header-height');
 			})();
 		</script>

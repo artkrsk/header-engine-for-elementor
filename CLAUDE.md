@@ -238,7 +238,14 @@ an empty `array()` encodes as `[]`, not `{}` — a section that can go empty nee
   registered (it always resolves to a plain px token), read at the same measure passes as the pin
   line's admin-bar term; see the admin-bar note under Gotchas.
 - **Engine-written vars** (`defaultConfig.vars`): `--arts-header-height`,
-  `--arts-header-height-non-sticky` (both on `<html>`), `--arts-header-release-top` and
+  `--arts-header-height-non-sticky` (both on `<html>`), `--arts-header-clearance-non-sticky` (on
+  `<html>`, captured with the rest height and never while sticking, seeded pre-paint with it: the
+  lowest edge the bar's content reaches from the bar's top — `measureClearance` — counting visible
+  `[data-arts-header-extent]` descendants the bar's box does not contain, a dropdown hanging out of
+  a height-locked row; equal to the rest height when nothing is marked; a `visibility`-hidden
+  marked element adds nothing, so a collapsed list is skipped without the engine knowing why; the
+  marked elements are observed beside the bar, and every delivery re-arms the settled capture),
+  `--arts-header-release-top` and
   `--arts-header-natural-height` (both header-scoped; natural-height = the wrapper's rest height,
   frozen while stuck — the flow modes consume it as a constant slot).
   SCSS-only styling vars: `--arts-header-top` (the DOCUMENT-space admin-bar allowance;
@@ -251,6 +258,8 @@ an empty `array()` encodes as `[]`, not `{}` — a section that can go empty nee
 - **Selectors**: `.js-arts-header` / `.js-arts-header__bar` — JS hooks, invisible to CSS by design;
   the styled twins are `.arts-header` / `.arts-header__bar`.
 - **Data attributes** (`constants/dataAttrs.ts`): `data-arts-header-options` (JSON);
+  `data-arts-header-extent` (any element inside the bar: its bottom edge counts toward the rest
+  clearance var while it is `visibility`-visible; the consumer's markup writes it);
   `data-arts-header-hide-over` / `data-arts-header-lock-over` (zones, `at-top|overlap|in-view`;
   panel: the "Header Zone" section on any NON-header Container — `arts_header_zone` +
   `arts_header_zone_geometry`, PHP-rendered, editor liveness via the zones MutationObserver);

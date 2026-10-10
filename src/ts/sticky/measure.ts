@@ -1,3 +1,4 @@
+import { EXTENT_ATTR } from '../constants/dataAttrs'
 import { VALUE_HOST_JS_CLASS } from '../constants/dom'
 import type { TPinLine } from '../types/TPinLine'
 
@@ -10,6 +11,30 @@ import type { TPinLine } from '../types/TPinLine'
 /** The bar's rendered border-box height, rounded to whole pixels. */
 export const measureBar = (bar: HTMLElement): number =>
   Math.round(bar.getBoundingClientRect().height)
+
+/** Whether a marked element currently paints (`visibility`); engines without the API say yes. */
+const isExtentVisible = (el: HTMLElement): boolean =>
+  typeof el.checkVisibility === 'function' ? el.checkVisibility({ visibilityProperty: true }) : true
+
+/**
+ * The lowest edge the bar's content reaches, from the bar's top, rounded to whole pixels: the
+ * bar's own bottom or the bottom of a visible `[data-arts-header-extent]` descendant, whichever is
+ * lower. A list hanging out of a height-locked row counts here though the bar's box does not.
+ * Equals `measureBar` when nothing is marked. One rect read per element — call it in the same
+ * pass as `measureBar`, before any write; `rect` is that pass's bar rect, to skip the re-read.
+ */
+export const measureClearance = (
+  bar: HTMLElement,
+  rect: DOMRect = bar.getBoundingClientRect()
+): number => {
+  let bottom = rect.bottom
+  for (const el of bar.querySelectorAll<HTMLElement>(`[${EXTENT_ATTR}]`)) {
+    if (isExtentVisible(el)) {
+      bottom = Math.max(bottom, el.getBoundingClientRect().bottom)
+    }
+  }
+  return Math.round(bottom - rect.top)
+}
 
 /** The styles' viewport-pinned admin-bar allowance (see `_modes.scss`). */
 const PINNED_TOP_VAR = '--arts-header-top-pinned'

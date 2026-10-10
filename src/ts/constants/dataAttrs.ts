@@ -16,3 +16,10 @@ export const LOCK_ZONE_ATTR = 'data-arts-header-lock-over'
  */
 export const NON_STICKY_LOGO_ATTR = 'data-arts-header-non-sticky-logo'
 export const STICKY_LOGO_ATTR = 'data-arts-header-sticky-logo'
+
+/**
+ * Marks an element inside the bar whose bottom edge counts toward the rest CLEARANCE var: a list
+ * the bar's box does not contain (a dropdown hanging out of a height-locked row). Hidden
+ * (`visibility`) marked elements are skipped, so a collapsed list adds nothing.
+ */
+export const EXTENT_ATTR = 'data-arts-header-extent'

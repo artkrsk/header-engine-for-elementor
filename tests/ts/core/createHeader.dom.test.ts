@@ -164,7 +164,7 @@ describe('createHeader', () => {
     vi.advanceTimersByTime(150)
     expect(document.documentElement.style.getPropertyValue('--arts-header-height')).toBe('80px')
     scrollTo(50)
-    bar.getBoundingClientRect = () => ({ height: 64 }) as DOMRect
+    bar.getBoundingClientRect = () => ({ top: 0, bottom: 64, height: 64 }) as DOMRect
     scrollTo(0)
     // Unstick → handleStickyChange(false) → re-measure (zero transition duration in happy-dom).
     expect(document.documentElement.style.getPropertyValue('--arts-header-height')).toBe('64px')
@@ -181,7 +181,7 @@ describe('createHeader', () => {
     scrollTo(50)
     // A chained reveal offset re-resolves against the fresh height var...
     container.style.setProperty('--arts-header-reveal-offset', '500px')
-    bar.getBoundingClientRect = () => ({ height: 64 }) as DOMRect
+    bar.getBoundingClientRect = () => ({ top: 0, bottom: 64, height: 64 }) as DOMRect
     // ...but only the height publisher's observer fires (the sticky's own bar RO would
     // re-measure anyway and mask the wiring under test).
     const heightObserverRecord = ro.filter((o) => o.observed.some((e) => e.target === bar))[1]

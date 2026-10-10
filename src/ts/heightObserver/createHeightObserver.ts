@@ -1,5 +1,6 @@
-import { SETTLE_DEBOUNCE_MS } from '../constants'
+import { EXTENT_ATTR, SETTLE_DEBOUNCE_MS } from '../constants'
 import type { IHeightObserver, IHeightObserverArgs } from '../interfaces'
+import { measureClearance } from '../sticky/measure'
 import { debounce, Resize, readTransitionDurationMs } from '../utils'
 
 /** Set a px var on `<html>`; an empty configured name is a deliberate opt-out. */
@@ -21,8 +22,8 @@ const toggleRootClass = (className: string, toggle: boolean): void => {
   }
 }
 
-/** Read the pre-paint inline non-sticky height var; 0 when absent or invalid. */
-const readSeededNonStickyHeight = (varName: string): number => {
+/** Read a pre-paint inline rest var (height or clearance); 0 when absent or invalid. */
+const readSeededRestVar = (varName: string): number => {
   if (!varName.length) {
     return 0
   }
@@ -31,7 +32,11 @@ const readSeededNonStickyHeight = (varName: string): number => {
 }
 
 /**
- * Publishes the bar's live and rest heights as CSS custom properties on `<html>`. The live height
+ * Publishes the bar's live and rest heights as CSS custom properties on `<html>`, plus the rest
+ * CLEARANCE: how far the bar's content reaches from its top, counting visible
+ * `[data-arts-header-extent]` descendants the bar's box does not contain (a dropdown list hanging
+ * out of a height-locked row), so a template can clear what the header paints rather than what it
+ * measures. Captured with the rest height, never while sticking, and seeded the same way. The live height
  * tracks a border-box ResizeObserver (the padding-driven sticky shrink fires it too); the
  * non-sticky (rest) height is captured separately once settled, so mid-transition frames never
  * corrupt the stable value, and is seeded from the pre-paint inline CSS var so a scroll-restored
@@ -47,10 +52,12 @@ export function createHeightObserver(args: IHeightObserverArgs): IHeightObserver
   const { bar, options, config, isSticking, initialHeight } = args
   const varCurrent = config.vars.headerHeight
   const varNonSticky = config.vars.headerHeightNonSticky
+  const varClearance = config.vars.clearanceNonSticky
   const heightClass = config.classes.hasHeaderHeight
 
   let height = 0
-  let heightNonSticky = readSeededNonStickyHeight(varNonSticky)
+  let heightNonSticky = readSeededRestVar(varNonSticky)
+  let clearanceNonSticky = readSeededRestVar(varClearance)
   let resize: Resize | null = null
   let destroyed = false
   let suppressed = false
@@ -62,6 +69,9 @@ export function createHeightObserver(args: IHeightObserverArgs): IHeightObserver
     // and 0 would stomp the correct pre-paint value.
     if (heightNonSticky > 0) {
       setRootVar(varNonSticky, heightNonSticky)
+    }
+    if (clearanceNonSticky > 0) {
+      setRootVar(varClearance, clearanceNonSticky)
     }
   }
 
@@ -78,9 +88,11 @@ export function createHeightObserver(args: IHeightObserverArgs): IHeightObserver
     }
   }
 
-  const setHeightNonSticky = (value: number): void => {
-    if (value !== heightNonSticky) {
+  // One write and one settle signal for the pair, whichever of the two moved.
+  const setRest = (value: number, clearance: number): void => {
+    if (value !== heightNonSticky || clearance !== clearanceNonSticky) {
       heightNonSticky = value
+      clearanceNonSticky = clearance
       updateCSSVars()
       notifyVarsSettled()
     }
@@ -91,7 +103,9 @@ export function createHeightObserver(args: IHeightObserverArgs): IHeightObserver
   // the state already unpublished but the bar is still animating).
   const measureNonStickySettled = debounce((): void => {
     if (!isSticking()) {
-      setHeightNonSticky(Math.round(bar.getBoundingClientRect().height))
+      // Both reads before either write: the write would dirty the page and make the second read flush.
+      const rect = bar.getBoundingClientRect()
+      setRest(Math.round(rect.height), varClearance.length ? measureClearance(bar, rect) : 0)
     }
   }, SETTLE_DEBOUNCE_MS)
 
@@ -109,15 +123,20 @@ export function createHeightObserver(args: IHeightObserverArgs): IHeightObserver
   // Rounded like measureBar, so sub-pixel jitter never turns into a root var write. Null when
   // the entry shape is unavailable (old engines, test fakes) — the caller reads then.
   const readEntryHeight = (entries: ResizeObserverEntry[]): number | null => {
-    const blockSize = entries[entries.length - 1]?.borderBoxSize?.[0]?.blockSize
+    const blockSize = entries.find((entry) => entry.target === bar)?.borderBoxSize?.[0]?.blockSize
     return blockSize === undefined ? null : Math.round(blockSize)
   }
 
   updateValue(initialHeight)
   updateCSSVars()
   if (options.observe) {
+    // The marked descendants resize without the bar doing so (a list taller than its locked row),
+    // so they are observed too: any delivery re-arms the settled rest capture, which reads both.
+    const extents = varClearance.length
+      ? Array.from(bar.querySelectorAll<HTMLElement>(`[${EXTENT_ATTR}]`))
+      : []
     resize = new Resize({
-      elements: [bar],
+      elements: [bar, ...extents],
       callbackResize: (_targets, entries) => {
         // Endpoint publishing: the bar's own state transition resizes it every frame, and each
         // root var write would style-recalc every consumer — the flip's scheduled settle write
@@ -167,6 +186,7 @@ export function createHeightObserver(args: IHeightObserverArgs): IHeightObserver
       if (revert && options.cleanupOnDestroy) {
         removeRootVar(varCurrent)
         removeRootVar(varNonSticky)
+        removeRootVar(varClearance)
         toggleRootClass(heightClass, false)
       }
     }
