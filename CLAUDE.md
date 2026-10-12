@@ -310,7 +310,11 @@ an empty `array()` encodes as `[]`, not `{}` — a section that can go empty nee
   `window.artsHeaderOptions.isElementorEditor`.
 - **Widget**: `arts-header-dual-site-logo` (name frozen — saved layouts reference it); secondary
   logo lives in the `arts_header_custom_logo_secondary` theme mod, two-way synced with the kit's
-  `site_secondary_logo` (`Elementor/Backend.php`).
+  `site_secondary_logo` (`Elementor/Backend.php`). Its section id `site_identity_section` is
+  frozen too: Velum adds its On-Scroll Animation section after it through Elementor's
+  `elementor/element/arts-header-dual-site-logo/site_identity_section/after_section_end`, and
+  prints its entrance attributes on the outer `.elementor-widget` through Elementor's
+  `_wrapper` render hook. Nothing here knows about Velum.
 
 ## Gotchas / invariants
 
