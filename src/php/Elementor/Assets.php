@@ -30,11 +30,13 @@ class Assets {
 		);
 
 		// Editor-only compensation: keeps the "+" add-new-section button and an
-		// empty header/footer canvas from vanishing under a fixed/sticky bar.
+		// empty header/footer canvas from vanishing under a fixed/sticky bar. It reads the
+		// non-sticky height: the live var shrinks when the bar sticks, which would resize
+		// this spacing mid-scroll and make the canvas jump.
 		if ( $this->is_elementor_editor() ) {
-			$css  = 'body.elementor-editor-active .elementor-section-wrap:empty{min-height:calc(25px + var(--arts-header-height, 0px))}';
-			$css .= 'body.elementor-editor-active .elementor-location-header #elementor-add-new-section{margin-top:var(--arts-header-height, 60px)}';
-			$css .= 'body.elementor-editor-active .elementor-edit-area-active[data-elementor-type="footer"]{margin-top:var(--arts-header-height, 60px)}';
+			$css  = 'body.elementor-editor-active .elementor-section-wrap:empty{min-height:calc(25px + var(--arts-header-height-non-sticky, 0px))}';
+			$css .= 'body.elementor-editor-active .elementor-location-header #elementor-add-new-section{margin-top:var(--arts-header-height-non-sticky, 60px)}';
+			$css .= 'body.elementor-editor-active .elementor-edit-area-active[data-elementor-type="footer"]{margin-top:var(--arts-header-height-non-sticky, 60px)}';
 			$css .= 'body.elementor-editor-active .elementor-edit-area-active[data-elementor-type="footer"] .elementor-section-wrap:empty{min-height:25px}';
 			wp_add_inline_style( self::HANDLE, $css );
 		}
