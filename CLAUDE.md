@@ -247,7 +247,11 @@ an empty `array()` encodes as `[]`, not `{}` — a section that can go empty nee
   lowest edge the bar's content reaches from the bar's top — `measureClearance` — counting visible
   `[data-arts-header-extent]` descendants the bar's box does not contain, a dropdown hanging out of
   a height-locked row; equal to the rest height when nothing is marked; a `visibility`-hidden
-  marked element adds nothing, so a collapsed list is skipped without the engine knowing why; the
+  marked element adds nothing, so a collapsed list is skipped without the engine knowing why —
+  which also means an integrator must not hide a header ROOT with `visibility` while its rest
+  geometry can be measured (the pre-paint seed re-run by an AJAX region swap, the settled
+  capture): `checkVisibility` is document-relative, so marked rows that declare no `visibility`
+  of their own inherit the hide and drop out, and a page-transition hide belongs on `opacity`; the
   marked elements are observed beside the bar, and every delivery re-arms the settled capture),
   `--arts-header-release-top` and
   `--arts-header-natural-height` (both header-scoped; natural-height = the wrapper's rest height,
