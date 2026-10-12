@@ -1,7 +1,7 @@
 import { defaultConfig } from '../constants'
 import { createHeader } from '../core/createHeader'
 import type { IHeader, IHeaderApp, IHeaderAppArgs } from '../interfaces'
-import { logger } from '../utils'
+import { isIgnored, logger } from '../utils'
 import { attachContainerHandler } from './containerHandler'
 
 /** De-duplicate concurrent calls onto the same in-flight promise; later arguments are ignored. */
@@ -78,6 +78,9 @@ export async function createHeaderApp(args: IHeaderAppArgs = {}): Promise<IHeade
       // (every Canvas template, for one) matches nothing and the loop simply no-ops.
       const wrappers = document.querySelectorAll<HTMLElement>(defaultConfig.selectors.container)
       for (const wrapper of wrappers) {
+        if (isIgnored(wrapper)) {
+          continue
+        }
         upsert(wrapper, wrapper.querySelector<HTMLElement>(defaultConfig.selectors.bar))
       }
 

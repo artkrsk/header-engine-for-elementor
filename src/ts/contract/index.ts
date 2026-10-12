@@ -1,5 +1,6 @@
 /** Integration surface: public types and passive values; no engine or WordPress boot. */
 
+export { IGNORE_ATTR } from '../constants/dataAttrs'
 export { VALUE_HOST_JS_CLASS } from '../constants/dom'
 export { EVENTS } from '../constants/events'
 export type { IConfig } from '../interfaces/IConfig'

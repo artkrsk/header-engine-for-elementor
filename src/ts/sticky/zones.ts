@@ -1,12 +1,13 @@
 import {
   HIDE_ZONE_ATTR,
+  IGNORE_ATTR,
   LOCK_ZONE_ATTR,
   ZONE_ATTR,
   ZONE_GEOMETRY_VAR,
   ZONE_KIND_VAR
 } from '../constants'
 import type { TZoneKind, TZoneMode } from '../types'
-import { coalesceToFrame } from '../utils'
+import { coalesceToFrame, isIgnored } from '../utils'
 
 /**
  * Hide-over / lock-over zones, declared on arbitrary page elements via data attributes. Zone
@@ -81,6 +82,9 @@ export function createZoneTracker(args: {
     zones = []
     const collect = (attr: string, kind: TZoneKind): void => {
       for (const element of document.querySelectorAll<HTMLElement>(`[${attr}]`)) {
+        if (isIgnored(element)) {
+          continue
+        }
         zones.push({
           element,
           kind,
@@ -97,6 +101,9 @@ export function createZoneTracker(args: {
     // decide (a settled resize re-scans through the measure pass). A var Elementor hasn't written
     // yet (stale generated CSS after an update) falls back to the desktop value in the marker.
     for (const element of document.querySelectorAll<HTMLElement>(`[${ZONE_ATTR}]`)) {
+      if (isIgnored(element)) {
+        continue
+      }
       const style = getComputedStyle(element)
       const [fallbackKind = '', fallbackGeometry = ''] = (
         element.getAttribute(ZONE_ATTR) ?? ''
@@ -151,7 +158,7 @@ export function createZoneTracker(args: {
   mutationObserver.observe(document.body, {
     attributes: true,
     subtree: true,
-    attributeFilter: [HIDE_ZONE_ATTR, LOCK_ZONE_ATTR, ZONE_ATTR]
+    attributeFilter: [HIDE_ZONE_ATTR, LOCK_ZONE_ATTR, ZONE_ATTR, IGNORE_ATTR]
   })
 
   scan()

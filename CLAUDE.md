@@ -125,7 +125,10 @@ each measure pass. Tick deciders and sub-modules:
 - `zones` — doc-space zone rects cached at scan/refresh, per-tick pure geometry
   (`resolveZoneActive`: at-top / overlap / in-view); a body-wide MutationObserver rAF-coalesces
   attribute-driven rescans; panel zones resolve kind/geometry from computed CSS vars at scan, so a
-  breakpoint change takes effect on the settled resize's measure pass. Trade-off (accepted): zone liveness is settle-based — a rect that
+  breakpoint change takes effect on the settled resize's measure pass. Zones and header wrappers
+  inside an `IGNORE_ATTR` subtree (`data-arts-header-ignore`, in `/contract`) are skipped by both
+  scans: an AJAX integrator stamps the page it is replacing instead of naming the engine's markers.
+  Trade-off (accepted): zone liveness is settle-based — a rect that
   changes mid-scroll lags until the next settled measure.
 
 `heightObserver/` publishes live + settled rest bar heights as CSS vars (border-box RO), told about

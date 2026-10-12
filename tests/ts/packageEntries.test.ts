@@ -98,7 +98,12 @@ void accepts; void createHeader
   it('bundles contracts without engines, boot, DOM or host defines', async () => {
     const result = await bundle(`${packageName}/contract`)
     const inputs = Object.keys(result.metafile.inputs)
-    const allowed = ['/contract/index.ts', '/constants/events.ts', '/constants/dom.ts']
+    const allowed = [
+      '/contract/index.ts',
+      '/constants/events.ts',
+      '/constants/dom.ts',
+      '/constants/dataAttrs.ts'
+    ]
     expect(
       inputs
         .filter((path) => path !== '<stdin>')
@@ -110,6 +115,7 @@ void accepts; void createHeader
     runInNewContext(code, context)
     expect(Object.keys(context.Provider as object).sort()).toEqual([
       'EVENTS',
+      'IGNORE_ATTR',
       'VALUE_HOST_JS_CLASS'
     ])
   })

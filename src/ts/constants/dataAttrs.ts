@@ -11,6 +11,13 @@ export const HIDE_ZONE_ATTR = 'data-arts-header-hide-over'
 export const LOCK_ZONE_ATTR = 'data-arts-header-lock-over'
 
 /**
+ * Marks a subtree the engine's document-wide scans (header wrappers, zones) treat as no longer part
+ * of the page. An integrator stamps the page it is replacing, so the leaving DOM cannot boot a header
+ * or steer the incoming one — it never has to name the engine's other markers.
+ */
+export const IGNORE_ATTR = 'data-arts-header-ignore'
+
+/**
  * Presence-only marker the Header Zone panel renders: the zone kind and geometry are NOT in the
  * attribute (they're responsive), they're read from the two CSS vars below at scan time.
  */
