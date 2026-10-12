@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "types": "./dist/types/index.d.ts",
-  "packageManager": "pnpm@11.17.0",
+  "packageManager": "pnpm@12.11.2",
   "engines": {
     "node": ">=24"
   },
