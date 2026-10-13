@@ -103,6 +103,13 @@ No. The script and stylesheet together weigh about 25 KB, and the engine does it
 
 == Changelog ==
 
+= 1.1.0 =
+* added: the Header Zone settings can now be set per screen size, so a section can hide or lock the header on desktop and leave it alone on tablet and mobile.
+* added: a new header clearance size is published for page content to clear dropdowns that hang out of a fixed-height header.
+* fixed: the editor canvas no longer jumps while scrolling when the header shrinks on stick.
+* fixed: the header's hidden, locked and sticky states can no longer get stuck after a page transition that keeps the header in place.
+* fixed: pages swapped by an AJAX transition no longer let the leaving page's zones hide the incoming header.
+
 = 1.0.3 =
 * added: a getInstance( element ) lookup on the global app, resolving the header instance that owns any element inside a managed header.
 * fixed: a lock-over or hide-over zone change no longer drops a lock held through lockSticky(), and lockSticky( false ) no longer releases an active lock-over zone.
