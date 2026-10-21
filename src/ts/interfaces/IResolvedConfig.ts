@@ -15,6 +15,7 @@ export interface IResolvedConfig {
     scrollingDown: string
     hidden: string
     locked: string
+    alt: string
     released: string
   }
   selectors: {

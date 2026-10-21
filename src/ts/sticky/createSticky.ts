@@ -82,6 +82,7 @@ export function createSticky(args: IStickyArgs): ISticky {
   const hidden = createStateFlag(container, config.classes.hidden)
   const locked = createStateFlag(container, config.classes.locked)
   const released = createStateFlag(container, config.classes.released)
+  const alt = createStateFlag(container, config.classes.alt)
 
   // The API lock and the zone lock are held apart and published as their OR: a zone flip never
   // drops a lock a consumer holds through `setLocked`, and a consumer's unlock never releases an
@@ -145,13 +146,17 @@ export function createSticky(args: IStickyArgs): ISticky {
   // zone attributes meant for the primary.
   const zoneTracker = options.zones
     ? createZoneTracker({
+        container,
         getPinLine: () => topLine(),
         getBarHeight: () => barHeight,
         getViewportH: () => viewportH,
-        onChange: (anyHide, anyLock) => {
+        getDecider: () =>
+          pin.edge === 'top' ? pin.offset + barHeight / 2 : viewportH - pin.offset - barHeight / 2,
+        onChange: (anyHide, anyLock, anyAlt) => {
           setHidden(anyHide)
           zoneLocked = anyLock
           publishLocked(apiLocked || zoneLocked)
+          setAlt(anyAlt)
         }
       })
     : null
@@ -159,6 +164,12 @@ export function createSticky(args: IStickyArgs): ISticky {
   function setHidden(value: boolean): void {
     if (hidden.set(value)) {
       notify(EVENTS.HIDDEN, value)
+    }
+  }
+
+  function setAlt(value: boolean): void {
+    if (alt.set(value)) {
+      notify(EVENTS.ALT, value)
     }
   }
 
@@ -293,6 +304,7 @@ export function createSticky(args: IStickyArgs): ISticky {
         scrollingDown.set(false)
         setHidden(false)
         publishLocked(false)
+        setAlt(false)
         if (released.set(false)) {
           notify(EVENTS.RELEASED, false)
         }
@@ -306,6 +318,7 @@ export function createSticky(args: IStickyArgs): ISticky {
         scrollingDown.reset()
         hidden.reset()
         locked.reset()
+        alt.reset()
         released.set(false)
       }
       displaced = false
@@ -318,6 +331,9 @@ export function createSticky(args: IStickyArgs): ISticky {
     },
     get isLocked() {
       return locked.value
+    },
+    get isAlt() {
+      return alt.value
     },
     get isReleased() {
       return released.value

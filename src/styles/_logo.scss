@@ -117,4 +117,32 @@
       }
     }
   }
+
+  // Like sticky, the alternate look tracks the zone state only. It must come last so it beats
+  // both logo blocks above at equal specificity.
+  .arts-header.arts-header_alt {
+    &[data-arts-header-alt-logo='primary'] {
+      .arts-header-logo__img-primary {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .arts-header-logo__img-secondary {
+        opacity: 0;
+        visibility: hidden;
+      }
+    }
+
+    &[data-arts-header-alt-logo='secondary'] {
+      .arts-header-logo__img-primary {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .arts-header-logo__img-secondary {
+        opacity: 1;
+        visibility: visible;
+      }
+    }
+  }
 }

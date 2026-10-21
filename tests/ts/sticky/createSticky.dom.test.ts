@@ -307,6 +307,94 @@ describe('createSticky — auto-hide', () => {
   })
 })
 
+describe('createSticky — alternate look zones', () => {
+  const ALT_CLASS = 'arts-header_alt'
+
+  /** A hand-built alt-over zone spanning document space 1000–1600 with a scroll-aware rect. */
+  const addAltZone = (): void => {
+    const zone = document.createElement('section')
+    zone.setAttribute('data-arts-header-alt-over', '')
+    zone.getBoundingClientRect = () =>
+      ({ top: 1000 - window.scrollY, bottom: 1600 - window.scrollY }) as DOMRect
+    document.body.appendChild(zone)
+  }
+
+  it('publishes the alt class and event when the bar center enters an alt-over zone', () => {
+    const altEvents = captureEvents('arts/header/alt')
+    addAltZone()
+    const { container, sticky, scrollTo } = makeSticky()
+    scrollTo(959)
+    expect(container.classList.contains(ALT_CLASS)).toBe(false)
+    expect(altEvents).toEqual([])
+    scrollTo(960)
+    expect(container.classList.contains(ALT_CLASS)).toBe(true)
+    expect(sticky.isAlt).toBe(true)
+    expect(altEvents).toEqual([true])
+    scrollTo(1560)
+    expect(container.classList.contains(ALT_CLASS)).toBe(false)
+    expect(sticky.isAlt).toBe(false)
+    expect(altEvents).toEqual([true, false])
+  })
+
+  it('derives the decider from the pin line and bar height', () => {
+    addAltZone()
+    // Top pin at 20px, 80px bar: the center line sits at y + 60.
+    const top = makeSticky({}, (el) => {
+      el.style.position = 'sticky'
+      el.style.top = '20px'
+    })
+    top.scrollTo(939)
+    expect(top.container.classList.contains(ALT_CLASS)).toBe(false)
+    top.scrollTo(940)
+    expect(top.container.classList.contains(ALT_CLASS)).toBe(true)
+    // Bottom pin at 0 in an 800px viewport: the center line sits at y + 800 - 0 - 40.
+    const bottom = makeSticky({}, (el) => {
+      el.style.position = 'sticky'
+      el.style.top = 'auto'
+      el.style.bottom = '0px'
+    })
+    bottom.scrollTo(239)
+    expect(bottom.container.classList.contains(ALT_CLASS)).toBe(false)
+    bottom.scrollTo(240)
+    expect(bottom.container.classList.contains(ALT_CLASS)).toBe(true)
+  })
+
+  it('keeps the alt class across a non-revert destroy and republishes on a fresh boot', () => {
+    const altEvents = captureEvents('arts/header/alt')
+    addAltZone()
+    const first = makeSticky()
+    first.scrollTo(1200)
+    expect(altEvents).toEqual([true])
+    first.sticky.destroy(false)
+    expect(first.container.classList.contains(ALT_CLASS)).toBe(true)
+    expect(first.sticky.isAlt).toBe(false)
+    expect(altEvents).toEqual([true])
+    const second = makeSticky()
+    expect(second.container.classList.contains(ALT_CLASS)).toBe(true)
+    expect(altEvents).toEqual([true, true])
+  })
+
+  it('clears alt and fires the event on revert destroy', () => {
+    const altEvents = captureEvents('arts/header/alt')
+    addAltZone()
+    const { container, sticky, scrollTo } = makeSticky()
+    scrollTo(1200)
+    sticky.destroy(true)
+    expect(container.classList.contains(ALT_CLASS)).toBe(false)
+    expect(altEvents).toEqual([true, false])
+  })
+
+  it('never publishes alt when zones are disabled', () => {
+    const altEvents = captureEvents('arts/header/alt')
+    addAltZone()
+    const { container, sticky, scrollTo } = makeSticky({ zones: false })
+    scrollTo(1200)
+    expect(sticky.isAlt).toBe(false)
+    expect(container.classList.contains(ALT_CLASS)).toBe(false)
+    expect(altEvents).toEqual([])
+  })
+})
+
 describe('createSticky — natural-height slot var', () => {
   const NATURAL_VAR = '--arts-header-natural-height'
 

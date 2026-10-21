@@ -1,4 +1,6 @@
 export {
+  ALT_LOGO_ATTR,
+  ALT_ZONE_ATTR,
   EXTENT_ATTR,
   HIDE_ZONE_ATTR,
   IGNORE_ATTR,
@@ -8,7 +10,9 @@ export {
   STICKY_LOGO_ATTR,
   ZONE_ATTR,
   ZONE_GEOMETRY_VAR,
-  ZONE_KIND_VAR
+  ZONE_KIND_VAR,
+  ZONE_LOOK_ATTR,
+  ZONE_LOOK_VAR
 } from './dataAttrs'
 export { defaultConfig } from './defaultConfig'
 export {

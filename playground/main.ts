@@ -15,7 +15,7 @@ const state = {
   mode: 'flow' as Mode,
   reveal: 'auto-hide' as Reveal,
   revealOffset: 0,
-  zoneMode: 'at-top' as TZoneMode,
+  zoneMode: 'at-top' as Exclude<TZoneMode, 'center'>,
   until: false,
   lock: false,
   tallBar: false
@@ -226,7 +226,7 @@ function setAndRebuild<K extends keyof typeof state>(key: K): (v: (typeof state)
 }
 
 /** Update the zone attributes in place, then re-scan — no full rebuild needed. */
-function applyZoneMode(v: TZoneMode): void {
+function applyZoneMode(v: Exclude<TZoneMode, 'center'>): void {
   state.zoneMode = v
   for (const el of document.querySelectorAll<HTMLElement>('[data-arts-header-hide-over]')) {
     el.setAttribute('data-arts-header-hide-over', v)

@@ -6,9 +6,13 @@
 /** Inline behavioral options JSON on the container; overrides constructor options entirely. */
 export const OPTIONS_ATTR = 'data-arts-header-options'
 
-/** Zone declarations on arbitrary page elements; the value is a `TZoneMode`. */
+/**
+ * Zone declarations on arbitrary page elements. The hide/lock value is one of the three vertical
+ * geometries (`at-top` / `overlap` / `in-view`); `data-arts-header-alt-over` is presence-only.
+ */
 export const HIDE_ZONE_ATTR = 'data-arts-header-hide-over'
 export const LOCK_ZONE_ATTR = 'data-arts-header-lock-over'
+export const ALT_ZONE_ATTR = 'data-arts-header-alt-over'
 
 /**
  * Marks a subtree the engine's document-wide scans (header wrappers, zones) treat as no longer part
@@ -28,11 +32,19 @@ export const ZONE_KIND_VAR = '--arts-header-zone'
 export const ZONE_GEOMETRY_VAR = '--arts-header-zone-geometry'
 
 /**
+ * Engine-READ look var on a marked zone element (`alt` kind only) plus the marker attribute that
+ * tells the tracker to resolve it at scan time; the attribute value is the desktop fallback.
+ */
+export const ZONE_LOOK_ATTR = 'data-arts-header-zone-look'
+export const ZONE_LOOK_VAR = '--arts-header-zone-look'
+
+/**
  * Logo version tokens on the wrapper — written by the editor handler in the preview and by
  * `Markup.php` on the frontend; read by CSS only, never by JS.
  */
 export const NON_STICKY_LOGO_ATTR = 'data-arts-header-non-sticky-logo'
 export const STICKY_LOGO_ATTR = 'data-arts-header-sticky-logo'
+export const ALT_LOGO_ATTR = 'data-arts-header-alt-logo'
 
 /**
  * Marks an element inside the bar whose bottom edge counts toward the rest CLEARANCE var: a list

@@ -67,6 +67,13 @@
   inherits: false;
 }
 
+// The alt-kind look var, same shape and reasoning as the two above: engine-READ, non-inheriting,
+// no initial value.
+@property --arts-header-zone-look {
+  syntax: '*';
+  inherits: false;
+}
+
 // Wrapper stacking context shared by every docking mode.
 $z-index: 100;
 

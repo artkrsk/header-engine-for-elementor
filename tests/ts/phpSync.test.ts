@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
+  ALT_LOGO_ATTR,
   BAR_ABSOLUTE_CLASS,
   BAR_BOTTOM_CLASS,
   BAR_CLASS,
@@ -18,7 +19,9 @@ import {
   WRAPPER_JS_CLASS,
   ZONE_ATTR,
   ZONE_GEOMETRY_VAR,
-  ZONE_KIND_VAR
+  ZONE_KIND_VAR,
+  ZONE_LOOK_ATTR,
+  ZONE_LOOK_VAR
 } from '@ts/constants'
 import { describe, expect, it } from 'vitest'
 
@@ -38,14 +41,17 @@ const PANEL_KEYS = [
   'arts_header_stick_to',
   'arts_header_zone',
   'arts_header_zone_geometry',
+  'arts_header_zone_look',
   'arts_header_state_non_sticky_logo_version',
-  'arts_header_state_sticky_logo_version'
+  'arts_header_state_sticky_logo_version',
+  'arts_header_state_alt_logo_version'
 ]
 
 /** CSS-write keys: Elementor's own selectors pipeline consumes them, not the editor JS. */
 const CSS_WRITE_KEYS = [
   'padding_sticky',
   'arts_header_sticky_global_colors',
+  'arts_header_alt_global_colors',
   'arts_header_sticky_reveal_offset_preset',
   'arts_header_sticky_reveal_offset',
   'arts_header_pin_offset_preset',
@@ -86,7 +92,8 @@ describe('Markup.php mirrors the TS identifier contract', () => {
 
   it.each([
     NON_STICKY_LOGO_ATTR,
-    STICKY_LOGO_ATTR
+    STICKY_LOGO_ATTR,
+    ALT_LOGO_ATTR
   ])('prints the %s logo-version attribute', (attr) => {
     expect(markup).toContain(`'${attr}'`)
   })
@@ -95,6 +102,12 @@ describe('Markup.php mirrors the TS identifier contract', () => {
     expect(markup).toContain(`'${ZONE_ATTR}'`)
     expect(markup).toContain('arts_header_zone')
     expect(markup).toContain("'hide' === $value || 'lock' === $value")
+  })
+
+  it('renders the look marker from the Header Look Over This panel key', () => {
+    expect(markup).toContain(`'${ZONE_LOOK_ATTR}'`)
+    expect(markup).toContain('arts_header_zone_look')
+    expect(markup).toContain("'alt' === $value")
   })
 
   it.each([
@@ -160,13 +173,30 @@ describe('Controls.php defines the frontend_available panel keys', () => {
     }
   })
 
-  it('makes both Header Zone controls responsive and writes the engine-read vars', () => {
+  it('makes the Header Zone kind and geometry controls responsive and writes the engine-read vars', () => {
     expect(controls).toMatch(/add_responsive_control\(\s*'arts_header_zone',/)
     expect(controls).toMatch(/add_responsive_control\(\s*'arts_header_zone_geometry',/)
     expect(controls).toContain(`${ZONE_KIND_VAR}: {{VALUE}}`)
     expect(controls).toContain(`${ZONE_GEOMETRY_VAR}: {{VALUE}}`)
     // Smaller breakpoints need an explicit neutral value ('' there means inherit).
     expect(controls).toContain("'none'")
+  })
+
+  it('defines the alternate-look zone select, recolor and logo controls', () => {
+    expect(controls).toMatch(/add_responsive_control\(\s*'arts_header_zone_look',/)
+    expect(controls).toContain(`${ZONE_LOOK_VAR}: {{VALUE}}`)
+    expect(controls).toContain("'alt_color'")
+    expect(controls).toContain("'alt'")
+    expect(controls).toContain('HEADER_ALT_STATE_BAR_SELECTOR')
+  })
+
+  // Equal specificity: Elementor emits per-control CSS in registration order, so the alt
+  // repeater must be registered after the sticky one for Alternate to win.
+  it('registers the alt recolor after the sticky recolor', () => {
+    const sticky = controls.indexOf("'arts_header_sticky_global_colors',")
+    const alt = controls.indexOf("'arts_header_alt_global_colors',")
+    expect(sticky).toBeGreaterThan(-1)
+    expect(alt).toBeGreaterThan(sticky)
   })
 
   it('marks every panel key frontend_available', () => {

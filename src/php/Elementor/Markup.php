@@ -89,6 +89,7 @@ class Markup {
 		// editor-side containerHandler (an absent attribute is the "no swap" state).
 		$non_sticky_logo_version = $settings['arts_header_state_non_sticky_logo_version'] ?? '';
 		$sticky_logo_version     = $settings['arts_header_state_sticky_logo_version'] ?? '';
+		$alt_logo_version        = $settings['arts_header_state_alt_logo_version'] ?? '';
 
 		if ( is_string( $non_sticky_logo_version ) && $non_sticky_logo_version !== '' ) {
 			$attributes['data-arts-header-non-sticky-logo'] = $non_sticky_logo_version;
@@ -96,6 +97,10 @@ class Markup {
 
 		if ( is_string( $sticky_logo_version ) && $sticky_logo_version !== '' ) {
 			$attributes['data-arts-header-sticky-logo'] = $sticky_logo_version;
+		}
+
+		if ( is_string( $alt_logo_version ) && $alt_logo_version !== '' ) {
+			$attributes['data-arts-header-alt-logo'] = $alt_logo_version;
 		}
 
 		$element->add_render_attribute( 'header_wrapper', $attributes );
@@ -180,18 +185,39 @@ class Markup {
 			return;
 		}
 
+		// The kind and look markers are independent: one container can carry either or both.
+		$is_kind_zone = false;
+		$is_look_zone = false;
+
 		foreach ( $settings as $key => $value ) {
-			// 'arts_header_zone' plus its per-breakpoint twins, but not 'arts_header_zone_geometry*'.
-			if ( 1 === preg_match( '/^arts_header_zone(?:_(?!geometry)\w+)?$/', (string) $key ) && ( 'hide' === $value || 'lock' === $value ) ) {
-				// Value = the desktop kind:geometry, the tracker's fallback for a var not yet written.
-				$kind     = $settings['arts_header_zone'] ?? '';
-				$geometry = $settings['arts_header_zone_geometry'] ?? '';
-				$element->add_render_attribute(
-					'_wrapper',
-					array( 'data-arts-header-zone' => ( 'hide' === $kind || 'lock' === $kind ? $kind : '' ) . ':' . ( is_string( $geometry ) ? $geometry : '' ) )
-				);
-				return;
+			// 'arts_header_zone' plus its per-breakpoint twins, but not the geometry/look controls.
+			if ( 1 === preg_match( '/^arts_header_zone(?:_(?!geometry|look)\w+)?$/', (string) $key ) && ( 'hide' === $value || 'lock' === $value ) ) {
+				$is_kind_zone = true;
 			}
+
+			// 'arts_header_zone_look' plus its per-breakpoint twins.
+			if ( 1 === preg_match( '/^arts_header_zone_look(?:_\w+)?$/', (string) $key ) && 'alt' === $value ) {
+				$is_look_zone = true;
+			}
+		}
+
+		if ( $is_kind_zone ) {
+			// Value = the desktop kind:geometry, the tracker's fallback for a var not yet written.
+			$kind     = $settings['arts_header_zone'] ?? '';
+			$geometry = $settings['arts_header_zone_geometry'] ?? '';
+			$element->add_render_attribute(
+				'_wrapper',
+				array( 'data-arts-header-zone' => ( 'hide' === $kind || 'lock' === $kind ? $kind : '' ) . ':' . ( is_string( $geometry ) ? $geometry : '' ) )
+			);
+		}
+
+		if ( $is_look_zone ) {
+			// Value = the desktop look, the tracker's fallback for a var not yet written.
+			$look = $settings['arts_header_zone_look'] ?? '';
+			$element->add_render_attribute(
+				'_wrapper',
+				array( 'data-arts-header-zone-look' => is_string( $look ) ? $look : '' )
+			);
 		}
 	}
 

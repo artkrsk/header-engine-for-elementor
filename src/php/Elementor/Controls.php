@@ -85,6 +85,15 @@ class Controls {
 
 	const HEADER_STICKY_STATE_BAR_SELECTOR = self::HEADER_STICKY_STATE_SELECTOR . ' .arts-header__bar';
 
+	/**
+	 * Alternate look: tracks `_alt` alone, same in-box scope as the sticky state. Its controls
+	 * are registered after the sticky ones so the alt rules are emitted later and win at equal
+	 * specificity.
+	 */
+	const HEADER_ALT_STATE_SELECTOR = '.arts-header.arts-header_alt' . self::HEADER_SELECTOR;
+
+	const HEADER_ALT_STATE_BAR_SELECTOR = self::HEADER_ALT_STATE_SELECTOR . ' .arts-header__bar';
+
 	const CONDITION_HEADER_ENABLED = array( 'arts_header_enabled!' => '' );
 
 	const CONDITION_HEADER_SCROLL_ENABLED = array(
@@ -401,7 +410,7 @@ class Controls {
 	/**
 	 * The inverse of Create Header: marks CONTENT the header reacts to. Injected into every
 	 * Container that is NOT a header (a container is either a header or a zone, never both).
-	 * Both controls are responsive and write CSS vars; a presence-only marker attribute is
+	 * All three controls are responsive and write CSS vars; a presence-only marker attribute is
 	 * PHP-rendered (see Markup::add_zone_attributes) and the engine's body-wide MutationObserver
 	 * picks up editor re-renders — no editor JS involved.
 	 */
@@ -475,6 +484,43 @@ class Controls {
 				'frontend_available' => true,
 				'render_type'        => 'template',
 				'condition'          => array( 'arts_header_zone!' => array( '', 'none' ) ),
+			)
+		);
+
+		// Independent of the kind control above: a container can switch the header look without
+		// hiding or locking it, so this has no condition on `arts_header_zone`. Smaller
+		// breakpoints get an explicit 'default' for the same inherit reason as the kind.
+		$look_options     = array( 'alt' => esc_html__( 'Alternate', 'artem-semkin-header-engine-for-elementor' ) );
+		$look_device_args = array();
+		foreach ( is_array( $active_breakpoints ) ? array_keys( $active_breakpoints ) : array() as $device ) {
+			$look_device_args[ (string) $device ] = array(
+				'options' => array_merge(
+					array(
+						''        => esc_html__( 'Inherit', 'artem-semkin-header-engine-for-elementor' ),
+						'default' => esc_html__( 'Default', 'artem-semkin-header-engine-for-elementor' ),
+					),
+					$look_options
+				),
+			);
+		}
+
+		$element->add_responsive_control(
+			'arts_header_zone_look',
+			array(
+				'label'              => esc_html__( 'Header Look Over This', 'artem-semkin-header-engine-for-elementor' ),
+				'description'        => esc_html__( 'Switches the header to its Alternate Look while its center sits over this container. Set the header\'s default look for the first section of the page and mark the sections that need the other one.', 'artem-semkin-header-engine-for-elementor' ),
+				'type'               => Controls_Manager::SELECT,
+				'options'            => array_merge(
+					array( '' => esc_html__( 'Default', 'artem-semkin-header-engine-for-elementor' ) ),
+					$look_options
+				),
+				'device_args'        => $look_device_args,
+				'default'            => '',
+				'selectors'          => array(
+					'{{WRAPPER}}' => '--arts-header-zone-look: {{VALUE}};',
+				),
+				'frontend_available' => true,
+				'render_type'        => 'template',
 			)
 		);
 
@@ -581,6 +627,71 @@ class Controls {
 				'description'   => esc_html__( 'Widgets inside this header that use a Global Color switch to the override while the header is sticky. Hardcoded colors are not affected.', 'artem-semkin-header-engine-for-elementor' ),
 				'type'          => Controls_Manager::REPEATER,
 				'fields'        => $global_colors_repeater->get_controls(),
+				'prevent_empty' => false,
+				'title_field'   => '{{{ global_id }}}',
+				'condition'     => self::CONDITION_HEADER_SCROLL_ENABLED,
+			)
+		);
+
+		// Registered after the sticky controls on purpose: Elementor emits per-control CSS in
+		// registration order, so at equal specificity the alt rules win over the sticky ones.
+		$element->add_control(
+			'arts_header_state_alt_logo_version',
+			array(
+				'label'              => esc_html__( 'Logo in Alternate Look', 'artem-semkin-header-engine-for-elementor' ),
+				'type'               => Controls_Manager::SELECT,
+				'options'            => array(
+					'primary'   => esc_html__( 'Primary', 'artem-semkin-header-engine-for-elementor' ),
+					'secondary' => esc_html__( 'Secondary', 'artem-semkin-header-engine-for-elementor' ),
+				),
+				'default'            => 'primary',
+				'frontend_available' => true,
+				'condition'          => self::CONDITION_HEADER_SCROLL_ENABLED,
+			)
+		);
+
+		$element->add_control(
+			'arts_header_alt_global_colors_heading',
+			array(
+				'label'     => esc_html__( 'Alternate Look Colors', 'artem-semkin-header-engine-for-elementor' ),
+				'type'      => Controls_Manager::HEADING,
+				'separator' => 'before',
+				'condition' => self::CONDITION_HEADER_SCROLL_ENABLED,
+			)
+		);
+
+		// A Repeater instance binds its field selectors, so the sticky one can't be reused.
+		$alt_colors_repeater = new \Elementor\Repeater();
+
+		$alt_colors_repeater->add_control(
+			'global_id',
+			array(
+				'label'   => esc_html__( 'Global Color', 'artem-semkin-header-engine-for-elementor' ),
+				'type'    => Controls_Manager::SELECT,
+				'options' => $this->get_kit_global_color_options(),
+				'default' => '',
+			)
+		);
+
+		$alt_colors_repeater->add_control(
+			'alt_color',
+			array(
+				'label'     => esc_html__( 'Color in Alternate Look', 'artem-semkin-header-engine-for-elementor' ),
+				'type'      => Controls_Manager::COLOR,
+				'global'    => array( 'active' => false ),
+				'selectors' => array(
+					self::HEADER_ALT_STATE_BAR_SELECTOR => '--e-global-color-{{global_id.VALUE}}: {{VALUE}};',
+				),
+			)
+		);
+
+		$element->add_control(
+			'arts_header_alt_global_colors',
+			array(
+				'label'         => esc_html__( 'Recolor in Alternate Look', 'artem-semkin-header-engine-for-elementor' ),
+				'description'   => esc_html__( 'Widgets inside this header that use a Global Color switch to the override while the header is over a container set to Alternate (Header Zone, Header Look Over This). Hardcoded colors are not affected.', 'artem-semkin-header-engine-for-elementor' ),
+				'type'          => Controls_Manager::REPEATER,
+				'fields'        => $alt_colors_repeater->get_controls(),
 				'prevent_empty' => false,
 				'title_field'   => '{{{ global_id }}}',
 				'condition'     => self::CONDITION_HEADER_SCROLL_ENABLED,

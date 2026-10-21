@@ -1,5 +1,6 @@
 import type { ElementorFrontend, ElementorModules } from '@artemsemkin/elementor-types'
 import {
+  ALT_LOGO_ATTR,
   BAR_ABSOLUTE_CLASS,
   BAR_BOTTOM_CLASS,
   BAR_CLASS,
@@ -16,14 +17,18 @@ import {
   WRAPPER_CLASS,
   WRAPPER_ELEMENT_ID_PREFIX,
   WRAPPER_JS_CLASS,
-  ZONE_ATTR
+  ZONE_ATTR,
+  ZONE_LOOK_ATTR
 } from '../constants'
 import type { IContainerHandler } from '../interfaces'
 import type { TOnDestroyCallback, TOnInitCallback } from '../types'
 import { mapPanelSettings } from './mapPanelSettings'
 
-/** `arts_header_zone` plus its per-breakpoint twins, but not `arts_header_zone_geometry*`. */
-const ZONE_KEY_PATTERN = /^arts_header_zone(?:_(?!geometry)\w+)?$/
+/** `arts_header_zone` plus its per-breakpoint twins, but not the geometry/look controls. */
+const ZONE_KEY_PATTERN = /^arts_header_zone(?:_(?!geometry|look)\w+)?$/
+
+/** `arts_header_zone_look` plus its per-breakpoint twins. */
+const ZONE_LOOK_KEY_PATTERN = /^arts_header_zone_look(?:_\w+)?$/
 
 /** Wrap `el` in the header wrapper div, or adopt an existing one; identification matches unwrap. */
 const wrapHeaderBar = (el: HTMLElement, elementId: string | number): HTMLElement | null => {
@@ -169,6 +174,7 @@ export const createContainerHandler = (onInit: TOnInitCallback, onDestroy: TOnDe
         'arts_header_state_non_sticky_logo_version'
       )
       const stickyLogoVersion = this.getElementSettings('arts_header_state_sticky_logo_version')
+      const altLogoVersion = this.getElementSettings('arts_header_state_alt_logo_version')
 
       if (nonStickyLogoVersion) {
         this.wrapperEl.setAttribute(NON_STICKY_LOGO_ATTR, nonStickyLogoVersion)
@@ -176,6 +182,10 @@ export const createContainerHandler = (onInit: TOnInitCallback, onDestroy: TOnDe
 
       if (stickyLogoVersion) {
         this.wrapperEl.setAttribute(STICKY_LOGO_ATTR, stickyLogoVersion)
+      }
+
+      if (altLogoVersion) {
+        this.wrapperEl.setAttribute(ALT_LOGO_ATTR, altLogoVersion)
       }
 
       const options = mapPanelSettings({
@@ -191,14 +201,20 @@ export const createContainerHandler = (onInit: TOnInitCallback, onDestroy: TOnDe
     // editor, so PHP never gets to print the marker there. Kind and geometry are responsive CSS
     // vars the zone tracker resolves at scan time; the marker flips when ANY breakpoint opts in.
     setZoneAttributes(this: IContainerHandler, headerEnabled: boolean) {
+      const settings = Object.entries(this.getElementSettings() ?? {})
       const isZone =
         !headerEnabled &&
-        Object.entries(this.getElementSettings() ?? {}).some(
+        settings.some(
           ([key, value]) => ZONE_KEY_PATTERN.test(key) && (value === 'hide' || value === 'lock')
         )
+      // Independent of the kind marker: a container can carry either or both.
+      const isLookZone =
+        !headerEnabled &&
+        settings.some(([key, value]) => ZONE_LOOK_KEY_PATTERN.test(key) && value === 'alt')
       // Always a remove + set, never a no-op toggle: the attribute mutation is what makes the
       // zones observer rescan after a kind/geometry var change.
       this.el.removeAttribute(ZONE_ATTR)
+      this.el.removeAttribute(ZONE_LOOK_ATTR)
       if (isZone) {
         // Value = the desktop `kind:geometry`, the tracker's fallback for a var not yet written.
         const kind = this.getElementSettings('arts_header_zone')
@@ -206,6 +222,11 @@ export const createContainerHandler = (onInit: TOnInitCallback, onDestroy: TOnDe
           ZONE_ATTR,
           `${kind === 'hide' || kind === 'lock' ? kind : ''}:${this.getElementSettings('arts_header_zone_geometry') ?? ''}`
         )
+      }
+      if (isLookZone) {
+        // Value = the desktop look, the tracker's fallback for a var not yet written.
+        const look = this.getElementSettings('arts_header_zone_look')
+        this.el.setAttribute(ZONE_LOOK_ATTR, typeof look === 'string' ? look : '')
       }
     },
 

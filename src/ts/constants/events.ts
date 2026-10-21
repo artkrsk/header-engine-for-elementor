@@ -6,6 +6,7 @@ export const EVENTS = {
   STICKY: 'arts/header/sticky',
   HIDDEN: 'arts/header/hidden',
   LOCKED: 'arts/header/locked',
+  ALT: 'arts/header/alt',
   RELEASED: 'arts/header/released',
   DISPLACED: 'arts/header/displaced'
 } as const

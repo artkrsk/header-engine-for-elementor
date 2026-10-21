@@ -1,4 +1,11 @@
-import { readZoneKind, readZoneMode, reduceZones, resolveZoneActive } from '@ts/sticky/zones'
+import {
+  readZoneKind,
+  readZoneLook,
+  readZoneMode,
+  reduceZones,
+  resolveCenterActive,
+  resolveZoneActive
+} from '@ts/sticky/zones'
 import { describe, expect, it } from 'vitest'
 
 describe('readZoneMode', () => {
@@ -12,6 +19,18 @@ describe('readZoneMode', () => {
     expect(readZoneMode('bounce')).toBe('at-top')
     expect(readZoneMode(null)).toBe('at-top')
     expect(readZoneMode('')).toBe('at-top')
+    // `center` is engine-internal geometry, never read from an attribute.
+    expect(readZoneMode('center')).toBe('at-top')
+  })
+})
+
+describe('readZoneLook', () => {
+  it('is true only for alt', () => {
+    expect(readZoneLook('alt')).toBe(true)
+    expect(readZoneLook(' alt ')).toBe(true)
+    expect(readZoneLook('')).toBe(false)
+    expect(readZoneLook('default')).toBe(false)
+    expect(readZoneLook('none')).toBe(false)
   })
 })
 
@@ -51,6 +70,15 @@ describe('resolveZoneActive', () => {
   })
 })
 
+describe('resolveCenterActive', () => {
+  it('is active while the decider line lies inside the rect', () => {
+    expect(resolveCenterActive(1000, 1600, 960, 40)).toBe(true)
+    expect(resolveCenterActive(1000, 1600, 959, 40)).toBe(false)
+    expect(resolveCenterActive(1000, 1600, 1559, 40)).toBe(true)
+    expect(resolveCenterActive(1000, 1600, 1560, 40)).toBe(false)
+  })
+})
+
 describe('reduceZones', () => {
   it('drives a kind from any single active zone of that kind', () => {
     expect(
@@ -58,7 +86,7 @@ describe('reduceZones', () => {
         { kind: 'hide', active: false },
         { kind: 'hide', active: true }
       ])
-    ).toEqual({ anyHide: true, anyLock: false })
+    ).toEqual({ anyHide: true, anyLock: false, anyAlt: false })
   })
 
   it('combines the two kinds independently', () => {
@@ -67,10 +95,20 @@ describe('reduceZones', () => {
         { kind: 'hide', active: true },
         { kind: 'lock', active: true }
       ])
-    ).toEqual({ anyHide: true, anyLock: true })
+    ).toEqual({ anyHide: true, anyLock: true, anyAlt: false })
   })
 
   it('reports all-clear for no zones at all', () => {
-    expect(reduceZones([])).toEqual({ anyHide: false, anyLock: false })
+    expect(reduceZones([])).toEqual({ anyHide: false, anyLock: false, anyAlt: false })
+  })
+
+  it('drives alt independently of hide and lock', () => {
+    expect(
+      reduceZones([
+        { kind: 'alt', active: true },
+        { kind: 'hide', active: false },
+        { kind: 'lock', active: false }
+      ])
+    ).toEqual({ anyHide: false, anyLock: false, anyAlt: true })
   })
 })

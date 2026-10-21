@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { defaultConfig, ZONE_GEOMETRY_VAR, ZONE_KIND_VAR } from '@ts/constants'
+import { defaultConfig, ZONE_GEOMETRY_VAR, ZONE_KIND_VAR, ZONE_LOOK_VAR } from '@ts/constants'
 import { describe, expect, it } from 'vitest'
 
 /**
@@ -54,7 +54,7 @@ describe('TS ↔ styles identifier sync', () => {
 
   it('registers the engine-read zone vars as non-inheriting properties in the head stylesheet', () => {
     const css = styleSource()
-    for (const name of [ZONE_KIND_VAR, ZONE_GEOMETRY_VAR]) {
+    for (const name of [ZONE_KIND_VAR, ZONE_GEOMETRY_VAR, ZONE_LOOK_VAR]) {
       const block = css.match(new RegExp(`@property ${escapeRegExp(name)} \\{([^}]*)\\}`))
       expect(block?.[1]).toContain('inherits: false')
     }

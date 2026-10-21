@@ -98,6 +98,16 @@ describe('createHeader', () => {
     expect(container.classList.contains('arts-header_hidden')).toBe(true)
     header.lockSticky(true)
     expect(header.isLocked).toBe(true)
+    expect(header.isAlt).toBe(false)
+    const zone = document.createElement('section')
+    zone.setAttribute('data-arts-header-alt-over', '')
+    zone.getBoundingClientRect = () =>
+      ({ top: 1000 - window.scrollY, bottom: 1600 - window.scrollY }) as DOMRect
+    document.body.appendChild(zone)
+    header.refreshZones()
+    scrollTo(1200)
+    expect(header.isAlt).toBe(true)
+    expect(container.classList.contains('arts-header_alt')).toBe(true)
   })
 
   it('fails safe on every API call when sticky is disabled', () => {
@@ -115,12 +125,46 @@ describe('createHeader', () => {
     }).not.toThrow()
     expect(header.isSticking).toBe(false)
     expect(header.isHidden).toBe(false)
+    expect(header.isAlt).toBe(false)
     expect(header.isReleased).toBe(false)
     expect(header.isDisplaced).toBe(false)
   })
 
-  it('init() and refresh() read every layout metric before their first DOM write', () => {
+  it.each([
+    ['', false],
+    [' with a marked panel in a horizontal section', true]
+  ])('init() and refresh() read every layout metric before their first DOM write%s', (_, horizontal) => {
     const { container, bar, header } = makeRig()
+    const rects: HTMLElement[] = []
+    const getScrollRange = vi.fn(() => ({
+      start: 1550,
+      end: 2650,
+      onStageAtEngage: false,
+      onStageAtRelease: false,
+      stageTop: 0,
+      stageHeight: 800
+    }))
+    if (horizontal) {
+      vi.stubGlobal('artsHorizontalScroll', { contract: 1, getScrollRange })
+      container.getBoundingClientRect = () =>
+        ({
+          top: -window.scrollY,
+          bottom: 80 - window.scrollY,
+          height: 80,
+          left: 0,
+          width: 500
+        }) as DOMRect
+      const section = document.createElement('div')
+      section.className = 'js-arts-hs'
+      section.getBoundingClientRect = () =>
+        ({ top: 1000, bottom: 4000, left: 0, width: 1000 }) as DOMRect
+      const panel = document.createElement('div')
+      panel.setAttribute('data-arts-header-hide-over', 'at-top')
+      panel.getBoundingClientRect = () => ({ top: 1000, bottom: 2500 }) as DOMRect
+      section.appendChild(panel)
+      document.body.appendChild(section)
+      rects.push(section, panel)
+    }
     const log: string[] = []
     const tap = <T extends object, K extends keyof T>(
       target: T,
@@ -140,6 +184,9 @@ describe('createHeader', () => {
     // dirtied node, so it flushes nothing (measured: 0 ms with a dirty descendant subtree).
     tap(bar, 'getBoundingClientRect', 'read')
     tap(container, 'getBoundingClientRect', 'read')
+    for (const el of rects) {
+      tap(el, 'getBoundingClientRect', 'read')
+    }
     tap(window, 'getComputedStyle', 'read', (el) => el === document.documentElement)
     tap(container.style, 'setProperty', 'write')
     tap(container.classList, 'toggle', 'write')
@@ -155,6 +202,7 @@ describe('createHeader', () => {
     log.length = 0
     header.refresh()
     expectOneFlush()
+    expect(getScrollRange).toHaveBeenCalledTimes(horizontal ? 2 : 0)
   })
 
   it('re-measures the height through the sticky change wiring end to end', () => {

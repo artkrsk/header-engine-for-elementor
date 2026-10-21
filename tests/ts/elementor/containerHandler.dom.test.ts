@@ -210,6 +210,62 @@ describe('createContainerHandler', () => {
     expect(wrapper?.getAttribute('data-arts-header-sticky-logo')).toBe('secondary')
   })
 
+  it('writes the alt logo version attribute on the wrapper', () => {
+    const { handler, el } = makeHandler({
+      arts_header_enabled: 'yes',
+      arts_header_on_scroll: 'sticky',
+      arts_header_state_alt_logo_version: 'secondary'
+    })
+    handler.setHeader()
+    expect(el.parentElement?.getAttribute('data-arts-header-alt-logo')).toBe('secondary')
+  })
+
+  it('marks a container whose look is alt on any breakpoint, with the desktop value', () => {
+    const settings: Record<string, unknown> = {
+      arts_header_enabled: '',
+      arts_header_zone_look_tablet: 'alt'
+    }
+    const { handler, el } = makeHandler(settings)
+    handler.setHeader()
+    expect(el.getAttribute('data-arts-header-zone-look')).toBe('')
+    settings.arts_header_zone_look = 'alt'
+    handler.setHeader()
+    expect(el.getAttribute('data-arts-header-zone-look')).toBe('alt')
+  })
+
+  it('removes the look marker when no breakpoint is alt, keeping the kind marker independent', () => {
+    const settings: Record<string, unknown> = {
+      arts_header_enabled: '',
+      arts_header_zone: 'hide',
+      arts_header_zone_geometry: 'overlap',
+      arts_header_zone_look: 'alt'
+    }
+    const { handler, el } = makeHandler(settings)
+    handler.setHeader()
+    expect(el.getAttribute('data-arts-header-zone')).toBe('hide:overlap')
+    expect(el.getAttribute('data-arts-header-zone-look')).toBe('alt')
+    settings.arts_header_zone_look = 'none'
+    handler.setHeader()
+    expect(el.getAttribute('data-arts-header-zone')).toBe('hide:overlap')
+    expect(el.hasAttribute('data-arts-header-zone-look')).toBe(false)
+    // A look-only container is not a kind zone: the look keys never trip the kind marker.
+    settings.arts_header_zone = ''
+    settings.arts_header_zone_look = 'alt'
+    handler.setHeader()
+    expect(el.hasAttribute('data-arts-header-zone')).toBe(false)
+    expect(el.getAttribute('data-arts-header-zone-look')).toBe('alt')
+  })
+
+  it('never marks a header container with the look marker', () => {
+    const { handler, el } = makeHandler({
+      arts_header_enabled: 'yes',
+      arts_header_on_scroll: 'sticky',
+      arts_header_zone_look: 'alt'
+    })
+    handler.setHeader()
+    expect(el.hasAttribute('data-arts-header-zone-look')).toBe(false)
+  })
+
   it('boots via onInit with the wrapper+bar pair, guarded against re-entrancy', async () => {
     const { handler, onInit } = makeHandler({ arts_header_enabled: 'yes' })
     handler.setHeader()
