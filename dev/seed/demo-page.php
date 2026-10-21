@@ -12,9 +12,9 @@
  * for that reason). Idempotent: finds the page by slug and rewrites it
  * wholesale; the two logo attachments are keyed on a meta value and reused.
  *
- * Styling is hard-coded except the three "Header *" kit Global Colors the seed
- * installs itself — the sticky recolor showcase binds the header content to
- * them via __globals__. The header/dock/zone behavior is entirely this
+ * Styling is hard-coded except the four "Header *" kit Global Colors the seed
+ * installs itself — the sticky and alternate-look recolor showcases bind the
+ * header content and the stuck bar to them via __globals__. The header/dock/zone behavior is entirely this
  * plugin's panel controls — the seed writes the same settings the panel would
  * save, nothing hand-wired.
  */
@@ -52,6 +52,11 @@ const AHE_DOCK_TEXT = '#d6d6d6';
 // which duplicates the ink hex — nowdoc can't interpolate) flips to.
 const AHE_INK_STICKY   = '#f5f5f5';
 const AHE_MUTED_STICKY = '#a3a3a3';
+
+// The alternate-look band: lighter than the stuck bar at its top edge, so the
+// bar visibly drops its background as it crosses in.
+const AHE_BAND_TOP    = '#2e2e2e';
+const AHE_BAND_BOTTOM = '#0c0c0c';
 
 function ahe_seed_id(): string {
 	return substr( bin2hex( random_bytes( 4 ) ), 0, 7 );
@@ -464,8 +469,9 @@ update_option( 'blogname', 'Header Engine' );
 update_option( 'blogdescription', '' );
 
 // --- Kit tokens: explicit header Global Colors -----------------------------------
-// The recolor workflow the demo showcases: header content binds to these three
-// tokens, and the header's Sticky Colors rows remap them while stuck. Merged
+// The recolor workflow the demo showcases: header content binds to these
+// tokens, the header's Sticky Colors rows remap them while stuck, and its
+// Alternate Look rows remap them over the dark band. Merged
 // into the kit's custom_colors keyed on _id — idempotent, other colors kept.
 
 $kit_id = 0;
@@ -493,6 +499,13 @@ if ( $kit_id ) {
 			'_id'   => 'ahesurf01',
 			'title' => 'Header Surface',
 			'color' => '#ffffff',
+		),
+		// The stuck bar's own background, apart from Surface (which the
+		// button's hover text also uses), so the alternate look can clear it.
+		array(
+			'_id'   => 'ahebar01',
+			'title' => 'Header Bar',
+			'color' => AHE_DOCK_BG,
 		),
 	);
 
@@ -559,6 +572,32 @@ $header = array(
 				'sticky_color' => AHE_DOCK_BG,
 			),
 		),
+
+		// The alternate-look showcase: over the full-width dark band the bar
+		// drops its background — a header with no background of its own, light
+		// logo and text over a dark section. Alternate wins over sticky; ink
+		// and muted are restated so the look holds without the sticky rows.
+		'arts_header_state_alt_logo_version'            => 'secondary',
+		'arts_header_alt_global_colors'                 => array(
+			array(
+				'_id'       => 'ahegc004',
+				'global_id' => 'ahebar01',
+				'alt_color' => 'rgba(22, 22, 22, 0)',
+			),
+			array(
+				'_id'       => 'ahegc005',
+				'global_id' => 'aheink01',
+				'alt_color' => AHE_INK_STICKY,
+			),
+			array(
+				'_id'       => 'ahegc006',
+				'global_id' => 'ahemute01',
+				'alt_color' => AHE_MUTED_STICKY,
+			),
+		),
+
+		// Background and bottom line bound to the Header Bar token (the hexes
+		// are fallbacks), so the alternate look can clear both.
 		'background_sticky_background' => 'classic',
 		'background_sticky_color'      => AHE_DOCK_BG,
 		// Explicit zero-width rest border: the bar transitions border-width, and
@@ -585,6 +624,10 @@ $header = array(
 			'isLinked' => false,
 		),
 		'border_sticky_color'          => '#2a2a2a',
+		'__globals__'                  => array(
+			'background_sticky_color' => 'globals/colors?id=ahebar01',
+			'border_sticky_color'     => 'globals/colors?id=ahebar01',
+		),
 
 		// Rest padding = the native control; the stuck state overrides it via
 		// padding_sticky (all four sides filled on both — a blank side makes
@@ -741,6 +784,7 @@ $sticky_section = ahe_section(
 		ahe_heading( 'The sticky flip', 'h2', '22px' ),
 		ahe_body( 'Past the first screen the bar turns dark — and everything in it re-inks itself. The header remaps Global Colors while sticky, so the menu, the button and the site title follow with no per-widget wiring; the logo swaps to its light version.' ),
 		ahe_body( 'Auto-hide waits out the first full screen — the reveal offset, set to one viewport height in the panel. From here on, scrolling down sends the bar away; scrolling up brings it back.' ),
+		ahe_body( 'Sections can restyle it too. Watch the bar as the dark band below passes under it.' ),
 	)
 );
 
@@ -846,6 +890,82 @@ $zones_section = ahe_section(
 	)
 );
 
+// --- Alternate-look band --------------------------------------------------------
+// A full-width dark section set to "Header Look Over This: Alternate": the bar
+// drops its background there, the way a header with no background of its own
+// reads over a dark section. Also a lock zone — auto-hide would otherwise send
+// the bar away on the way down, and the switch is the thing to watch. Boxed:
+// the background spans the viewport, the text keeps the page's 640px measure.
+
+$alt_band = array(
+	'id'       => ahe_seed_id(),
+	'elType'   => 'container',
+	'isInner'  => false,
+	'settings' => array(
+		'_title'                    => 'Alternate look band',
+		'_element_id'               => 'alternate',
+		'content_width'             => 'boxed',
+		'boxed_width'               => array(
+			'unit'  => 'px',
+			'size'  => 640,
+			'sizes' => array(),
+		),
+		'min_height'                => array(
+			'unit'  => 'vh',
+			'size'  => 100,
+			'sizes' => array(),
+		),
+		'flex_direction'            => 'column',
+		'flex_justify_content'      => 'center',
+		'flex_gap'                  => ahe_gap( 12 ),
+		'padding'                   => array(
+			'unit'     => 'px',
+			'top'      => '120',
+			'right'    => '24',
+			'bottom'   => '120',
+			'left'     => '24',
+			'isLinked' => false,
+		),
+		'background_background'     => 'gradient',
+		'background_color'          => AHE_BAND_TOP,
+		'background_color_b'        => AHE_BAND_BOTTOM,
+		'background_gradient_angle' => array(
+			'unit'  => 'deg',
+			'size'  => 180,
+			'sizes' => array(),
+		),
+		'arts_header_zone'          => 'lock',
+		'arts_header_zone_geometry' => 'overlap',
+		'arts_header_zone_look'     => 'alt',
+	),
+	'elements' => array(
+		ahe_heading( 'Alternate look', 'h2', '22px', array( 'title_color' => AHE_INK_STICKY ) ),
+		ahe_body(
+			'Set "Header Look Over This" to Alternate on any container, and the header switches to its alternate look while its middle is over it. Here the bar drops its background and keeps the light logo and text — how a header with no background of its own stays readable over a dark section.',
+			array( 'title_color' => AHE_DOCK_TEXT )
+		),
+		ahe_body(
+			'Try it: scroll slowly past either edge of this band — the bar fades out as its middle crosses in, and comes back as it leaves. The band also locks the header in view.',
+			array(
+				'title_color'          => AHE_MUTED_STICKY,
+				'typography_font_size' => array(
+					'unit'  => 'px',
+					'size'  => 13,
+					'sizes' => array(),
+				),
+				'_margin'              => array(
+					'unit'     => 'px',
+					'top'      => '16',
+					'right'    => '0',
+					'bottom'   => '0',
+					'left'     => '0',
+					'isLinked' => false,
+				),
+			)
+		),
+	),
+);
+
 $dock_section = ahe_section(
 	'dock',
 	array(
@@ -886,30 +1006,39 @@ $outro_section = ahe_section(
 	)
 );
 
-$page_wrapper = array(
-	'id'       => ahe_seed_id(),
-	'elType'   => 'container',
-	'isInner'  => false,
-	'settings' => array(
-		'_title'        => 'Content',
-		'content_width' => 'boxed',
-		'boxed_width'   => array(
-			'unit'  => 'px',
-			'size'  => 640,
-			'sizes' => array(),
+/** Boxed 640px content column; the page uses two, split by the full-width band. */
+function ahe_page_wrapper( string $title, array $children ): array {
+	return array(
+		'id'       => ahe_seed_id(),
+		'elType'   => 'container',
+		'isInner'  => false,
+		'settings' => array(
+			'_title'        => $title,
+			'content_width' => 'boxed',
+			'boxed_width'   => array(
+				'unit'  => 'px',
+				'size'  => 640,
+				'sizes' => array(),
+			),
+			'flex_gap'      => ahe_zero_gap(),
+			'padding'       => array(
+				'unit'     => 'px',
+				'top'      => '0',
+				'right'    => '24',
+				'bottom'   => '0',
+				'left'     => '24',
+				'isLinked' => false,
+			),
 		),
-		'flex_gap'      => ahe_zero_gap(),
-		'padding'       => array(
-			'unit'     => 'px',
-			'top'      => '0',
-			'right'    => '24',
-			'bottom'   => '0',
-			'left'     => '24',
-			'isLinked' => false,
-		),
-	),
-	'elements' => array( $hero, $sticky_section, $zones_section, $dock_section, $outro_section ),
-);
+		'elements' => $children,
+	);
+}
+
+// The band sits right after the sticky section, not near the page end: the
+// content after it must outlast a viewport, or the header can never scroll
+// back out of the band and the switch back goes unseen.
+$page_content       = ahe_page_wrapper( 'Content', array( $hero, $sticky_section ) );
+$page_content_after = ahe_page_wrapper( 'Content (after the band)', array( $zones_section, $dock_section, $outro_section ) );
 
 // --- Secondary header (bottom dock) ---------------------------------------------
 // Rendered after the primary in the element tree — the first-rendered header
@@ -1000,7 +1129,7 @@ if ( is_wp_error( $post_id ) ) {
 	return;
 }
 
-$elements = array( $header, $dock, $page_wrapper );
+$elements = array( $header, $dock, $page_content, $alt_band, $page_content_after );
 
 $page_settings = array(
 	'template'              => 'elementor_canvas',
