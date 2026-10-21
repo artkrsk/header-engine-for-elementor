@@ -172,7 +172,7 @@ importers:
     devDependencies:
       '@arts/wp-plugin-tooling':
         specifier: github:artkrsk/wp-plugin-tooling
-        version: https://codeload.github.com/artkrsk/wp-plugin-tooling/tar.gz/f5d242c7b969a3a20180e5c320bcfd8c0586023a(postcss@8.5.29)(stylelint@17.14.1(supports-color@10.2.2)(typescript@7.0.2))
+        version: https://codeload.github.com/artkrsk/wp-plugin-tooling/tar.gz/766185a322d08bfbc408c00da812a575f8d7548d(postcss@8.5.29)(stylelint@17.14.1(supports-color@10.2.2)(typescript@7.0.2))
       '@biomejs/biome':
         specifier: 2.5.3
         version: 2.5.3
@@ -223,8 +223,8 @@ packages:
     peerDependencies:
       swiper: '>=12.0.0'
 
-  '@arts/wp-plugin-tooling@https://codeload.github.com/artkrsk/wp-plugin-tooling/tar.gz/f5d242c7b969a3a20180e5c320bcfd8c0586023a':
-    resolution: {gitHosted: true, integrity: sha512-p3hcgPZhY6siN0Qi4IhYczqwQiizrdE1OuTvqqxEtt/i6c9VIKgPppZv8rgo9vLMIl/6FyCe77m4yv9qGOdn3w==, tarball: https://codeload.github.com/artkrsk/wp-plugin-tooling/tar.gz/f5d242c7b969a3a20180e5c320bcfd8c0586023a}
+  '@arts/wp-plugin-tooling@https://codeload.github.com/artkrsk/wp-plugin-tooling/tar.gz/766185a322d08bfbc408c00da812a575f8d7548d':
+    resolution: {gitHosted: true, integrity: sha512-V3cLtGlOROoFVZv1U02AQD+v9ZhWQ2qOmrMiNWPfDv/HhKm1RtRf173d3Ev0Ej5by6uwk+5OvBlOYxq0678cFw==, tarball: https://codeload.github.com/artkrsk/wp-plugin-tooling/tar.gz/766185a322d08bfbc408c00da812a575f8d7548d}
     version: 1.0.0
     engines: {node: '>=24'}
     hasBin: true
@@ -2284,7 +2284,7 @@ snapshots:
       '@types/select2': 4.0.63
       swiper: 14.2.0
 
-  '@arts/wp-plugin-tooling@https://codeload.github.com/artkrsk/wp-plugin-tooling/tar.gz/f5d242c7b969a3a20180e5c320bcfd8c0586023a(postcss@8.5.29)(stylelint@17.14.1(supports-color@10.2.2)(typescript@7.0.2))':
+  '@arts/wp-plugin-tooling@https://codeload.github.com/artkrsk/wp-plugin-tooling/tar.gz/766185a322d08bfbc408c00da812a575f8d7548d(postcss@8.5.29)(stylelint@17.14.1(supports-color@10.2.2)(typescript@7.0.2))':
     dependencies:
       archiver: 8.0.0
       chokidar: 5.0.0
