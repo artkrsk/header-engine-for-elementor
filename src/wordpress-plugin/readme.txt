@@ -24,6 +24,7 @@ Turn any Elementor Container into a site header that knows what to do on scroll:
 * **Recolor while sticky** — remap any Elementor Global Color for the stuck header: every widget inside that uses it — menus, buttons, icons, from any addon — switches with it. No per-widget color settings to hunt down.
 * **Logo swap** — the bundled Dual Site Logo widget switches between a primary and a secondary logo when the header sticks, so a light logo over the hero can become a dark one on a solid sticky bar.
 * **Header zones** — mark any other container on the page to hide the header while visitors scroll over it, or to reveal and lock it there. Handy over full-screen galleries and embedded maps.
+* **Alternate look** — mark the sections that need a different header look, such as dark ones, and the header swaps to a second logo and remaps your Global Colors while it sits over them. Also works inside Horizontal Scroll sections.
 * **Reveal offset** — start auto-hiding only after a chosen scroll distance: a custom value, the viewport height, or the header's own height.
 * **Pin offset** — stick the header below a custom line. Negative offsets work too, which lets a tall header stick in a compact form.
 * **Bottom dock** — fix the header to the bottom edge instead; auto-hide slides it down and out of the way.
@@ -46,7 +47,7 @@ Turn any Elementor Container into a site header that knows what to do on scroll:
 
 = For developers =
 
-The engine publishes its state as CSS classes and custom properties on the header wrapper and fires CustomEvents on `document`: `arts/header/sticky`, `arts/header/hidden`, `arts/header/locked`, `arts/header/released`, `arts/header/displaced`. The TypeScript and SCSS source lives on GitHub: https://github.com/artkrsk/header-engine-for-elementor
+The engine publishes its state as CSS classes and custom properties on the header wrapper and fires CustomEvents on `document`: `arts/header/sticky`, `arts/header/hidden`, `arts/header/locked`, `arts/header/alt`, `arts/header/released`, `arts/header/displaced`. The TypeScript and SCSS source lives on GitHub: https://github.com/artkrsk/header-engine-for-elementor
 
 == Installation ==
 
@@ -84,6 +85,10 @@ Set Position to Top, leave the container's background empty, and give the Sticky
 = Can I hide the header over one specific section? =
 
 Yes. Select any other container on the page and open its Header Zone section: choose Hide Header or Reveal & Lock Header, and pick when the zone counts: when it reaches the top, overlaps the header, or is in view.
+
+= How do I change the header's look over dark sections? =
+
+Set the header's default look for the first section of the page: its logo version and colors as they should appear at the top. Then select each section that needs the other look, open its Header Zone section and set Header Look Over This to Alternate. In the header's own settings, pick the Logo in Alternate Look and add rows under Recolor in Alternate Look. The header switches while its center line is over a marked section. This requires On Scroll set to Sticky or Sticky & Auto-Hide.
 
 = Why doesn't the Default position stick inside my Theme Builder header? =
 

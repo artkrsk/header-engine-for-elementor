@@ -130,6 +130,29 @@ each measure pass. Tick deciders and sub-modules:
   scans: an AJAX integrator stamps the page it is replacing instead of naming the engine's markers.
   Trade-off (accepted): zone liveness is settle-based — a rect that
   changes mid-scroll lags until the next settled measure.
+  The `alt` kind (alternate look, published as `arts-header_alt`) is evaluated with the `center`
+  mode (`resolveCenterActive`): active while the bar's center line — `getDecider()` from
+  `createSticky`, `pin.offset + barHeight / 2` for a top pin, `viewportH − pin.offset − barHeight / 2`
+  for a bottom pin, from cached measurements — lies inside the zone rect (`rect.top ≤ y + decider <
+  rect.bottom`). It has no geometry select; a container can be a hide/lock zone and an alt zone at
+  once (two tracked zones). Only the panel look var/marker and the presence-only
+  `data-arts-header-alt-over` make alt zones: `readZoneMode` does not accept `center`. The decider
+  never reads the DOM per tick; like `overlap`, it uses the pinned line even for an un-stuck flow
+  bar.
+  `sticky/horizontalScroll.ts` is the feature-detected adapter for the Horizontal Scroll plugin
+  (`window.artsHorizontalScroll`, read through a local structural interface at call time — no
+  import, no `global.d.ts`). At zone scan, any zone inside a `.js-arts-hs` section asks
+  `getScrollRange(el, { point })` (`point` = the header wrapper's center x as a fraction of the
+  section width, clamped to [0, 1]; one wrapper rect read per scan) and the returned scroll window
+  becomes a synthetic doc-space rect (`top = onStageAtEngage ? sectionTop : start + decider`,
+  `bottom = onStageAtRelease ? sectionBottom : end + decider`), so the tick stays arithmetic. Every
+  zone inside a horizontal section is forced to `center` mode, hide and lock included. Scan-time
+  band gate: if the decider line is outside the track's pinned band (`stageTop`/`stageHeight` — the
+  Horizontal Scroll Pin Top Offset case) the panel zone is dropped; the runway's parent Container is
+  what sits behind the header there, and marking that uses the ordinary rect path. A missing global,
+  `contract < 1`, or a null range (stacked/unmeasured/not a panel) takes the ordinary rect path; the
+  bubbling `arts-hs:layout` event on `document` schedules the existing rAF-coalesced rescan
+  (removed in `destroy()`).
 
 `heightObserver/` publishes live + settled rest bar heights as CSS vars (border-box RO), told about
 sticky state by an `isSticking` predicate + the `onStickingChange` callback `createHeader` wires —
@@ -211,9 +234,11 @@ Subscribe via `onHeaderEvent` / `offHeaderEvent` or plain `document.addEventList
 `toggleHidden`), `arts/header/locked` (bar revealed and held shown, reveal frozen — lock also
 clears the direction/displaced state; the `lockSticky` API lock and the lock-over zone lock are
 held apart in `createSticky` and published as their OR, so a zone flip never drops a consumer's
-lock and an API unlock never releases an active zone), `arts/header/released`
-(sticky-until release), `arts/header/displaced` (bar vacates its space). The same five have getters
-(`isSticking/isHidden/isLocked/isReleased/isDisplaced`); `revealing`/`scrollingDown` are
+lock and an API unlock never releases an active zone), `arts/header/alt` (the bar's center line is
+over an alternate-look zone; primary header only — a secondary runs `zones: false` and never
+publishes it), `arts/header/released`
+(sticky-until release), `arts/header/displaced` (bar vacates its space). The same six have getters
+(`isSticking/isHidden/isLocked/isAlt/isReleased/isDisplaced`); `revealing`/`scrollingDown` are
 deliberately class-only styling signals (per-tick frequency).
 
 ## Identifier contract
@@ -228,7 +253,7 @@ options JSON, the frontend the PHP one, and both must serialize identically. Wat
 an empty `array()` encodes as `[]`, not `{}` — a section that can go empty needs an object cast.
 
 - **State classes** on `.arts-header`: `arts-header_sticky`, `_revealing`, `_scrolling-down`,
-  `_hidden`, `_locked`, `_released`; plus `has-header-height` on `<html>`.
+  `_hidden`, `_locked`, `_alt`, `_released`; plus `has-header-height` on `<html>`.
 - **Engine-READ vars** (the arrows pointing the other way): `--arts-header-reveal-offset` — the
   panel/theme writes it (responsive px, `100vh`, `var(--arts-header-height-non-sticky)`), the
   stylesheet registers it as an inheriting `<length>` (`@property` in `_tokens.scss`) and the
@@ -238,7 +263,9 @@ an empty `array()` encodes as `[]`, not `{}` — a section that can go empty nee
   whole-document recalc after first paint (measured on Velum). A JS registration of the SAME name
   still succeeds on top of `@property` (separate registries) and pays that recalc again, so
   `createSticky` registers from JS only for a custom var name (a duplicate throws, swallowed).
-  Unregistered fallback parses a trailing-px token only. And `--arts-header-top-pinned` — SCSS-derived, not panel-authored and not
+  Unregistered fallback parses a trailing-px token only. The zone vars (`--arts-header-zone`,
+  `--arts-header-zone-geometry`, `--arts-header-zone-look`) are engine-READ at zone scan, each
+  `@property` non-inheriting with no initial value (see Data attributes). And `--arts-header-top-pinned` — SCSS-derived, not panel-authored and not
   registered (it always resolves to a plain px token), read at the same measure passes as the pin
   line's admin-bar term; see the admin-bar note under Gotchas.
 - **Engine-written vars** (`defaultConfig.vars`): `--arts-header-height`,
@@ -278,8 +305,16 @@ an empty `array()` encodes as `[]`, not `{}` — a section that can go empty nee
   rendered when ANY breakpoint is hide/lock) tells the tracker which elements to resolve at scan
   time. The marker value is the fallback for a var Elementor hasn't written yet (generated CSS
   predating the responsive controls), so existing sites need no CSS regeneration;
-  `data-arts-header-non-sticky-logo` / `data-arts-header-sticky-logo` (written by the editor
-  handler in the preview and by `Markup.php` on the frontend; CSS-read, never JS-read).
+  `data-arts-header-alt-over` (hand-authored alt zone, PRESENCE-only: the value is never parsed, the
+  `center` rule is the only geometry); the alternate-look twin of the panel zone, an independent
+  RESPONSIVE `arts_header_zone_look` select (`''` Default / `alt`; smaller breakpoints `''` Inherit +
+  explicit `default`) writing `--arts-header-zone-look` (`ZONE_LOOK_VAR`) with its own marker
+  `data-arts-header-zone-look="<desktop value>"` (`ZONE_LOOK_ATTR`, rendered when ANY breakpoint is
+  `alt`, value = fallback for an unwritten var); the kind and look markers are independent, so a
+  container may carry either or both;
+  `data-arts-header-non-sticky-logo` / `data-arts-header-sticky-logo` /
+  `data-arts-header-alt-logo` (written by the editor handler in the preview and by `Markup.php` on
+  the frontend; CSS-read, never JS-read). The new attribute constants stay out of `/contract`.
 - **Structural classes** (`constants/dom.ts`): wrapper/bar classes, the editor's
   `arts-header_elementor-element-<id>` prefix.
 - **Panel keys** read by `containerHandler`: `arts_header_enabled`, `arts_header_position`
@@ -287,7 +322,7 @@ an empty `array()` encodes as `[]`, not `{}` — a section that can go empty nee
   select's default value: saved overlay-top headers must not reflow), `arts_header_on_scroll`
   (`''` None / `sticky` / `auto-hide`, default `auto-hide`), `arts_header_stick_to`
   (`''` Top / `bottom`, flow-only),
-  `arts_header_state_{non_sticky,sticky}_logo_version`. CSS-write only (Elementor selectors, not
+  `arts_header_state_{non_sticky,sticky,alt}_logo_version`. CSS-write only (Elementor selectors, not
   editor-JS-read): `arts_header_pin_offset_preset` + responsive `arts_header_pin_offset` →
   `--arts-header-pin-offset`; `arts_header_sticky_reveal_offset_preset` (Custom/Viewport/Header Height) +
   `arts_header_sticky_reveal_offset` (responsive px slider) — both write `--arts-header-reveal-offset`.
@@ -310,6 +345,11 @@ an empty `array()` encodes as `[]`, not `{}` — a section that can go empty nee
   global — cycle guard). Kit colors for the SELECT come from
   `kits_manager->get_active_kit_for_frontend()` at registration (guarded; empty options when no
   kit). A deleted kit color degrades silently: the row emits a var nobody consumes.
+  `arts_header_alt_global_colors` (fields `global_id` + `alt_color`) is the same recolor for the
+  alternate look, scoped via `HEADER_ALT_STATE_BAR_SELECTOR` (`_alt` alone, like sticky) and
+  registered AFTER the sticky repeater so it wins at equal specificity; the `_logo.scss` alt block
+  sits after the sticky one for the same reason. Alt zones, like all zones, need On Scroll
+  Sticky or Sticky & Auto-Hide.
 - **Globals**: `window.artsHeaderForElementor` (`IHeaderApp`),
   `window.artsHeaderOptions.isElementorEditor`.
 - **Widget**: `arts-header-dual-site-logo` (name frozen — saved layouts reference it); secondary
@@ -345,8 +385,9 @@ an empty `array()` encodes as `[]`, not `{}` — a section that can go empty nee
   theme-builder header location wrapper is header-height tall, so flow can't pin there; the mode
   is for containers INSIDE tall page content (mid-page filter/submenu bars).
   The bottom dock hides DOWNWARD via the `--arts-header-hide-direction` sign token in the reveal
-  rules; caveats: zone `overlap` geometry and `until` release anchoring are top-bar semantics —
-  bottom mode supports `at-top`/`in-view` zones and no `until`. And a fixed dock's natural
+  rules; caveats: zone `overlap` geometry, the alt `center` decider and `until` release anchoring
+  are top-bar semantics (`resolvePinLine` reads a `fixed` dock as a top-edge pin, so its decider
+  sits near the top, at the admin-bar offset plus half the bar height) — bottom mode supports `at-top`/`in-view` zones and no `until`. And a fixed dock's natural
   position is ESTIMATED from its previous sibling (`estimateNaturalTop`), so a dock rendered
   after tall page content estimates near document-end and never resolves stuck — its auto-hide
   machinery stays inert. Render bottom docks before the tall content (the demo seed places its
@@ -459,6 +500,18 @@ layout the playground exercises.
   vars without the FDS preset dropdown hand-feeding
   `var()` into Padding. Native Padding + `padding_sticky` replaced them; don't reintroduce
   engine-owned spacing vars.
+- **Alternate wins over sticky by source order**: both state selectors have equal specificity, so
+  the alt repeater is registered after the sticky one in `Controls.php` and the alt logo block
+  follows the sticky block in `_logo.scss`. Don't reorder either, and don't fix it with
+  specificity.
+- **The look is a separate control, not a third Hide/Lock option**: look is orthogonal to behavior
+  (a dark section can also lock the header), and released panel ids are frozen, so the select's
+  shape could not be changed later. `arts_header_zone_look` stays independent of
+  `arts_header_zone`.
+- **No version-skew handling with Horizontal Scroll**: both plugins release together, so there is
+  no detection, warning or feature marker. A build without the newer range fields still takes the
+  window path (no band gate, release treated as false); only a missing global, `contract < 1` or a
+  null range takes the rect path. Don't add shims.
 - **fallow's "split `core/createHeader.ts`" recommendation: rejected.** It is the composition root;
   the wiring belongs in one place. fallow will keep suggesting it on fan-in.
 
