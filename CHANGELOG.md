@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0 – October 27, 2026
+
+* added: a new "Header Look Over This" setting on any section switches the header to an alternate look, with its own logo version and recolored Global Colors, while the header sits over that section.
+* added: a new arts/header/alt event and isAlt() getter report when the header is showing its alternate look.
+* improved: sections inside Horizontal Scroll panels now switch the header as each panel passes beneath it.
+
 ## 1.1.0 – October 13, 2026
 
 * added: the Header Zone settings can now be set per screen size, so a section can hide or lock the header on desktop and leave it alone on tablet and mobile.

@@ -4,7 +4,7 @@ Tags: elementor, sticky header, elementor header, transparent header, hide heade
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0
 GitHub Plugin URI: https://github.com/artkrsk/header-engine-for-elementor/
@@ -107,6 +107,11 @@ No. The script and stylesheet together weigh about 25 KB, and the engine does it
 5. Primary and secondary logos in the Dual Site Logo widget — the header swaps them automatically when it sticks.
 
 == Changelog ==
+
+= 1.2.0 – October 27, 2026 =
+* added: a new "Header Look Over This" setting on any section switches the header to an alternate look, with its own logo version and recolored Global Colors, while the header sits over that section.
+* added: a new arts/header/alt event and isAlt() getter report when the header is showing its alternate look.
+* improved: sections inside Horizontal Scroll panels now switch the header as each panel passes beneath it.
 
 = 1.1.0 – October 13, 2026 =
 * added: the Header Zone settings can now be set per screen size, so a section can hide or lock the header on desktop and leave it alone on tablet and mobile.
