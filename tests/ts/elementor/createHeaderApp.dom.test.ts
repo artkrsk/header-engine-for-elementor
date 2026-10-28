@@ -163,6 +163,26 @@ describe('createHeaderApp', () => {
     expect(app.instances).toHaveLength(0)
   })
 
+  it('gives an init() issued after a destroy() its own scan instead of joining the obsolete one', async () => {
+    makeHeaderFixture()
+    let release: () => void = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const app = await createHeaderApp({ autoInit: false, callbackBefore: () => gate })
+    apps.push(app)
+    const stale = app.init()
+    await app.destroy(false)
+    const fresh = app.init()
+    release()
+    await stale
+    await fresh
+    // The AJAX cycle: the destroy dropped the first scan, so the second init() must have booted
+    // the page itself rather than resolving with the dropped scan's empty result.
+    expect(app.instances).toHaveLength(1)
+    expect(app.artsHeader?.isInitialized).toBe(true)
+  })
+
   it("propagates one instance's settled height vars to the other instances", async () => {
     const raf = fakeRaf()
     const ro = fakeResizeObserver()

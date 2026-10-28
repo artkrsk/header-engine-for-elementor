@@ -4,15 +4,26 @@ import type { IHeader, IHeaderApp, IHeaderAppArgs } from '../interfaces'
 import { isIgnored, logger } from '../utils'
 import { attachContainerHandler } from './containerHandler'
 
-/** De-duplicate concurrent calls onto the same in-flight promise; later arguments are ignored. */
+/**
+ * De-duplicate concurrent calls onto the same in-flight promise; later arguments are ignored. A
+ * changed `epoch` detaches new callers from a run that became obsolete mid-flight.
+ */
 const singleFlight = <A extends unknown[]>(
-  run: (...callArgs: A) => Promise<void>
+  run: (...callArgs: A) => Promise<void>,
+  epoch: () => number = () => 0
 ): ((...callArgs: A) => Promise<void>) => {
   let pending: Promise<void> | null = null
+  let pendingEpoch = 0
   return (...callArgs) => {
-    pending ??= run(...callArgs).finally(() => {
-      pending = null
-    })
+    if (pending === null || pendingEpoch !== epoch()) {
+      pendingEpoch = epoch()
+      const current: Promise<void> = run(...callArgs).finally(() => {
+        if (pending === current) {
+          pending = null
+        }
+      })
+      pending = current
+    }
     return pending
   }
 }
@@ -56,7 +67,7 @@ export async function createHeaderApp(args: IHeaderAppArgs = {}): Promise<IHeade
     registry.set(container, header)
   }
 
-  const scan = singleFlight(async () => {
+  const runScan = async () => {
     try {
       const generation = teardowns
       await args.callbackBefore?.()
@@ -89,7 +100,8 @@ export async function createHeaderApp(args: IHeaderAppArgs = {}): Promise<IHeade
       logger.error('Error during arts header initialization:', error)
       throw error
     }
-  })
+  }
+  const scan = singleFlight(runScan, () => teardowns)
 
   // Editor upserts SERIALIZE but each call keeps its own container — Elementor boots one handler
   // per header container (each in its own deferred task, so calls overlap in flight), and a
