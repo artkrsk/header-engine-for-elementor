@@ -56,6 +56,29 @@ describe('createHeader', () => {
     expect(header.isInitialized).toBe(false)
   })
 
+  it.each([
+    ['the bar', true, false],
+    ['the container', false, true],
+    ['the container and the bar', false, false]
+  ])('never throws on any API call when %s is missing', (_, hasContainer, hasBar) => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { container, bar } = makeHeaderFixture()
+    const header = createHeader(
+      (hasContainer ? container : null) as unknown as HTMLElement,
+      (hasBar ? bar : null) as unknown as HTMLElement
+    )
+    created.push(header)
+    header.init()
+    expect(() => {
+      header.refresh()
+      header.toggleHidden(true)
+      header.lockSticky(true)
+      header.refreshZones()
+      header.destroy(true)
+    }).not.toThrow()
+    expect(header.isInitialized).toBe(false)
+  })
+
   it('lets inline data-arts-header-options REPLACE constructor options entirely', () => {
     fakeMutationObserver()
     fakeResizeObserver()

@@ -98,6 +98,9 @@ export function createHeader(
       initialized = false
     },
     refresh() {
+      if (!bar) {
+        return
+      }
       // Resolve host values before reading geometry, then let the sticky pass publish state.
       values?.refresh()
       const barHeight = measureBar(bar)
