@@ -35,12 +35,17 @@ describe('readZoneLook', () => {
 })
 
 describe('readZoneKind', () => {
-  it('accepts only hide and lock; none, unset and junk are no zone', () => {
+  it('accepts hide, lock and hold; none, unset and junk are no zone', () => {
     expect(readZoneKind('hide')).toBe('hide')
     expect(readZoneKind('lock')).toBe('lock')
+    expect(readZoneKind('hold')).toBe('hold')
     expect(readZoneKind('none')).toBeNull()
     expect(readZoneKind('')).toBeNull()
     expect(readZoneKind('shrink')).toBeNull()
+  })
+
+  it('never reads alt from the kind var — the look is a separate control', () => {
+    expect(readZoneKind('alt')).toBeNull()
   })
 })
 
@@ -51,6 +56,20 @@ describe('resolveZoneActive', () => {
     expect(resolveZoneActive('at-top', 1000, 2500, 1000, 900, 0, 80)).toBe(true)
     expect(resolveZoneActive('at-top', 1000, 2500, 2499, 900, 0, 80)).toBe(true)
     expect(resolveZoneActive('at-top', 1000, 2500, 2500, 900, 0, 80)).toBe(false)
+  })
+
+  it('at-top: measures against the pin line, not the viewport top', () => {
+    // Pinned 32px down (an admin bar): the zone must span y + 32, so it activates 32px earlier.
+    expect(resolveZoneActive('at-top', 1000, 2500, 967, 900, 32, 80)).toBe(false)
+    expect(resolveZoneActive('at-top', 1000, 2500, 968, 900, 32, 80)).toBe(true)
+    // And lets go 32px earlier: the bottom edge clears the pin line at y 2468.
+    expect(resolveZoneActive('at-top', 1000, 2500, 2467, 900, 32, 80)).toBe(true)
+    expect(resolveZoneActive('at-top', 1000, 2500, 2468, 900, 32, 80)).toBe(false)
+    // A negative compact-header offset moves the line above the viewport.
+    expect(resolveZoneActive('at-top', 1000, 2500, 1087, 900, -88, 80)).toBe(false)
+    expect(resolveZoneActive('at-top', 1000, 2500, 1088, 900, -88, 80)).toBe(true)
+    expect(resolveZoneActive('at-top', 1000, 2500, 2587, 900, -88, 80)).toBe(true)
+    expect(resolveZoneActive('at-top', 1000, 2500, 2588, 900, -88, 80)).toBe(false)
   })
 
   it('overlap: active while the zone intersects the header strip [pinLine, pinLine+barHeight]', () => {
@@ -96,6 +115,16 @@ describe('reduceZones', () => {
         { kind: 'lock', active: true }
       ])
     ).toEqual({ anyHide: true, anyLock: true, anyHold: false, anyAlt: false })
+  })
+
+  it('drives hold on its own — the lock it implies is combined by the orchestrator', () => {
+    expect(
+      reduceZones([
+        { kind: 'hold', active: true },
+        { kind: 'lock', active: false }
+      ])
+    ).toEqual({ anyHide: false, anyLock: false, anyHold: true, anyAlt: false })
+    expect(reduceZones([{ kind: 'hold', active: false }]).anyHold).toBe(false)
   })
 
   it('reports all-clear for no zones at all', () => {

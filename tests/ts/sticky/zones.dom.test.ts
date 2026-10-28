@@ -245,6 +245,76 @@ describe('createZoneTracker', () => {
     expect(filter).toContain('data-arts-header-zone-look')
   })
 
+  it('drives hold from a panel zone var, independent of lock', () => {
+    addPanelZone('hold', 'in-view', 1000, 1600)
+    const { tracker, onChange } = makeTracker()
+    tracker.evaluate(0)
+    expect(onChange).not.toHaveBeenCalled()
+    tracker.evaluate(1200)
+    expect(onChange).toHaveBeenLastCalledWith(false, false, true, false)
+  })
+
+  describe('ignored subtrees', () => {
+    // One builder per scan site; each zone is active at y 1200 when it is NOT ignored.
+    const sites: [string, () => HTMLElement][] = [
+      ['hide-over', () => addZone('data-arts-header-hide-over', 'at-top', 1000, 1600)],
+      ['lock-over', () => addZone('data-arts-header-lock-over', 'at-top', 1000, 1600)],
+      ['alt-over', () => addZone('data-arts-header-alt-over', '', 1000, 1600)],
+      ['panel zone', () => addPanelZone('hide', 'at-top', 1000, 1600)],
+      [
+        'panel look zone',
+        () => {
+          const el = addZone('data-arts-header-zone-look', '', 1000, 1600)
+          el.style.setProperty('--arts-header-zone-look', 'alt')
+          return el
+        }
+      ]
+    ]
+
+    it.each(sites)('%s: tracked while the page is live', (_name, build) => {
+      build()
+      const { tracker, onChange } = makeTracker()
+      tracker.evaluate(1200)
+      expect(onChange).toHaveBeenCalledTimes(1)
+    })
+
+    it.each(sites)('%s: skipped inside a stamped subtree', (_name, build) => {
+      const leaving = document.createElement('div')
+      leaving.setAttribute('data-arts-header-ignore', '')
+      document.body.appendChild(leaving)
+      leaving.appendChild(build())
+      const { tracker, onChange } = makeTracker()
+      tracker.evaluate(1200)
+      expect(onChange).not.toHaveBeenCalled()
+    })
+
+    it.each(sites)('%s: skipped when the zone element itself is stamped', (_name, build) => {
+      build().setAttribute('data-arts-header-ignore', '')
+      const { tracker, onChange } = makeTracker()
+      tracker.evaluate(1200)
+      expect(onChange).not.toHaveBeenCalled()
+    })
+
+    it('drops a live zone on the next scan once its page is stamped', () => {
+      const leaving = document.createElement('div')
+      document.body.appendChild(leaving)
+      leaving.appendChild(addZone('data-arts-header-hide-over', 'at-top', 1000, 1600))
+      const { tracker, onChange } = makeTracker()
+      tracker.evaluate(1200)
+      expect(onChange).toHaveBeenLastCalledWith(true, false, false, false)
+      leaving.setAttribute('data-arts-header-ignore', '')
+      tracker.refresh(1200)
+      expect(onChange).toHaveBeenLastCalledWith(false, false, false, false)
+    })
+
+    it('rescans when the ignore marker mutates', () => {
+      const moInstances = fakeMutationObserver()
+      makeTracker()
+      const options = moInstances[0]?.observed[0]?.options as MutationObserverInit | undefined
+      expect(options?.attributeFilter).toContain('data-arts-header-ignore')
+    })
+  })
+
   describe('horizontal sections', () => {
     const range = {
       start: 1550,
@@ -255,8 +325,17 @@ describe('createZoneTracker', () => {
       stageHeight: 800
     }
 
+    interface IRigParts {
+      container: HTMLElement
+      section: HTMLElement
+      panel: HTMLElement
+    }
+
     /** A header container, a `.js-arts-hs` section and one marked panel inside it. */
-    const makeHorizontalRig = (getScrollRange: () => typeof range | null) => {
+    const makeHorizontalRig = (
+      getScrollRange: () => typeof range | null,
+      prepare?: (parts: IRigParts) => void
+    ) => {
       vi.stubGlobal('artsHorizontalScroll', { contract: 1, getScrollRange })
       const container = document.createElement('div')
       container.getBoundingClientRect = () =>
@@ -272,6 +351,7 @@ describe('createZoneTracker', () => {
       panel.getBoundingClientRect = () => ({ top: 1000, bottom: 2500 }) as DOMRect
       section.appendChild(panel)
       document.body.appendChild(section)
+      prepare?.({ container, section, panel })
       const onChange = vi.fn()
       const tracker = createZoneTracker({
         container,
@@ -282,7 +362,7 @@ describe('createZoneTracker', () => {
         onChange
       })
       trackers.push(tracker)
-      return { tracker, onChange }
+      return { tracker, onChange, panel }
     }
 
     it('tracks a hide zone inside a horizontal section with the center rule and the window path', () => {
@@ -319,11 +399,103 @@ describe('createZoneTracker', () => {
       expect(onChange).not.toHaveBeenCalled()
     })
 
-    it('removes the layout listener on destroy', () => {
-      const removeSpy = vi.spyOn(document, 'removeEventListener')
-      const { tracker } = makeHorizontalRig(() => range)
+    it('stops rescanning on the layout event after destroy', () => {
+      const raf = fakeRaf()
+      const getScrollRange = vi.fn(() => range)
+      const { tracker } = makeHorizontalRig(getScrollRange)
+      expect(getScrollRange).toHaveBeenCalledTimes(1)
+      document.dispatchEvent(new CustomEvent(HS_LAYOUT_EVENT, { bubbles: true }))
+      raf.step()
+      expect(getScrollRange).toHaveBeenCalledTimes(2)
       tracker.destroy()
-      expect(removeSpy).toHaveBeenCalledWith(HS_LAYOUT_EVENT, expect.any(Function))
+      document.dispatchEvent(new CustomEvent(HS_LAYOUT_EVENT, { bubbles: true }))
+      expect(raf.pendingCount).toBe(0)
+      raf.step()
+      expect(getScrollRange).toHaveBeenCalledTimes(2)
+    })
+
+    it('asks for the window at the header center, as a fraction of the section width', () => {
+      const getScrollRange = vi.fn(() => range)
+      const { panel } = makeHorizontalRig(getScrollRange)
+      // Container center x 250 over a 1000px-wide section starting at 0.
+      expect(getScrollRange).toHaveBeenCalledExactlyOnceWith(panel, { point: 0.25 })
+    })
+
+    it('reads the container rect once per scan however many panels ask, and not at all otherwise', () => {
+      const containerRect = vi.fn(() => ({ top: 0, bottom: 80, left: 0, width: 500 }) as DOMRect)
+      const { tracker } = makeHorizontalRig(
+        () => range,
+        ({ container, section }) => {
+          container.getBoundingClientRect = containerRect
+          const second = document.createElement('div')
+          second.setAttribute('data-arts-header-lock-over', 'at-top')
+          section.appendChild(second)
+        }
+      )
+      expect(containerRect).toHaveBeenCalledTimes(1)
+      tracker.refresh(0)
+      expect(containerRect).toHaveBeenCalledTimes(2)
+    })
+
+    it('never reads the container rect when no zone sits in a horizontal section', () => {
+      const containerRect = vi.fn(() => ({ top: 0, bottom: 80, left: 0, width: 500 }) as DOMRect)
+      const { tracker } = makeHorizontalRig(
+        () => range,
+        ({ container, section }) => {
+          container.getBoundingClientRect = containerRect
+          section.remove()
+          addZone('data-arts-header-hide-over', 'at-top', 1000, 1600)
+        }
+      )
+      tracker.evaluate(1200)
+      expect(containerRect).not.toHaveBeenCalled()
+    })
+
+    it.each([
+      ['upper edge exclusive', 0, 40, false],
+      ['upper edge reached from inside', 0, 41, true],
+      ['lower edge inclusive', 40, 40, true]
+    ])('band gate at the decider line (40): %s', (_name, stageTop, stageHeight, kept) => {
+      const { tracker, onChange } = makeHorizontalRig(() => ({ ...range, stageTop, stageHeight }))
+      tracker.evaluate(1700)
+      if (kept) {
+        expect(onChange).toHaveBeenLastCalledWith(true, false, false, false)
+      } else {
+        expect(onChange).not.toHaveBeenCalled()
+      }
+    })
+
+    it.each([
+      [
+        'lock',
+        (panel: HTMLElement) => {
+          panel.removeAttribute('data-arts-header-hide-over')
+          panel.setAttribute('data-arts-header-lock-over', 'in-view')
+        },
+        [false, true, false, false]
+      ],
+      [
+        'hold',
+        (panel: HTMLElement) => {
+          panel.removeAttribute('data-arts-header-hide-over')
+          panel.setAttribute('data-arts-header-zone', 'hold:in-view')
+        },
+        [false, false, true, false]
+      ]
+    ] as const)('forces a %s zone to the center rule and the window path', (_kind, configure, expected) => {
+      const { tracker, onChange } = makeHorizontalRig(
+        () => range,
+        ({ panel }) => configure(panel)
+      )
+      // The panel's own rect [1000, 2500] would be in view here; the window opens at 1550.
+      tracker.evaluate(1200)
+      expect(onChange).not.toHaveBeenCalled()
+      tracker.evaluate(1549)
+      expect(onChange).not.toHaveBeenCalled()
+      tracker.evaluate(1550)
+      expect(onChange).toHaveBeenLastCalledWith(...expected)
+      tracker.evaluate(2650)
+      expect(onChange).toHaveBeenLastCalledWith(false, false, false, false)
     })
   })
 })

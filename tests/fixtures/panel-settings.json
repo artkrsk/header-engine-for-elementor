@@ -1,0 +1,230 @@
+{
+  "onScroll": [
+    {
+      "name": "none",
+      "settings": { "arts_header_on_scroll": "" },
+      "primary": "{\"sticky\":false}",
+      "secondary": "{\"sticky\":false,\"heightObserver\":false}"
+    },
+    {
+      "name": "sticky",
+      "settings": { "arts_header_on_scroll": "sticky" },
+      "primary": "{\"sticky\":{\"reveal\":false}}",
+      "secondary": "{\"sticky\":{\"reveal\":false,\"zones\":false},\"heightObserver\":false}"
+    },
+    {
+      "name": "auto-hide",
+      "settings": { "arts_header_on_scroll": "auto-hide" },
+      "primary": "{\"sticky\":{\"reveal\":true}}",
+      "secondary": "{\"sticky\":{\"reveal\":true,\"zones\":false},\"heightObserver\":false}"
+    },
+    {
+      "name": "unknown string",
+      "settings": { "arts_header_on_scroll": "bounce" },
+      "primary": "{\"sticky\":false}",
+      "secondary": "{\"sticky\":false,\"heightObserver\":false}"
+    },
+    {
+      "name": "wrong case",
+      "settings": { "arts_header_on_scroll": "Sticky" },
+      "primary": "{\"sticky\":false}",
+      "secondary": "{\"sticky\":false,\"heightObserver\":false}"
+    },
+    {
+      "name": "missing",
+      "settings": {},
+      "primary": "{\"sticky\":false}",
+      "secondary": "{\"sticky\":false,\"heightObserver\":false}"
+    },
+    {
+      "name": "null",
+      "settings": { "arts_header_on_scroll": null },
+      "primary": "{\"sticky\":false}",
+      "secondary": "{\"sticky\":false,\"heightObserver\":false}"
+    },
+    {
+      "name": "number",
+      "settings": { "arts_header_on_scroll": 1 },
+      "primary": "{\"sticky\":false}",
+      "secondary": "{\"sticky\":false,\"heightObserver\":false}"
+    },
+    {
+      "name": "boolean",
+      "settings": { "arts_header_on_scroll": true },
+      "primary": "{\"sticky\":false}",
+      "secondary": "{\"sticky\":false,\"heightObserver\":false}"
+    },
+    {
+      "name": "array holding a valid value",
+      "settings": { "arts_header_on_scroll": ["sticky"] },
+      "primary": "{\"sticky\":false}",
+      "secondary": "{\"sticky\":false,\"heightObserver\":false}"
+    }
+  ],
+  "zones": [
+    {
+      "name": "desktop hide",
+      "settings": { "arts_header_zone": "hide", "arts_header_zone_geometry": "at-top" },
+      "zone": "hide:at-top",
+      "look": null
+    },
+    {
+      "name": "desktop lock",
+      "settings": { "arts_header_zone": "lock", "arts_header_zone_geometry": "overlap" },
+      "zone": "lock:overlap",
+      "look": null
+    },
+    {
+      "name": "desktop hold",
+      "settings": { "arts_header_zone": "hold", "arts_header_zone_geometry": "in-view" },
+      "zone": "hold:in-view",
+      "look": null
+    },
+    {
+      "name": "kind without geometry",
+      "settings": { "arts_header_zone": "hide" },
+      "zone": "hide:",
+      "look": null
+    },
+    {
+      "name": "tablet-only lock keeps the desktop geometry as fallback",
+      "settings": {
+        "arts_header_zone": "",
+        "arts_header_zone_tablet": "lock",
+        "arts_header_zone_geometry": "overlap"
+      },
+      "zone": ":overlap",
+      "look": null
+    },
+    {
+      "name": "mobile-only hold",
+      "settings": { "arts_header_zone_mobile": "hold" },
+      "zone": ":",
+      "look": null
+    },
+    {
+      "name": "two-word breakpoint suffix",
+      "settings": { "arts_header_zone_mobile_extra": "hide" },
+      "zone": ":",
+      "look": null
+    },
+    {
+      "name": "desktop junk kind, tablet hide",
+      "settings": {
+        "arts_header_zone": "bounce",
+        "arts_header_zone_tablet": "hide",
+        "arts_header_zone_geometry": "at-top"
+      },
+      "zone": ":at-top",
+      "look": null
+    },
+    {
+      "name": "explicit none on every breakpoint",
+      "settings": { "arts_header_zone": "none", "arts_header_zone_tablet": "none" },
+      "zone": null,
+      "look": null
+    },
+    {
+      "name": "geometry-only twin holding a kind value",
+      "settings": { "arts_header_zone_geometry_tablet": "hide" },
+      "zone": null,
+      "look": null
+    },
+    {
+      "name": "geometry key holding a kind value",
+      "settings": { "arts_header_zone_geometry": "hide" },
+      "zone": null,
+      "look": null
+    },
+    {
+      "name": "look key holding a kind value",
+      "settings": { "arts_header_zone_look": "hide" },
+      "zone": null,
+      "look": null
+    },
+    {
+      "name": "unknown kind",
+      "settings": { "arts_header_zone": "bounce" },
+      "zone": null,
+      "look": null
+    },
+    {
+      "name": "array holding a valid kind",
+      "settings": { "arts_header_zone_tablet": ["hide"] },
+      "zone": null,
+      "look": null
+    },
+    {
+      "name": "key that only starts like the zone key",
+      "settings": { "arts_header_zonex": "hide", "my_arts_header_zone": "hide" },
+      "zone": null,
+      "look": null
+    },
+    {
+      "name": "desktop alt look",
+      "settings": { "arts_header_zone_look": "alt" },
+      "zone": null,
+      "look": "alt"
+    },
+    {
+      "name": "tablet-only alt look",
+      "settings": { "arts_header_zone_look": "", "arts_header_zone_look_tablet": "alt" },
+      "zone": null,
+      "look": ""
+    },
+    {
+      "name": "default look",
+      "settings": { "arts_header_zone_look": "default", "arts_header_zone_look_tablet": "default" },
+      "zone": null,
+      "look": null
+    },
+    {
+      "name": "kind and look together",
+      "settings": {
+        "arts_header_zone": "hide",
+        "arts_header_zone_geometry": "at-top",
+        "arts_header_zone_look": "alt"
+      },
+      "zone": "hide:at-top",
+      "look": "alt"
+    },
+    {
+      "name": "an enabled header is never a zone",
+      "settings": {
+        "arts_header_enabled": "yes",
+        "arts_header_zone": "hide",
+        "arts_header_zone_look": "alt"
+      },
+      "zone": null,
+      "look": null
+    }
+  ],
+  "logos": [
+    {
+      "name": "all three versions",
+      "settings": {
+        "arts_header_state_non_sticky_logo_version": "primary",
+        "arts_header_state_sticky_logo_version": "secondary",
+        "arts_header_state_alt_logo_version": "secondary"
+      },
+      "attributes": {
+        "data-arts-header-non-sticky-logo": "primary",
+        "data-arts-header-sticky-logo": "secondary",
+        "data-arts-header-alt-logo": "secondary"
+      }
+    },
+    {
+      "name": "only the sticky version set",
+      "settings": {
+        "arts_header_state_non_sticky_logo_version": "",
+        "arts_header_state_sticky_logo_version": "secondary"
+      },
+      "attributes": { "data-arts-header-sticky-logo": "secondary" }
+    },
+    {
+      "name": "no versions",
+      "settings": {},
+      "attributes": {}
+    }
+  ]
+}

@@ -172,6 +172,22 @@ describe('createContainerHandler', () => {
     expect(el.hasAttribute('data-arts-header-zone')).toBe(false)
   })
 
+  it('marks a hold container like hide and lock — on desktop or on any breakpoint', () => {
+    const settings: Record<string, unknown> = {
+      arts_header_enabled: '',
+      arts_header_zone: 'hold',
+      arts_header_zone_geometry: 'in-view'
+    }
+    const { handler, el } = makeHandler(settings)
+    handler.setHeader()
+    expect(el.getAttribute('data-arts-header-zone')).toBe('hold:in-view')
+    // Desktop off, a mobile-only hold still counts; the marker carries no kind then.
+    settings.arts_header_zone = ''
+    settings.arts_header_zone_mobile = 'hold'
+    handler.setHeader()
+    expect(el.getAttribute('data-arts-header-zone')).toBe(':in-view')
+  })
+
   it('never marks a header container as its own zone', () => {
     const { handler, el } = makeHandler({
       arts_header_enabled: 'yes',
@@ -283,12 +299,51 @@ describe('createContainerHandler', () => {
     expect(onInit).toHaveBeenCalledWith({ container: handler.wrapperEl, bar: handler.el })
   })
 
-  it('routes a disabled header to onDestroy instead of onInit', async () => {
+  it('boots again on a later change once the previous boot has settled', async () => {
+    const { handler, onInit } = makeHandler({ arts_header_enabled: 'yes' })
+    handler.setHeader()
+    await handler.initHeader(
+      onInit,
+      vi.fn(async () => {})
+    )
+    expect(handler.isLoading).toBe(false)
+    await handler.initHeader(
+      onInit,
+      vi.fn(async () => {})
+    )
+    expect(onInit).toHaveBeenCalledTimes(2)
+  })
+
+  it('tears down the wrapper it booted when the header is disabled afterwards', async () => {
+    const settings: Record<string, unknown> = { arts_header_enabled: 'yes' }
+    const { handler, onInit, onDestroy } = makeHandler(settings)
+    handler.setHeader()
+    const wrapper = handler.wrapperEl
+    await handler.initHeader(onInit, onDestroy)
+    expect(onDestroy).not.toHaveBeenCalled()
+    settings.arts_header_enabled = ''
+    handler.setHeader()
+    await handler.initHeader(onInit, onDestroy)
+    expect(onInit).toHaveBeenCalledTimes(1)
+    expect(onDestroy).toHaveBeenCalledTimes(1)
+    // The wrapper is already unwrapped by now: the app's registry still keys on that element.
+    expect(wrapper?.isConnected).toBe(false)
+    expect(onDestroy).toHaveBeenCalledWith(wrapper)
+  })
+
+  it('has nothing to tear down for a disabled container that never booted', async () => {
     const { handler, onInit, onDestroy } = makeHandler({ arts_header_enabled: '' })
     handler.setHeader()
-    Object.assign(handler, { onDestroy })
     await handler.initHeader(onInit, onDestroy)
     expect(onInit).not.toHaveBeenCalled()
-    expect(onDestroy).toHaveBeenCalledTimes(1)
+    expect(onDestroy).not.toHaveBeenCalled()
+  })
+
+  it('leaves an element that is not attached to anything unwrapped', () => {
+    const { handler, el } = makeHandler({ arts_header_enabled: 'yes' })
+    el.remove()
+    expect(() => handler.setHeader()).not.toThrow()
+    expect(el.parentElement).toBeNull()
+    expect(handler.wrapperEl).toBeUndefined()
   })
 })

@@ -24,6 +24,15 @@ describe('deepmerge', () => {
     expect(result.list).toEqual([1, 2, 3])
   })
 
+  it('returns a copy of the target for a source that is not an object', () => {
+    const target = { a: 1 }
+    for (const source of [null, undefined, 'str', [1, 2]]) {
+      const result = deepmerge(target, source as never)
+      expect(result).toEqual({ a: 1 })
+      expect(result).not.toBe(target)
+    }
+  })
+
   it('mutates neither input', () => {
     const target = { a: { b: 1 } }
     const source = { a: { b: 2 } }

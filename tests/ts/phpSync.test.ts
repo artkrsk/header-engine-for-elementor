@@ -24,14 +24,20 @@ import {
   ZONE_LOOK_VAR
 } from '@ts/constants'
 import { describe, expect, it } from 'vitest'
+import { hasPhp, lazyEmitter } from './phpEmitter'
 
 /**
  * The PHP layer hand-mirrors the TS identifier contract (no shared source of
  * truth across the languages) — this is the styleSync guard extended to PHP.
  */
 
-const php = (file: string): string =>
-  readFileSync(resolve(__dirname, `../../src/php/Elementor/${file}`), 'utf8')
+const phpRoot = (file: string): string =>
+  readFileSync(resolve(__dirname, `../../src/php/${file}`), 'utf8')
+
+const php = (file: string): string => phpRoot(`Elementor/${file}`)
+
+/** Whitespace-free source: phpcbf rewrites PHP on pre-commit, so assertions must not depend on layout. */
+const compact = (source: string): string => source.replaceAll(/\s+/g, '')
 
 /** Panel keys the editor-side handler reads; PHP must define and read the same names. */
 const PANEL_KEYS = [
@@ -101,13 +107,13 @@ describe('Markup.php mirrors the TS identifier contract', () => {
   it('renders the zone marker from the Header Zone panel keys', () => {
     expect(markup).toContain(`'${ZONE_ATTR}'`)
     expect(markup).toContain('arts_header_zone')
-    expect(markup).toContain("in_array( $value, array( 'hide', 'lock', 'hold' ), true )")
+    expect(compact(markup)).toContain("in_array($value,array('hide','lock','hold'),true)")
   })
 
   it('renders the look marker from the Header Look Over This panel key', () => {
     expect(markup).toContain(`'${ZONE_LOOK_ATTR}'`)
     expect(markup).toContain('arts_header_zone_look')
-    expect(markup).toContain("'alt' === $value")
+    expect(compact(markup)).toContain("'alt'===$value")
   })
 
   it.each([
@@ -143,10 +149,17 @@ describe('Controls.php defines the frontend_available panel keys', () => {
   // Scope split: in-box sticky styles (backgrounds, borders, padding, recolor) ride
   // HEADER_STICKY_STATE_BAR_SELECTOR (`_sticky` alone) so they hold through the hide/reveal
   // slide; ONLY box-shadow may use the `:not(_scrolling-down)` visible scope — it paints outside
-  // the box and would bleed into the viewport while the bar sits hidden. Two references =
-  // the constant's own definition + the box_shadow_sticky usage.
+  // the box and would bleed into the viewport while the bar sits hidden.
   it('reserves the visible (:not scrolling-down) bar scope for the box shadow alone', () => {
-    expect(controls.match(/HEADER_STICKY_BAR_SELECTOR/g)?.length).toBe(2)
+    const usages = [...controls.matchAll(/self::HEADER_STICKY_BAR_SELECTOR\b/g)]
+    const shadow = controls.indexOf("'box_shadow_sticky'")
+
+    expect(usages).toHaveLength(1)
+    expect(shadow).toBeGreaterThan(-1)
+    // The one usage belongs to the box_shadow_sticky control: no other control starts in between.
+    const usage = usages[0]?.index ?? -1
+    expect(usage).toBeGreaterThan(shadow)
+    expect(controls.slice(shadow, usage)).not.toMatch(/add_(?:group_|responsive_)?control\(/)
   })
 
   // The sticky recolor rides Elementor's own kit idiom: redefining the inherited
@@ -210,5 +223,86 @@ describe('Assets.php provides the editor-flag global', () => {
     const assets = php('Assets.php')
     expect(assets).toContain('artsHeaderOptions')
     expect(assets).toContain('isElementorEditor')
+  })
+})
+
+describe('Controls.php sticky selectors', () => {
+  const constants = lazyEmitter<Record<string, unknown>>('controls.php', [{}])
+  const HELD_GUARD = `:where(:not(.${defaultConfig.classes.held}))`
+
+  // A held header keeps `_sticky` (it positions the bar) but must lose the sticky LOOK; the
+  // `:where()` guard does it without adding specificity, so the alt rules, registered later,
+  // still win at equal weight. Only a browser sees the cascade — this pins the guard string.
+  it
+    .skipIf(!hasPhp)
+    .each([
+      'HEADER_STICKY_SELECTOR',
+      'HEADER_STICKY_BAR_SELECTOR',
+      'HEADER_STICKY_STATE_SELECTOR',
+      'HEADER_STICKY_STATE_BAR_SELECTOR'
+    ])('%s excludes a held header with a zero-specificity guard', (name) => {
+    expect(constants()[0]?.[name]).toContain(HELD_GUARD)
+  })
+
+  it.skipIf(!hasPhp).each(['HEADER_ALT_STATE_SELECTOR', 'HEADER_ALT_STATE_BAR_SELECTOR'])(
+    '%s keeps the alternate look independent of held',
+    (name) => {
+      expect(constants()[0]?.[name]).not.toContain(defaultConfig.classes.held)
+      expect(constants()[0]?.[name]).toContain(`.${defaultConfig.classes.alt}`)
+    }
+  )
+
+  // The Elementor-generated sticky CSS names state classes by string. A rename in defaultConfig
+  // plus the SCSS passes styleSync, yet would leave these rules matching nothing.
+  it('only names state classes the engine still publishes', () => {
+    const tokens = new Set(
+      (php('Controls.php').match(/arts-header_(?!_)[a-z][a-z-]*/g) ?? []).filter(
+        (token) => !token.startsWith(WRAPPER_ELEMENT_ID_PREFIX)
+      )
+    )
+
+    expect([...tokens].sort()).toEqual(
+      expect.arrayContaining([
+        defaultConfig.classes.sticking,
+        defaultConfig.classes.held,
+        defaultConfig.classes.scrollingDown,
+        defaultConfig.classes.alt
+      ])
+    )
+    expect(
+      [...tokens].filter((token) => !Object.values(defaultConfig.classes).includes(token))
+    ).toEqual([])
+  })
+})
+
+describe('The secondary-logo theme mod key is one string across the PHP layer', () => {
+  const KEY = 'arts_header_custom_logo_secondary'
+  const first = (source: string, pattern: RegExp): string | undefined =>
+    compact(source).match(pattern)?.[1]
+
+  it('agrees between the filter hook, the Customizer setting, the kit sync and the readers', () => {
+    const backend = php('Backend.php')
+    const dualLogo = compact(php('DualLogoWidget.php'))
+    const keys = {
+      hook: first(
+        phpRoot('Plugin.php'),
+        /pre_set_theme_mod_(\w+)',array\(\$backend,'handle_secondary_logo_theme_mod'\)/
+      ),
+      setting: first(backend, /add_setting\('([^']+)'/),
+      kitSync: first(backend, /set_theme_mod\('([^']+)',\$settings\['site_secondary_logo'\]/),
+      controlsRead: first(php('Controls.php'), /get_theme_mod\('([^']+)'\)/),
+      // The widget also reads core's own `custom_logo` mod for the primary logo.
+      widgetReads: [...dualLogo.matchAll(/get_theme_mod_id\('([^']+)'\)/g)]
+        .map((match) => match[1])
+        .filter((key) => key !== 'custom_logo')
+    }
+
+    expect(keys).toEqual({
+      hook: KEY,
+      setting: KEY,
+      kitSync: KEY,
+      controlsRead: KEY,
+      widgetReads: [KEY, KEY]
+    })
   })
 })

@@ -133,6 +133,27 @@ describe('createHeader', () => {
     expect(container.classList.contains('arts-header_alt')).toBe(true)
   })
 
+  it('publishes a hold zone through isHeld, together with the lock it implies', () => {
+    const { container, header, scrollTo } = makeRig()
+    header.init()
+    const zone = document.createElement('section')
+    zone.setAttribute('data-arts-header-zone', 'hold:in-view')
+    zone.getBoundingClientRect = () =>
+      ({ top: 1000 - window.scrollY, bottom: 1600 - window.scrollY }) as DOMRect
+    document.body.appendChild(zone)
+    header.refreshZones()
+    scrollTo(100)
+    expect(header.isHeld).toBe(false)
+    scrollTo(1200)
+    expect(header.isHeld).toBe(true)
+    expect(header.isLocked).toBe(true)
+    expect(container.classList.contains('arts-header_held')).toBe(true)
+    scrollTo(2500)
+    expect(header.isHeld).toBe(false)
+    expect(header.isLocked).toBe(false)
+    expect(container.classList.contains('arts-header_held')).toBe(false)
+  })
+
   it('fails safe on every API call when sticky is disabled', () => {
     fakeMutationObserver()
     fakeResizeObserver()
@@ -140,17 +161,23 @@ describe('createHeader', () => {
     const header = createHeader(container, bar, { options: { sticky: false } })
     created.push(header)
     header.init()
+    const classes = container.className
     expect(() => {
       header.toggleHidden(true)
       header.lockSticky(true)
       header.refreshZones()
       header.refresh()
     }).not.toThrow()
+    expect(header.isInitialized).toBe(true)
     expect(header.isSticking).toBe(false)
     expect(header.isHidden).toBe(false)
+    expect(header.isLocked).toBe(false)
+    expect(header.isHeld).toBe(false)
     expect(header.isAlt).toBe(false)
     expect(header.isReleased).toBe(false)
     expect(header.isDisplaced).toBe(false)
+    // Nothing owns the state classes without the sticky engine, so the calls wrote none.
+    expect(container.className).toBe(classes)
   })
 
   it.each([
@@ -158,6 +185,10 @@ describe('createHeader', () => {
     [' with a marked panel in a horizontal section', true]
   ])('init() and refresh() read every layout metric before their first DOM write%s', (_, horizontal) => {
     const { container, bar, header } = makeRig()
+    const host = document.createElement('div')
+    host.className = 'arts-header-values js-arts-header-values'
+    container.before(host)
+    host.appendChild(container)
     const rects: HTMLElement[] = []
     const getScrollRange = vi.fn(() => ({
       start: 1550,
@@ -192,7 +223,7 @@ describe('createHeader', () => {
     const tap = <T extends object, K extends keyof T>(
       target: T,
       key: K,
-      kind: 'read' | 'write',
+      kind: 'read' | 'write' | 'host',
       skip?: (...args: unknown[]) => boolean
     ): void => {
       const original = target[key] as unknown as (...args: unknown[]) => unknown
@@ -211,14 +242,20 @@ describe('createHeader', () => {
       tap(el, 'getBoundingClientRect', 'read')
     }
     tap(window, 'getComputedStyle', 'read', (el) => el === document.documentElement)
+    tap(host.style, 'setProperty', 'host')
     tap(container.style, 'setProperty', 'write')
     tap(container.classList, 'toggle', 'write')
     tap(document.documentElement.style, 'setProperty', 'write')
     tap(document.documentElement.classList, 'toggle', 'write')
     const expectOneFlush = (): void => {
-      const firstWrite = log.indexOf('write')
+      // The value-host invalidation is the one write allowed ahead of the reads, once per pass: it
+      // dirties the host so the measurement below resolves its viewport lengths in that SAME flush.
+      expect(log[0]).toBe('host')
+      expect(log.filter((kind) => kind === 'host')).toHaveLength(1)
+      const rest = log.slice(1)
+      const firstWrite = rest.indexOf('write')
       expect(firstWrite).toBeGreaterThan(0)
-      expect(log.lastIndexOf('read')).toBeLessThan(firstWrite)
+      expect(rest.lastIndexOf('read')).toBeLessThan(firstWrite)
     }
     header.init()
     expectOneFlush()

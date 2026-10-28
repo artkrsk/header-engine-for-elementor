@@ -17,6 +17,21 @@ describe('Resize', () => {
     ])
   })
 
+  it('creates no observer without elements or without a callback to tell', () => {
+    const instances = fakeResizeObserver()
+    new Resize({ elements: [], callbackResize: () => {} })
+    new Resize({ elements: [document.createElement('div')] })
+    expect(instances).toHaveLength(0)
+  })
+
+  it('observes only real elements — a non-element target is skipped, not handed to the observer', () => {
+    const instances = fakeResizeObserver()
+    const el = document.createElement('div')
+    const textNode = { nodeType: 3 } as unknown as HTMLElement
+    new Resize({ elements: [textNode, el], callbackResize: () => {} })
+    expect(instances[0]?.observed.map((record) => record.target)).toEqual([el])
+  })
+
   it('skips construction entirely when ResizeObserver is not available', () => {
     vi.stubGlobal('ResizeObserver', undefined)
     const instance = new Resize({

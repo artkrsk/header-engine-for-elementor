@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { createHeaderApp } from '@ts/elementor/createHeaderApp'
 import type { IHeaderApp } from '@ts/interfaces'
+import type { TOnDestroyCallback, TOnInitCallback } from '@ts/types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   fakeMutationObserver,
@@ -31,7 +32,43 @@ afterEach(async () => {
   document.documentElement.style.removeProperty('--arts-header-height')
   document.documentElement.style.removeProperty('--arts-header-height-non-sticky')
   ;(window as { elementorFrontend?: unknown }).elementorFrontend = undefined
+  ;(window as { elementorModules?: unknown }).elementorModules = undefined
 })
+
+/**
+ * The `load`/`destroyOne` pair the app hands the editor container handler, captured through a stub
+ * Elementor: the handler's own `initHeader` is replaced so booting it reveals the callbacks it is
+ * given, which are the app's editor entry points.
+ */
+const captureEditorHooks = (
+  app: IHeaderApp
+): { load: TOnInitCallback; destroyOne: TOnDestroyCallback } => {
+  ;(window as { elementorModules?: unknown }).elementorModules = {
+    frontend: { handlers: { Base: { extend: (proto: unknown) => proto } } }
+  }
+  let proto = null as object | null
+  ;(window as { elementorFrontend?: unknown }).elementorFrontend = {
+    elementsHandler: {
+      attachHandler: (_type: string, handler: unknown) => {
+        proto = handler as object
+      }
+    }
+  }
+  app.loadElementorEditorHandler()
+  let hooks = null as { load: TOnInitCallback; destroyOne: TOnDestroyCallback } | null
+  const handler = Object.assign(Object.create(proto as object) as { onInit(): void }, {
+    $element: { get: () => document.createElement('div') },
+    setHeader: () => {},
+    initHeader: (load: TOnInitCallback, destroyOne: TOnDestroyCallback) => {
+      hooks = { load, destroyOne }
+    }
+  })
+  handler.onInit()
+  if (!hooks) {
+    throw new Error('Editor handler did not expose its callbacks')
+  }
+  return hooks
+}
 
 describe('createHeaderApp', () => {
   it('discovers the header by its selectors and boots it on autoInit', async () => {
@@ -103,13 +140,93 @@ describe('createHeaderApp', () => {
   })
 
   it('boots one engine per wrapper — the primary accessor is the first in DOM order', async () => {
-    makeHeaderFixture()
-    makeHeaderFixture()
+    const first = makeHeaderFixture()
+    const second = makeHeaderFixture()
     const app = await createHeaderApp()
     apps.push(app)
     expect(app.instances).toHaveLength(2)
     expect(app.instances.every((h) => h.isInitialized)).toBe(true)
-    expect(app.artsHeader).toBe(app.instances[0])
+    expect(app.artsHeader).toBe(app.getInstance(first.container))
+    expect(app.instances[1]).toBe(app.getInstance(second.container))
+    expect(app.artsHeader).not.toBe(app.instances[1])
+  })
+
+  it('keeps the primary first in DOM order however the editor registered the instances', async () => {
+    const first = makeHeaderFixture()
+    const second = makeHeaderFixture()
+    const app = await createHeaderApp({ autoInit: false })
+    apps.push(app)
+    const { load } = captureEditorHooks(app)
+    // Elementor boots containers in whatever order their tasks land: here the SECOND header
+    // registers first, so only the DOM-order sort can put the first one back in front.
+    await load({ container: second.container, bar: second.bar })
+    await load({ container: first.container })
+    expect(app.instances).toHaveLength(2)
+    expect(app.artsHeader).toBe(app.getInstance(first.container))
+    expect(app.instances[1]).toBe(app.getInstance(second.container))
+  })
+
+  it('resolves the instance owning an element — wrapper, bar or descendant — and nothing else', async () => {
+    const first = makeHeaderFixture()
+    const second = makeHeaderFixture()
+    const inner = document.createElement('span')
+    second.bar.appendChild(inner)
+    const outside = document.createElement('div')
+    document.body.appendChild(outside)
+    const app = await createHeaderApp()
+    apps.push(app)
+    const [primary, secondary] = app.instances
+    expect(primary).not.toBe(secondary)
+    expect(app.getInstance(first.container)).toBe(primary)
+    expect(app.getInstance(first.bar)).toBe(primary)
+    expect(app.getInstance(second.container)).toBe(secondary)
+    expect(app.getInstance(inner)).toBe(secondary)
+    expect(app.getInstance(outside)).toBeUndefined()
+  })
+
+  it('stops resolving instances after destroy, and a re-scan resolves the NEW instance', async () => {
+    const { container, bar } = makeHeaderFixture()
+    const app = await createHeaderApp()
+    apps.push(app)
+    const stale = app.getInstance(bar)
+    expect(stale).toBeDefined()
+    await app.init()
+    const fresh = app.getInstance(bar)
+    expect(fresh).toBeDefined()
+    expect(fresh).not.toBe(stale)
+    expect(fresh).toBe(app.artsHeader)
+    await app.destroy(false)
+    expect(app.getInstance(container)).toBeUndefined()
+    expect(app.getInstance(bar)).toBeUndefined()
+  })
+
+  it('prunes instances whose wrapper left the DOM on the next scan', async () => {
+    const gone = makeHeaderFixture()
+    const app = await createHeaderApp()
+    apps.push(app)
+    const goneHeader = app.artsHeader
+    // An AJAX page swap: the old wrapper is detached, a fresh one arrives.
+    gone.container.remove()
+    const arrived = makeHeaderFixture()
+    await app.init()
+    expect(goneHeader?.isInitialized).toBe(false)
+    expect(app.instances).toHaveLength(1)
+    expect(app.artsHeader).toBe(app.getInstance(arrived.container))
+    expect(app.getInstance(gone.container)).toBeUndefined()
+  })
+
+  it('leaves a wrapper inside an ignored subtree unbooted while the rest of the page boots', async () => {
+    const stale = document.createElement('div')
+    stale.setAttribute('data-arts-header-ignore', '')
+    document.body.appendChild(stale)
+    const ignored = makeHeaderFixture()
+    stale.appendChild(ignored.container)
+    const live = makeHeaderFixture()
+    const app = await createHeaderApp()
+    apps.push(app)
+    expect(app.instances).toHaveLength(1)
+    expect(app.getInstance(ignored.container)).toBeUndefined()
+    expect(app.artsHeader).toBe(app.getInstance(live.container))
   })
 
   it('skips a wrapper missing its bar and boots the rest', async () => {
@@ -181,6 +298,89 @@ describe('createHeaderApp', () => {
     // the page itself rather than resolving with the dropped scan's empty result.
     expect(app.instances).toHaveLength(1)
     expect(app.artsHeader?.isInitialized).toBe(true)
+  })
+
+  it.each([
+    'callbackBefore',
+    'callbackAfter'
+  ] as const)('logs and rethrows a failing %s, and the next init() runs again', async (hook) => {
+    makeHeaderFixture()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const failure = new Error('boom')
+    const callback = vi.fn(async () => {})
+    callback.mockRejectedValueOnce(failure)
+    const app = await createHeaderApp({ autoInit: false, [hook]: callback })
+    apps.push(app)
+    await expect(app.init()).rejects.toBe(failure)
+    expect(errorSpy).toHaveBeenCalledWith(
+      ':Header [ERROR] Error during arts header initialization:',
+      failure
+    )
+    // The failed run must not stay parked as the "in-flight" one.
+    await expect(app.init()).resolves.toBe(true)
+    expect(callback).toHaveBeenCalledTimes(2)
+    expect(app.artsHeader?.isInitialized).toBe(true)
+  })
+
+  it('keeps serving editor upserts after one of them fails', async () => {
+    const first = makeHeaderFixture()
+    const second = makeHeaderFixture()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const failure = new Error('boom')
+    const before = vi.fn(async () => {})
+    before.mockRejectedValueOnce(failure)
+    const app = await createHeaderApp({ autoInit: false, callbackBefore: before })
+    apps.push(app)
+    const { load } = captureEditorHooks(app)
+    const failing = load({ container: first.container, bar: first.bar })
+    const following = load({ container: second.container, bar: second.bar })
+    await expect(failing).rejects.toBe(failure)
+    await following
+    expect(errorSpy).toHaveBeenCalledWith(
+      ':Header [ERROR] Error during arts header initialization:',
+      failure
+    )
+    expect(app.instances).toHaveLength(1)
+    expect(app.getInstance(second.container)).toBe(app.artsHeader)
+    expect(app.getInstance(first.container)).toBeUndefined()
+  })
+
+  it.each([
+    [true, false],
+    [false, true]
+  ])('destroys one editor container with revert=%s — the sticky look survives only without it', async (revert, keepsLook) => {
+    const { container, bar } = makeHeaderFixture()
+    const other = makeHeaderFixture()
+    // Scrolled before boot: the engine publishes its stuck state at construction.
+    setScroll(0, 50)
+    const app = await createHeaderApp({ autoInit: false })
+    apps.push(app)
+    const { load, destroyOne } = captureEditorHooks(app)
+    await load({ container, bar })
+    await load({ container: other.container, bar: other.bar })
+    const destroyed = app.getInstance(container)
+    expect(container.classList.contains('arts-header_sticky')).toBe(true)
+    await destroyOne(container, revert)
+    expect(destroyed?.isInitialized).toBe(false)
+    expect(container.classList.contains('arts-header_sticky')).toBe(keepsLook)
+    // Only that container went: the sibling header keeps running.
+    expect(app.instances).toHaveLength(1)
+    expect(app.getInstance(other.container)?.isInitialized).toBe(true)
+  })
+
+  it('treats an editor destroy without a container as the aggregate destroy', async () => {
+    const first = makeHeaderFixture()
+    const second = makeHeaderFixture()
+    setScroll(0, 50)
+    const app = await createHeaderApp({ autoInit: false })
+    apps.push(app)
+    const { load, destroyOne } = captureEditorHooks(app)
+    await load({ container: first.container, bar: first.bar })
+    await load({ container: second.container, bar: second.bar })
+    await destroyOne(null, true)
+    expect(app.instances).toHaveLength(0)
+    expect(first.container.classList.contains('arts-header_sticky')).toBe(false)
+    expect(second.container.classList.contains('arts-header_sticky')).toBe(false)
   })
 
   it("propagates one instance's settled height vars to the other instances", async () => {
