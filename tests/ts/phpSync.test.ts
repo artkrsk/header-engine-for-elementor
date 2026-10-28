@@ -101,7 +101,7 @@ describe('Markup.php mirrors the TS identifier contract', () => {
   it('renders the zone marker from the Header Zone panel keys', () => {
     expect(markup).toContain(`'${ZONE_ATTR}'`)
     expect(markup).toContain('arts_header_zone')
-    expect(markup).toContain("'hide' === $value || 'lock' === $value")
+    expect(markup).toContain("in_array( $value, array( 'hide', 'lock', 'hold' ), true )")
   })
 
   it('renders the look marker from the Header Look Over This panel key', () => {

@@ -191,7 +191,7 @@ class Markup {
 
 		foreach ( $settings as $key => $value ) {
 			// 'arts_header_zone' plus its per-breakpoint twins, but not the geometry/look controls.
-			if ( 1 === preg_match( '/^arts_header_zone(?:_(?!geometry|look)\w+)?$/', (string) $key ) && ( 'hide' === $value || 'lock' === $value ) ) {
+			if ( 1 === preg_match( '/^arts_header_zone(?:_(?!geometry|look)\w+)?$/', (string) $key ) && in_array( $value, array( 'hide', 'lock', 'hold' ), true ) ) {
 				$is_kind_zone = true;
 			}
 
@@ -207,7 +207,7 @@ class Markup {
 			$geometry = $settings['arts_header_zone_geometry'] ?? '';
 			$element->add_render_attribute(
 				'_wrapper',
-				array( 'data-arts-header-zone' => ( 'hide' === $kind || 'lock' === $kind ? $kind : '' ) . ':' . ( is_string( $geometry ) ? $geometry : '' ) )
+				array( 'data-arts-header-zone' => ( in_array( $kind, array( 'hide', 'lock', 'hold' ), true ) ? $kind : '' ) . ':' . ( is_string( $geometry ) ? $geometry : '' ) )
 			);
 		}
 

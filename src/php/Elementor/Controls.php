@@ -69,7 +69,7 @@ class Controls {
 	 * state selector below — scoping in-box styles here makes them flash back
 	 * to the rest state while the bar visibly slides out.
 	 */
-	const HEADER_STICKY_SELECTOR = '.arts-header_sticky:not(.arts-header_scrolling-down)' . self::HEADER_SELECTOR;
+	const HEADER_STICKY_SELECTOR = '.arts-header_sticky:where(:not(.arts-header_held)):not(.arts-header_scrolling-down)' . self::HEADER_SELECTOR;
 
 	const HEADER_STICKY_BAR_SELECTOR = self::HEADER_STICKY_SELECTOR . ' .arts-header__bar';
 
@@ -81,7 +81,7 @@ class Controls {
 	 * The extra `.arts-header` class out-specifies the native controls'
 	 * `.elementor-{post} .elementor-element.elementor-element-{id}`.
 	 */
-	const HEADER_STICKY_STATE_SELECTOR = '.arts-header.arts-header_sticky' . self::HEADER_SELECTOR;
+	const HEADER_STICKY_STATE_SELECTOR = '.arts-header.arts-header_sticky:where(:not(.arts-header_held))' . self::HEADER_SELECTOR;
 
 	const HEADER_STICKY_STATE_BAR_SELECTOR = self::HEADER_STICKY_STATE_SELECTOR . ' .arts-header__bar';
 
@@ -427,6 +427,7 @@ class Controls {
 		$zone_options = array(
 			'hide' => esc_html__( 'Hide Header', 'artem-semkin-header-engine-for-elementor' ),
 			'lock' => esc_html__( 'Reveal & Lock Header', 'artem-semkin-header-engine-for-elementor' ),
+			'hold' => esc_html__( 'Reveal & Hold Initial Look', 'artem-semkin-header-engine-for-elementor' ),
 		);
 
 		// Elementor emits no CSS for an empty value, and on a smaller breakpoint empty means

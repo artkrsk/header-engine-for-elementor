@@ -24,6 +24,7 @@ export const defaultConfig: IResolvedConfig = {
     scrollingDown: 'arts-header_scrolling-down',
     hidden: 'arts-header_hidden',
     locked: 'arts-header_locked',
+    held: 'arts-header_held',
     alt: 'arts-header_alt',
     released: 'arts-header_released'
   },

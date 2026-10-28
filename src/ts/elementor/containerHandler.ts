@@ -205,7 +205,8 @@ export const createContainerHandler = (onInit: TOnInitCallback, onDestroy: TOnDe
       const isZone =
         !headerEnabled &&
         settings.some(
-          ([key, value]) => ZONE_KEY_PATTERN.test(key) && (value === 'hide' || value === 'lock')
+          ([key, value]) =>
+            ZONE_KEY_PATTERN.test(key) && (value === 'hide' || value === 'lock' || value === 'hold')
         )
       // Independent of the kind marker: a container can carry either or both.
       const isLookZone =
@@ -220,7 +221,7 @@ export const createContainerHandler = (onInit: TOnInitCallback, onDestroy: TOnDe
         const kind = this.getElementSettings('arts_header_zone')
         this.el.setAttribute(
           ZONE_ATTR,
-          `${kind === 'hide' || kind === 'lock' ? kind : ''}:${this.getElementSettings('arts_header_zone_geometry') ?? ''}`
+          `${kind === 'hide' || kind === 'lock' || kind === 'hold' ? kind : ''}:${this.getElementSettings('arts_header_zone_geometry') ?? ''}`
         )
       }
       if (isLookZone) {

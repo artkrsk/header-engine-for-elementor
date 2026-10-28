@@ -58,7 +58,9 @@
   }
 }
 
-.arts-header-values > .arts-header.arts-header_sticky > .arts-header__bar.elementor-element.e-con {
+.arts-header-values
+  > .arts-header.arts-header_sticky:where(:not(.arts-header_held))
+  > .arts-header__bar.elementor-element.e-con {
   @each $side in top, right, bottom, left {
     --padding-#{$side}: var(--arts-header-padding-#{$side}-sticky);
   }

@@ -30,7 +30,7 @@ export const readZoneMode = (raw: string | null): TZoneMode =>
 
 /** Parse the resolved kind var of a marked zone; `none`, unset, or anything else is no zone. */
 export const readZoneKind = (raw: string): TZoneKind | null =>
-  raw === 'hide' || raw === 'lock' ? raw : null
+  raw === 'hide' || raw === 'lock' || raw === 'hold' ? raw : null
 
 /** Parse the resolved look var of a marked zone; only `alt` makes a zone. */
 export const readZoneLook = (raw: string): boolean => raw.trim() === 'alt'
@@ -71,9 +71,10 @@ export const resolveZoneActive = (
 /** Combine live zone states: any active zone of a kind drives that kind, independently. */
 export const reduceZones = (
   zones: readonly { kind: TZoneKind; active: boolean }[]
-): { anyHide: boolean; anyLock: boolean; anyAlt: boolean } => ({
+): { anyHide: boolean; anyLock: boolean; anyHold: boolean; anyAlt: boolean } => ({
   anyHide: zones.some((zone) => zone.kind === 'hide' && zone.active),
   anyLock: zones.some((zone) => zone.kind === 'lock' && zone.active),
+  anyHold: zones.some((zone) => zone.kind === 'hold' && zone.active),
   anyAlt: zones.some((zone) => zone.kind === 'alt' && zone.active)
 })
 
@@ -93,12 +94,13 @@ export function createZoneTracker(args: {
   getViewportH: () => number
   /** Viewport-space y of the bar's center line, the reference for `center` zones. */
   getDecider: () => number
-  onChange: (anyHide: boolean, anyLock: boolean, anyAlt: boolean) => void
+  onChange: (anyHide: boolean, anyLock: boolean, anyHold: boolean, anyAlt: boolean) => void
 }): { refresh(y?: number): void; evaluate(y: number): void; destroy(): void } {
   let zones: ITrackedZone[] = []
   let lastY = 0
   let lastHide = false
   let lastLock = false
+  let lastHold = false
   let lastAlt = false
 
   const scan = (): void => {
@@ -208,12 +210,18 @@ export function createZoneTracker(args: {
               args.getBarHeight()
             )
     }
-    const { anyHide, anyLock, anyAlt } = reduceZones(zones)
-    if (anyHide !== lastHide || anyLock !== lastLock || anyAlt !== lastAlt) {
+    const { anyHide, anyLock, anyHold, anyAlt } = reduceZones(zones)
+    if (
+      anyHide !== lastHide ||
+      anyLock !== lastLock ||
+      anyHold !== lastHold ||
+      anyAlt !== lastAlt
+    ) {
       lastHide = anyHide
       lastLock = anyLock
+      lastHold = anyHold
       lastAlt = anyAlt
-      args.onChange(anyHide, anyLock, anyAlt)
+      args.onChange(anyHide, anyLock, anyHold, anyAlt)
     }
   }
 

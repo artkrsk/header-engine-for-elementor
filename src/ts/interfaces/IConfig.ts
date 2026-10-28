@@ -15,6 +15,7 @@ export interface IConfig {
     scrollingDown?: string
     hidden?: string
     locked?: string
+    held?: string
     alt?: string
     released?: string
   }

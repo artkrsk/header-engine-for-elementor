@@ -81,6 +81,7 @@ export function createSticky(args: IStickyArgs): ISticky {
   const scrollingDown = createStateFlag(container, config.classes.scrollingDown)
   const hidden = createStateFlag(container, config.classes.hidden)
   const locked = createStateFlag(container, config.classes.locked)
+  const held = createStateFlag(container, config.classes.held)
   const released = createStateFlag(container, config.classes.released)
   const alt = createStateFlag(container, config.classes.alt)
 
@@ -152,9 +153,10 @@ export function createSticky(args: IStickyArgs): ISticky {
         getViewportH: () => viewportH,
         getDecider: () =>
           pin.edge === 'top' ? pin.offset + barHeight / 2 : viewportH - pin.offset - barHeight / 2,
-        onChange: (anyHide, anyLock, anyAlt) => {
+        onChange: (anyHide, anyLock, anyHold, anyAlt) => {
           setHidden(anyHide)
-          zoneLocked = anyLock
+          setHeld(anyHold)
+          zoneLocked = anyLock || anyHold
           publishLocked(apiLocked || zoneLocked)
           setAlt(anyAlt)
         }
@@ -165,6 +167,17 @@ export function createSticky(args: IStickyArgs): ISticky {
     if (hidden.set(value)) {
       notify(EVENTS.HIDDEN, value)
     }
+  }
+
+  function setHeld(value: boolean): void {
+    if (!held.set(value)) {
+      return
+    }
+    if (sticking.value) {
+      // The bar animates between its sticky and rest look here, exactly as on a stick flip.
+      args.onStickingChange?.(true)
+    }
+    notify(EVENTS.HELD, value)
   }
 
   function setAlt(value: boolean): void {
@@ -303,6 +316,7 @@ export function createSticky(args: IStickyArgs): ISticky {
         revealing.set(false)
         scrollingDown.set(false)
         setHidden(false)
+        setHeld(false)
         publishLocked(false)
         setAlt(false)
         if (released.set(false)) {
@@ -318,6 +332,7 @@ export function createSticky(args: IStickyArgs): ISticky {
         scrollingDown.reset()
         hidden.reset()
         locked.reset()
+        held.reset()
         alt.reset()
         released.set(false)
       }
@@ -331,6 +346,9 @@ export function createSticky(args: IStickyArgs): ISticky {
     },
     get isLocked() {
       return locked.value
+    },
+    get isHeld() {
+      return held.value
     },
     get isAlt() {
       return alt.value

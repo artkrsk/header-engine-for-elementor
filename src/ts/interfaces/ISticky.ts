@@ -20,6 +20,7 @@ export interface ISticky {
   readonly isSticking: boolean
   readonly isHidden: boolean
   readonly isLocked: boolean
+  readonly isHeld: boolean
   readonly isAlt: boolean
   readonly isReleased: boolean
   readonly isDisplaced: boolean

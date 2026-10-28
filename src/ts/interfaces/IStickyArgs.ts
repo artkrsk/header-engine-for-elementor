@@ -7,6 +7,9 @@ export interface IStickyArgs {
   bar: HTMLElement
   options: IResolvedStickyOptions
   config: IResolvedConfig
-  /** Internal wiring: fires on every genuine published sticky transition (composition root only). */
+  /**
+   * Internal wiring: fires on every genuine published sticky transition, and while sticking when
+   * the held look flips, since the bar animates then too (composition root only).
+   */
   onStickingChange?: (isSticking: boolean) => void
 }

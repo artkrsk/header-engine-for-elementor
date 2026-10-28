@@ -64,7 +64,8 @@
     visibility: hidden;
   }
 
-  .arts-header:not(.arts-header_sticky) {
+  // A held bar shows its rest look although it is still sticky (it stays pinned).
+  .arts-header:is(:not(.arts-header_sticky), .arts-header_held) {
     &[data-arts-header-non-sticky-logo='primary'] {
       .arts-header-logo__img-primary {
         opacity: 1;
@@ -92,7 +93,7 @@
 
   // The logo tracks the sticky state only — never scroll direction. A hiding/locked bar
   // is still sticky ("pseudo sticky"), so no `_scrolling-down` variant here.
-  .arts-header.arts-header_sticky {
+  .arts-header.arts-header_sticky:where(:not(.arts-header_held)) {
     &[data-arts-header-sticky-logo='primary'] {
       .arts-header-logo__img-primary {
         opacity: 1;

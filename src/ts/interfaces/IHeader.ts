@@ -17,12 +17,13 @@ export interface IHeader {
    * a zone change never drops this lock, and unlocking never releases an active zone.
    */
   lockSticky(locked: boolean): void
-  /** Re-scan the DOM for hide-over / lock-over / alt-over zones. */
+  /** Re-scan the DOM for hide-over / lock-over / hold / alt-over zones. */
   refreshZones(): void
   readonly isInitialized: boolean
   readonly isSticking: boolean
   readonly isHidden: boolean
   readonly isLocked: boolean
+  readonly isHeld: boolean
   readonly isAlt: boolean
   readonly isReleased: boolean
   readonly isDisplaced: boolean

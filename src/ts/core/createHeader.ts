@@ -125,6 +125,9 @@ export function createHeader(
     get isLocked() {
       return sticky?.isLocked ?? false
     },
+    get isHeld() {
+      return sticky?.isHeld ?? false
+    },
     get isAlt() {
       return sticky?.isAlt ?? false
     },

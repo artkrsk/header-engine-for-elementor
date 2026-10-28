@@ -86,7 +86,7 @@ describe('reduceZones', () => {
         { kind: 'hide', active: false },
         { kind: 'hide', active: true }
       ])
-    ).toEqual({ anyHide: true, anyLock: false, anyAlt: false })
+    ).toEqual({ anyHide: true, anyLock: false, anyHold: false, anyAlt: false })
   })
 
   it('combines the two kinds independently', () => {
@@ -95,11 +95,16 @@ describe('reduceZones', () => {
         { kind: 'hide', active: true },
         { kind: 'lock', active: true }
       ])
-    ).toEqual({ anyHide: true, anyLock: true, anyAlt: false })
+    ).toEqual({ anyHide: true, anyLock: true, anyHold: false, anyAlt: false })
   })
 
   it('reports all-clear for no zones at all', () => {
-    expect(reduceZones([])).toEqual({ anyHide: false, anyLock: false, anyAlt: false })
+    expect(reduceZones([])).toEqual({
+      anyHide: false,
+      anyLock: false,
+      anyHold: false,
+      anyAlt: false
+    })
   })
 
   it('drives alt independently of hide and lock', () => {
@@ -109,6 +114,6 @@ describe('reduceZones', () => {
         { kind: 'hide', active: false },
         { kind: 'lock', active: false }
       ])
-    ).toEqual({ anyHide: false, anyLock: false, anyAlt: true })
+    ).toEqual({ anyHide: false, anyLock: false, anyHold: false, anyAlt: true })
   })
 })

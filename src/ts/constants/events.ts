@@ -6,6 +6,7 @@ export const EVENTS = {
   STICKY: 'arts/header/sticky',
   HIDDEN: 'arts/header/hidden',
   LOCKED: 'arts/header/locked',
+  HELD: 'arts/header/held',
   ALT: 'arts/header/alt',
   RELEASED: 'arts/header/released',
   DISPLACED: 'arts/header/displaced'

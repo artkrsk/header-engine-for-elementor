@@ -48,11 +48,11 @@ describe('createZoneTracker', () => {
     addPanelZone('none', 'at-top', 6000, 7000)
     const { tracker, onChange } = makeTracker()
     tracker.evaluate(1200)
-    expect(onChange).toHaveBeenLastCalledWith(true, false, false)
+    expect(onChange).toHaveBeenLastCalledWith(true, false, false, false)
     tracker.evaluate(3200)
-    expect(onChange).toHaveBeenLastCalledWith(false, true, false)
+    expect(onChange).toHaveBeenLastCalledWith(false, true, false, false)
     tracker.evaluate(6200)
-    expect(onChange).toHaveBeenLastCalledWith(false, false, false)
+    expect(onChange).toHaveBeenLastCalledWith(false, false, false, false)
   })
 
   it('falls back to the desktop kind:geometry in the marker while the vars are unwritten', () => {
@@ -61,21 +61,21 @@ describe('createZoneTracker', () => {
     tracker.evaluate(0)
     expect(onChange).not.toHaveBeenCalled()
     tracker.evaluate(1200)
-    expect(onChange).toHaveBeenLastCalledWith(false, true, false)
+    expect(onChange).toHaveBeenLastCalledWith(false, true, false, false)
     // An explicit var beats the fallback: tablet-style 'none' switches the zone off.
     el.style.setProperty('--arts-header-zone', 'none')
     tracker.refresh(1200)
-    expect(onChange).toHaveBeenLastCalledWith(false, false, false)
+    expect(onChange).toHaveBeenLastCalledWith(false, false, false, false)
   })
 
   it('re-reads the vars on refresh, so a breakpoint change flips the zone', () => {
     const zone = addPanelZone('hide', 'at-top', 1000, 2500)
     const { tracker, onChange } = makeTracker()
     tracker.evaluate(1200)
-    expect(onChange).toHaveBeenLastCalledWith(true, false, false)
+    expect(onChange).toHaveBeenLastCalledWith(true, false, false, false)
     zone.style.setProperty('--arts-header-zone', 'none')
     tracker.refresh(1200)
-    expect(onChange).toHaveBeenLastCalledWith(false, false, false)
+    expect(onChange).toHaveBeenLastCalledWith(false, false, false, false)
   })
 
   it('caches doc-space rects at scan and drives both kinds from pure geometry on evaluate', () => {
@@ -83,11 +83,11 @@ describe('createZoneTracker', () => {
     addZone('data-arts-header-lock-over', 'in-view', 4000, 4500)
     const { tracker, onChange } = makeTracker()
     tracker.evaluate(1200)
-    expect(onChange).toHaveBeenLastCalledWith(true, false, false)
+    expect(onChange).toHaveBeenLastCalledWith(true, false, false, false)
     tracker.evaluate(3200)
-    expect(onChange).toHaveBeenLastCalledWith(false, true, false)
+    expect(onChange).toHaveBeenLastCalledWith(false, true, false, false)
     tracker.evaluate(0)
-    expect(onChange).toHaveBeenLastCalledWith(false, false, false)
+    expect(onChange).toHaveBeenLastCalledWith(false, false, false, false)
   })
 
   it('dedups evaluations that do not change the combined state', () => {
@@ -105,7 +105,7 @@ describe('createZoneTracker', () => {
     const zone = addZone('data-arts-header-hide-over', 'at-top', 1000, 2500)
     const { tracker, onChange } = makeTracker()
     tracker.evaluate(1200)
-    expect(onChange).toHaveBeenLastCalledWith(true, false, false)
+    expect(onChange).toHaveBeenLastCalledWith(true, false, false, false)
     // The zone attribute is removed; a burst of mutations schedules exactly one rAF rescan.
     zone.removeAttribute('data-arts-header-hide-over')
     const observer = {} as MutationObserver
@@ -113,7 +113,7 @@ describe('createZoneTracker', () => {
     moInstances[0]?.callback([], observer)
     expect(raf.pendingCount).toBe(1)
     raf.step()
-    expect(onChange).toHaveBeenLastCalledWith(false, false, false)
+    expect(onChange).toHaveBeenLastCalledWith(false, false, false, false)
   })
 
   it('refresh re-scans and re-evaluates at the last known scroll position', () => {
@@ -122,7 +122,7 @@ describe('createZoneTracker', () => {
     expect(onChange).not.toHaveBeenCalled()
     addZone('data-arts-header-hide-over', 'at-top', 1000, 2500)
     tracker.refresh()
-    expect(onChange).toHaveBeenLastCalledWith(true, false, false)
+    expect(onChange).toHaveBeenLastCalledWith(true, false, false, false)
   })
 
   it('refresh(y) evaluates at the given position, not the stale tick one', () => {
@@ -131,7 +131,7 @@ describe('createZoneTracker', () => {
     tracker.evaluate(0)
     expect(onChange).not.toHaveBeenCalled()
     tracker.refresh(1200)
-    expect(onChange).toHaveBeenLastCalledWith(true, false, false)
+    expect(onChange).toHaveBeenLastCalledWith(true, false, false, false)
   })
 
   it('destroy disconnects the MutationObserver and cancels a pending rescan', () => {
@@ -151,9 +151,9 @@ describe('createZoneTracker', () => {
     tracker.evaluate(959)
     expect(onChange).not.toHaveBeenCalled()
     tracker.evaluate(960)
-    expect(onChange).toHaveBeenLastCalledWith(false, false, true)
+    expect(onChange).toHaveBeenLastCalledWith(false, false, false, true)
     tracker.evaluate(1560)
-    expect(onChange).toHaveBeenLastCalledWith(false, false, false)
+    expect(onChange).toHaveBeenLastCalledWith(false, false, false, false)
   })
 
   it('reports an alt-only transition', () => {
@@ -171,13 +171,13 @@ describe('createZoneTracker', () => {
     viaVar.style.setProperty('--arts-header-zone-look', 'alt')
     const { tracker, onChange } = makeTracker()
     tracker.evaluate(960)
-    expect(onChange).toHaveBeenLastCalledWith(false, false, true)
+    expect(onChange).toHaveBeenLastCalledWith(false, false, false, true)
 
     // Marker-only element: no var written yet, the desktop value in the attribute decides.
     viaVar.remove()
     addZone('data-arts-header-zone-look', 'alt', 1000, 1600)
     tracker.refresh(960)
-    expect(onChange).toHaveBeenLastCalledWith(false, false, true)
+    expect(onChange).toHaveBeenLastCalledWith(false, false, false, true)
   })
 
   it('treats a default var as no zone even when the marker says alt', () => {
@@ -201,7 +201,7 @@ describe('createZoneTracker', () => {
     el.style.setProperty('--arts-header-zone-look', 'alt')
     const { tracker, onChange } = makeTracker()
     tracker.evaluate(960)
-    expect(onChange).toHaveBeenLastCalledWith(true, false, true)
+    expect(onChange).toHaveBeenLastCalledWith(true, false, false, true)
   })
 
   it('tracks nested marked containers independently', () => {
@@ -214,16 +214,16 @@ describe('createZoneTracker', () => {
     const { tracker, onChange } = makeTracker()
     // Center line y + 40 = 1140: inside the alt parent only; the child isn't at the top line yet.
     tracker.evaluate(1100)
-    expect(onChange).toHaveBeenLastCalledWith(false, false, true)
+    expect(onChange).toHaveBeenLastCalledWith(false, false, false, true)
     // The child spans the top line: hide flips on while alt stays on.
     tracker.evaluate(1300)
-    expect(onChange).toHaveBeenLastCalledWith(true, false, true)
+    expect(onChange).toHaveBeenLastCalledWith(true, false, false, true)
     // Past the child's bottom, still inside the parent: hide flips off, alt stays on.
     tracker.evaluate(1500)
-    expect(onChange).toHaveBeenLastCalledWith(false, false, true)
+    expect(onChange).toHaveBeenLastCalledWith(false, false, false, true)
     // 2960 + 40 = 3000: past the parent's exclusive bottom.
     tracker.evaluate(2960)
-    expect(onChange).toHaveBeenLastCalledWith(false, false, false)
+    expect(onChange).toHaveBeenLastCalledWith(false, false, false, false)
   })
 
   it('tracks a valued alt-over attribute with the center rule, not its value', () => {
@@ -233,7 +233,7 @@ describe('createZoneTracker', () => {
     tracker.evaluate(959)
     expect(onChange).not.toHaveBeenCalled()
     tracker.evaluate(960)
-    expect(onChange).toHaveBeenLastCalledWith(false, false, true)
+    expect(onChange).toHaveBeenLastCalledWith(false, false, false, true)
   })
 
   it('rescans when the alt-over or zone-look attribute mutates', () => {
@@ -290,7 +290,7 @@ describe('createZoneTracker', () => {
       tracker.evaluate(1549)
       expect(onChange).not.toHaveBeenCalled()
       tracker.evaluate(1550)
-      expect(onChange).toHaveBeenLastCalledWith(true, false, false)
+      expect(onChange).toHaveBeenLastCalledWith(true, false, false, false)
     })
 
     it('moves panel zones from the rect path to the window path on arts-hs:layout', () => {
@@ -299,14 +299,14 @@ describe('createZoneTracker', () => {
       const { tracker, onChange } = makeHorizontalRig(() => current)
       // Null range: the element's own rect drives (at-top over 1000..2500).
       tracker.evaluate(1200)
-      expect(onChange).toHaveBeenLastCalledWith(true, false, false)
+      expect(onChange).toHaveBeenLastCalledWith(true, false, false, false)
       current = range
       document.dispatchEvent(new CustomEvent(HS_LAYOUT_EVENT, { bubbles: true }))
       raf.step()
       // The window path now drives: 1200 + 40 sits before the window opening at 1590.
-      expect(onChange).toHaveBeenLastCalledWith(false, false, false)
+      expect(onChange).toHaveBeenLastCalledWith(false, false, false, false)
       tracker.evaluate(1550)
-      expect(onChange).toHaveBeenLastCalledWith(true, false, false)
+      expect(onChange).toHaveBeenLastCalledWith(true, false, false, false)
     })
 
     it('removes a panel whose pinned band misses the decider line', () => {
