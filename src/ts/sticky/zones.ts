@@ -44,9 +44,11 @@ export const resolveCenterActive = (
 ): boolean => rectTop <= y + decider && y + decider < rectBottom
 
 /**
- * Zone activity per geometry, in document space. `at-top`: the zone spans the viewport's top
- * line; `overlap`: it intersects the header strip [pinLine, pinLine + barHeight]; `in-view`: any
- * viewport intersection. Mirrors the old IO rootMargin geometries exactly.
+ * Zone activity per geometry, in document space. `at-top`: the zone spans the header's pin line,
+ * the viewport top for an unoffset header — under an admin bar or a pin offset the bar sticks
+ * there, so measuring against the viewport top would activate the zone late; `overlap`: it
+ * intersects the header strip [pinLine, pinLine + barHeight]; `in-view`: any viewport
+ * intersection.
  */
 export const resolveZoneActive = (
   mode: Exclude<TZoneMode, 'center'>,
@@ -60,7 +62,7 @@ export const resolveZoneActive = (
   const viewTop = rectTop - y
   const viewBottom = rectBottom - y
   if (mode === 'at-top') {
-    return viewTop <= 0 && viewBottom > 0
+    return viewTop <= pinLine && viewBottom > pinLine
   }
   if (mode === 'overlap') {
     return viewTop < pinLine + barHeight && viewBottom > pinLine
