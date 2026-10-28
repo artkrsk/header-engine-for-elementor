@@ -142,7 +142,8 @@ class Backend {
 			return;
 		}
 
-		$url = is_int( $value ) ? wp_get_attachment_image_url( $value, 'full' ) : '';
+		// The Customizer's esc_attr sanitizer delivers the id as a numeric string.
+		$url = is_numeric( $value ) ? wp_get_attachment_image_url( (int) $value, 'full' ) : '';
 
 		if ( $url === false ) {
 			$url = '';
