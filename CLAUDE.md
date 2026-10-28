@@ -123,13 +123,28 @@ each measure pass. Tick deciders and sub-modules:
   Owns the release-anchor CSS var, derived from the same evaluated y and written BEFORE the
   callback so consumers can resolve it without another viewport read.
 - `zones` — doc-space zone rects cached at scan/refresh, per-tick pure geometry
-  (`resolveZoneActive`: at-top / overlap / in-view); a body-wide MutationObserver rAF-coalesces
+  (`resolveZoneActive`: at-top / overlap / in-view; `at-top` is the header's pin line, not the
+  viewport top — the admin-bar or Pin Top Offset a bar sticks under would otherwise activate the zone
+  late and flash the sticky look in between; a bottom pin uses 0); a body-wide MutationObserver rAF-coalesces
   attribute-driven rescans; panel zones resolve kind/geometry from computed CSS vars at scan, so a
   breakpoint change takes effect on the settled resize's measure pass. Zones and header wrappers
   inside an `IGNORE_ATTR` subtree (`data-arts-header-ignore`, in `/contract`) are skipped by both
   scans: an AJAX integrator stamps the page it is replacing instead of naming the engine's markers.
   Trade-off (accepted): zone liveness is settle-based — a rect that
   changes mid-scroll lags until the next settled measure.
+  The `hold` kind (panel zones only, no data attribute) is a lock zone that also publishes
+  `arts-header_held`: `createSticky` ORs it into the zone lock (`anyLock || anyHold`), and the held
+  class turns the sticky LOOK off while `_sticky` stays on, because `_sticky` also positions the
+  bar in the fixed, hero-bottom and released modes. Every in-box sticky rule excludes it with a
+  zero-specificity `:where(:not(.arts-header_held))` (the `HEADER_STICKY_*` selector constants in
+  `Controls.php`, `_values.scss` padding, the sticky-logo block in `_logo.scss`), so the sticky
+  rules keep their weight and the alt rules, registered later, still win; the non-sticky logo block
+  matches `:is(:not(_sticky), _held)`. A held flip animates the bar like a stick flip, so
+  `setHeld` re-fires `onStickingChange` while sticking and the height observer publishes the
+  endpoint once. Its use case is a Horizontal Scroll pin: the HS runway advances the real document
+  scroll, so without it the header would shrink and auto-hide mid-pin; the zone sits on the
+  Container around the HS widget (a zone on the wrapper itself gets no HS range), Hold on desktop
+  and None where HS is off.
   The `alt` kind (alternate look, published as `arts-header_alt`) is evaluated with the `center`
   mode (`resolveCenterActive`): active while the bar's center line — `getDecider()` from
   `createSticky`, `pin.offset + barHeight / 2` for a top pin, `viewportH − pin.offset − barHeight / 2`
@@ -231,14 +246,15 @@ but unparseable **warns and is ignored** (constructor options survive); absent i
 `EVENTS` (`constants/events.ts`); payload `IHeaderEventDetail { value: boolean; header: HTMLElement }`.
 Subscribe via `onHeaderEvent` / `offHeaderEvent` or plain `document.addEventListener`:
 `arts/header/sticky` (published sticky state), `arts/header/hidden` (full-hide, zone or
-`toggleHidden`), `arts/header/locked` (bar revealed and held shown, reveal frozen — lock also
+`toggleHidden`), `arts/header/held` (a hold zone is active: locked, with the rest look instead of the sticky one),
+`arts/header/locked` (bar revealed and held shown, reveal frozen — lock also
 clears the direction/displaced state; the `lockSticky` API lock and the lock-over zone lock are
 held apart in `createSticky` and published as their OR, so a zone flip never drops a consumer's
 lock and an API unlock never releases an active zone), `arts/header/alt` (the bar's center line is
 over an alternate-look zone; primary header only — a secondary runs `zones: false` and never
 publishes it), `arts/header/released`
-(sticky-until release), `arts/header/displaced` (bar vacates its space). The same six have getters
-(`isSticking/isHidden/isLocked/isAlt/isReleased/isDisplaced`); `revealing`/`scrollingDown` are
+(sticky-until release), `arts/header/displaced` (bar vacates its space). The same seven have getters
+(`isSticking/isHidden/isLocked/isHeld/isAlt/isReleased/isDisplaced`); `revealing`/`scrollingDown` are
 deliberately class-only styling signals (per-tick frequency).
 
 ## Identifier contract
@@ -253,7 +269,7 @@ options JSON, the frontend the PHP one, and both must serialize identically. Wat
 an empty `array()` encodes as `[]`, not `{}` — a section that can go empty needs an object cast.
 
 - **State classes** on `.arts-header`: `arts-header_sticky`, `_revealing`, `_scrolling-down`,
-  `_hidden`, `_locked`, `_alt`, `_released`; plus `has-header-height` on `<html>`.
+  `_hidden`, `_locked`, `_held`, `_alt`, `_released`; plus `has-header-height` on `<html>`.
 - **Engine-READ vars** (the arrows pointing the other way): `--arts-header-reveal-offset` — the
   panel/theme writes it (responsive px, `100vh`, `var(--arts-header-height-non-sticky)`), the
   stylesheet registers it as an inheriting `<length>` (`@property` in `_tokens.scss`) and the
@@ -302,7 +318,7 @@ an empty `array()` encodes as `[]`, not `{}` — a section that can go empty nee
   `arts_header_zone_geometry`. They write `--arts-header-zone` / `--arts-header-zone-geometry`
   through selectors (engine-READ, `@property` non-inheriting in `_tokens.scss`, no initial value),
   and a marker `data-arts-header-zone="<desktop kind>:<desktop geometry>"` (PHP + editor handler,
-  rendered when ANY breakpoint is hide/lock) tells the tracker which elements to resolve at scan
+  rendered when ANY breakpoint is hide/lock/hold) tells the tracker which elements to resolve at scan
   time. The marker value is the fallback for a var Elementor hasn't written yet (generated CSS
   predating the responsive controls), so existing sites need no CSS regeneration;
   `data-arts-header-alt-over` (hand-authored alt zone, PRESENCE-only: the value is never parsed, the
