@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.0 – October 29, 2026
+
+* added: a new "Reveal & Hold Initial Look" option in a section's Header Zone settings keeps the header visible and in its starting look while it sits over that section, which suits pinned Horizontal Scroll sections.
+* added: a new arts/header/held event and isHeld() getter report when the header is being held in its initial look.
+* fixed: a section set to "It Reaches the Top" now activates at the header's own position, so the header no longer flashes its sticky look when it sits below the admin bar or has a Pin Top Offset.
+* fixed: the secondary logo now saves correctly when it is chosen in the Customizer.
+* fixed: a page transition that replaces the page and re-initializes the header no longer leaves it without a working header.
+* fixed: a header that is only partly rendered no longer causes an error when it is refreshed.
+
 ## 1.2.0 – October 27, 2026
 
 * added: a new "Header Look Over This" setting on any section switches the header to an alternate look, with its own logo version and recolored Global Colors, while the header sits over that section.
