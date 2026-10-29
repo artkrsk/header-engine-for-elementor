@@ -4,7 +4,7 @@ Tags: elementor, sticky header, elementor header, transparent header, hide heade
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0
 GitHub Plugin URI: https://github.com/artkrsk/header-engine-for-elementor/
@@ -108,7 +108,7 @@ No. The script and stylesheet together weigh about 25 KB, and the engine does it
 
 == Changelog ==
 
-= 1.3.0 =
+= 1.3.0 – October 29, 2026 =
 * added: a new "Reveal & Hold Initial Look" option in a section's Header Zone settings keeps the header visible and in its starting look while it sits over that section, which suits pinned Horizontal Scroll sections.
 * added: a new arts/header/held event and isHeld() getter report when the header is being held in its initial look.
 * fixed: a section set to "It Reaches the Top" now activates at the header's own position, so the header no longer flashes its sticky look when it sits below the admin bar or has a Pin Top Offset.
