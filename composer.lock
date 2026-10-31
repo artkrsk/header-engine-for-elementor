@@ -4,26 +4,26 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ba6c6e88119af108a204b8f1f388b5bf",
+    "content-hash": "156df594f682d78a78ff27c238a43bd6",
     "packages": [],
     "packages-dev": [
         {
             "name": "arts/elementor-stubs",
-            "version": "v4.2.1",
+            "version": "v4.3.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/artkrsk/elementor-stubs.git",
-                "reference": "4d4860e49b7827940bc2ae308645dc21ff48c2e8"
+                "reference": "91dd4da92ab9631314b5b5409cdffdbcd6c62e9e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/artkrsk/elementor-stubs/zipball/4d4860e49b7827940bc2ae308645dc21ff48c2e8",
-                "reference": "4d4860e49b7827940bc2ae308645dc21ff48c2e8",
+                "url": "https://api.github.com/repos/artkrsk/elementor-stubs/zipball/91dd4da92ab9631314b5b5409cdffdbcd6c62e9e",
+                "reference": "91dd4da92ab9631314b5b5409cdffdbcd6c62e9e",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.0",
-                "php-stubs/woocommerce-stubs": "^10.5",
+                "php-stubs/woocommerce-stubs": "^10.5 || ^11.0",
                 "php-stubs/wordpress-stubs": "^6.9",
                 "php-stubs/wp-cli-stubs": "^2.12"
             },
@@ -64,7 +64,7 @@
             ],
             "support": {
                 "issues": "https://github.com/artkrsk/elementor-stubs/issues",
-                "source": "https://github.com/artkrsk/elementor-stubs/tree/v4.2.1"
+                "source": "https://github.com/artkrsk/elementor-stubs/tree/v4.3.5"
             },
             "funding": [
                 {
@@ -72,7 +72,8 @@
                     "type": "buy_me_a_coffee"
                 }
             ],
-            "time": "2026-08-01T13:49:57+00:00"
+            "time": "2026-10-15T03:48:19+00:00",
+            "published-time": "2026-10-15T03:48:28+00:00"
         },
         {
             "name": "arts/wp-plugin-standards",
@@ -253,7 +254,8 @@
                 "issues": "https://github.com/php-stubs/woocommerce-stubs/issues",
                 "source": "https://github.com/php-stubs/woocommerce-stubs/tree/v10.9.4"
             },
-            "time": "2026-07-16T18:17:41+00:00"
+            "time": "2026-07-16T18:17:41+00:00",
+            "published-time": "2026-07-16T18:18:07+00:00"
         },
         {
             "name": "php-stubs/wordpress-stubs",
@@ -305,7 +307,8 @@
                 "issues": "https://github.com/php-stubs/wordpress-stubs/issues",
                 "source": "https://github.com/php-stubs/wordpress-stubs/tree/v6.9.4"
             },
-            "time": "2026-05-01T20:36:01+00:00"
+            "time": "2026-05-01T20:36:01+00:00",
+            "published-time": "2026-05-21T21:46:34+00:00"
         },
         {
             "name": "php-stubs/wp-cli-stubs",
@@ -349,7 +352,8 @@
                 "issues": "https://github.com/php-stubs/wp-cli-stubs/issues",
                 "source": "https://github.com/php-stubs/wp-cli-stubs/tree/v2.12.0"
             },
-            "time": "2025-06-10T09:58:05+00:00"
+            "time": "2025-06-10T09:58:05+00:00",
+            "published-time": "2025-06-10T09:59:35+00:00"
         },
         {
             "name": "phpcompatibility/php-compatibility",
@@ -789,11 +793,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.2.8",
+            "version": "2.3.4",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/e285254e60f33c21902efef4a926ca0987c06804",
-                "reference": "e285254e60f33c21902efef4a926ca0987c06804",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/f20ce6f3c82556cfcfc086b152445a12d1d64fff",
+                "reference": "f20ce6f3c82556cfcfc086b152445a12d1d64fff",
                 "shasum": ""
             },
             "require": {
@@ -849,7 +853,8 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-08-04T22:21:45+00:00"
+            "time": "2026-10-28T22:38:53+00:00",
+            "published-time": "2026-10-28T22:39:06+00:00"
         },
         {
             "name": "squizlabs/php_codesniffer",
@@ -932,21 +937,21 @@
         },
         {
             "name": "szepeviktor/phpstan-wordpress",
-            "version": "v2.0.3",
+            "version": "v2.0.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/szepeviktor/phpstan-wordpress.git",
-                "reference": "aa722f037b2d034828cd6c55ebe9e5c74961927e"
+                "reference": "84577e2ea1e4c2a95537fe5ea2ac8e18f4ceab1a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/szepeviktor/phpstan-wordpress/zipball/aa722f037b2d034828cd6c55ebe9e5c74961927e",
-                "reference": "aa722f037b2d034828cd6c55ebe9e5c74961927e",
+                "url": "https://api.github.com/repos/szepeviktor/phpstan-wordpress/zipball/84577e2ea1e4c2a95537fe5ea2ac8e18f4ceab1a",
+                "reference": "84577e2ea1e4c2a95537fe5ea2ac8e18f4ceab1a",
                 "shasum": ""
             },
             "require": {
                 "php": "^7.4 || ^8.0",
-                "php-stubs/wordpress-stubs": "^6.6.2",
+                "php-stubs/wordpress-stubs": ">=6.6.2",
                 "phpstan/phpstan": "^2.0"
             },
             "require-dev": {
@@ -989,9 +994,10 @@
             ],
             "support": {
                 "issues": "https://github.com/szepeviktor/phpstan-wordpress/issues",
-                "source": "https://github.com/szepeviktor/phpstan-wordpress/tree/v2.0.3"
+                "source": "https://github.com/szepeviktor/phpstan-wordpress/tree/v2.0.4"
             },
-            "time": "2025-09-14T02:58:22+00:00"
+            "time": "2026-05-22T16:22:09+00:00",
+            "published-time": "2026-08-28T06:48:49+00:00"
         },
         {
             "name": "wp-coding-standards/wpcs",
@@ -1069,5 +1075,5 @@
         "php": ">=8.0"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.11.0"
 }
