@@ -74,7 +74,7 @@ export function createHeader(
           isSticking: () => sticky?.isSticking ?? false,
           // A settled height-var change re-runs the sticky measurement pass: the pin/reveal
           // offset vars may chain to the height vars, and the sticky engine's own debounce can
-          // fire before the corrected height lands. Then outward — other instances re-measure
+          // fire before the settled height lands. Then outward — other instances re-measure
           // through the app layer.
           onHeightVarsSettled: () => {
             sticky?.update()

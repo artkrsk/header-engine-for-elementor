@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import {
   ALT_LOGO_ATTR,
   BAR_ABSOLUTE_CLASS,
@@ -14,7 +15,7 @@ import {
   ZONE_LOOK_ATTR
 } from '@ts/constants'
 import { mapPanelSettings } from '@ts/elementor/mapPanelSettings'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   fixture,
   hasPhp,
@@ -342,5 +343,73 @@ describe.skipIf(!hasPhp)('Markup logo version attributes', () => {
       undefined,
       undefined
     ])
+  })
+})
+
+describe.skipIf(!hasPhp)('Markup pre-paint height seed', () => {
+  const root = (): HTMLElement => document.documentElement
+  const STICKY_VAR = '--arts-header-height-sticky'
+  const NON_STICKY_VAR = '--arts-header-height-non-sticky'
+  const CLEARANCE_VAR = '--arts-header-clearance-non-sticky'
+
+  /** The seed script's body as PHP prints it after the primary header. */
+  const renderSeed = (): string => {
+    const [header] = renderElements([{ id: 'a', type: 'container', settings: ENABLED }])
+    const match = /<script id="arts-header-height-a-js">([\s\S]*?)<\/script>/.exec(
+      header?.after ?? ''
+    )
+    expect(match).not.toBeNull()
+    return match?.[1] ?? ''
+  }
+
+  const sizeBar = (bar: HTMLElement, height: number): void => {
+    Object.defineProperty(bar, 'clientHeight', { value: height, configurable: true })
+    bar.getBoundingClientRect = () => ({ top: 0, bottom: height, height }) as DOMRect
+  }
+
+  const build = (height: number): HTMLElement => {
+    const wrapper = document.createElement('div')
+    wrapper.className = 'arts-header arts-header_elementor-element-a js-arts-header'
+    const bar = document.createElement('div')
+    bar.className = 'arts-header__bar js-arts-header__bar'
+    sizeBar(bar, height)
+    wrapper.appendChild(bar)
+    document.body.appendChild(wrapper)
+    return bar
+  }
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    root().style.removeProperty(STICKY_VAR)
+    root().style.removeProperty(NON_STICKY_VAR)
+    root().style.removeProperty(CLEARANCE_VAR)
+    root().classList.remove('has-header-height')
+  })
+
+  it('writes the rest pair and the class on <html>, and no sticky or live height', () => {
+    const seed = renderSeed()
+    build(80)
+    new Function(seed)()
+    expect(root().style.getPropertyValue(NON_STICKY_VAR)).toBe('80px')
+    expect(root().style.getPropertyValue(CLEARANCE_VAR)).toBe('80px')
+    expect(root().classList.contains('has-header-height')).toBe(true)
+    expect(root().style.getPropertyValue(STICKY_VAR)).toBe('')
+    expect(root().style.getPropertyValue('--arts-header-height')).toBe('')
+  })
+
+  // The navigator re-runs the seed at every AJAX header swap: an unchanged header must not
+  // touch the inline style (an inherited var written on <html> re-resolves the whole page).
+  it('skips every write whose value is already inline, like the engine does', () => {
+    const seed = renderSeed()
+    const bar = build(80)
+    new Function(seed)()
+    const rootWrites = vi.spyOn(root().style, 'setProperty')
+    new Function(seed)()
+    expect(rootWrites).not.toHaveBeenCalled()
+    sizeBar(bar, 64)
+    new Function(seed)()
+    expect(rootWrites).toHaveBeenCalledTimes(2)
+    expect(rootWrites).toHaveBeenCalledWith(NON_STICKY_VAR, '64px')
+    expect(rootWrites).toHaveBeenCalledWith(CLEARANCE_VAR, '64px')
   })
 })

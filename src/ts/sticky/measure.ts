@@ -1,5 +1,5 @@
 import { EXTENT_ATTR } from '../constants/dataAttrs'
-import { VALUE_HOST_JS_CLASS } from '../constants/dom'
+import { resolveValueHost } from '../core/resolveValueHost'
 import type { TPinLine } from '../types/TPinLine'
 
 /**
@@ -117,9 +117,7 @@ export const measureNaturalTop = (
  * measure corrects it.
  */
 export const estimateNaturalTop = (container: HTMLElement): number => {
-  const slot = container.parentElement?.classList.contains(VALUE_HOST_JS_CLASS)
-    ? container.parentElement
-    : container
+  const slot = resolveValueHost(container) ?? container
   const sibling = slot.previousElementSibling
   const anchor = sibling ?? slot.parentElement
   if (!anchor) {

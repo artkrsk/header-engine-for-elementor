@@ -232,10 +232,12 @@ class Markup {
 	}
 
 	/**
-	 * Pre-paint seed: sets the two height vars, the rest clearance var + the has-header-height class
-	 * synchronously, immediately after the header markup, so first paint has
-	 * the correct layout and the engine's height observer can trust the
-	 * seeded non-sticky value on scroll-restored loads.
+	 * Pre-paint seed: sets the rest height and clearance vars + the has-header-height class on
+	 * <html>, synchronously, immediately after the header markup, so first paint has the correct
+	 * layout and the engine's height observer can trust the seeded non-sticky value on
+	 * scroll-restored loads. The sticky height is the engine's alone (it exists once the bar has
+	 * stuck). Every write skips an unchanged value: an inherited var written on <html> re-resolves
+	 * the whole page, and the navigator re-runs this script at every AJAX header swap.
 	 */
 	private function print_inline_height_script( string $script_id, string $element_id ): void {
 		?>
@@ -243,6 +245,10 @@ class Markup {
 			(function() {
 				var bar = document.querySelector('.arts-header_elementor-element-<?php echo esc_attr( $element_id ); ?> .arts-header__bar');
 				if (!bar) { return; }
+				var root = document.documentElement;
+				var set = function(el, name, value) {
+					if (el.style.getPropertyValue(name) !== value) { el.style.setProperty(name, value); }
+				};
 				var height = bar.clientHeight;
 				// Clearance: the lowest edge the bar's content reaches, counting visible marked
 				// descendants the bar's box does not contain (a dropdown hanging out of a locked row).
@@ -252,10 +258,9 @@ class Markup {
 					if (typeof el.checkVisibility === 'function' && !el.checkVisibility({ visibilityProperty: true })) { return; }
 					bottom = Math.max(bottom, el.getBoundingClientRect().bottom);
 				});
-				document.documentElement.style.setProperty('--arts-header-height', height + 'px');
-				document.documentElement.style.setProperty('--arts-header-height-non-sticky', height + 'px');
-				document.documentElement.style.setProperty('--arts-header-clearance-non-sticky', Math.round(bottom - rect.top) + 'px');
-				document.documentElement.classList.add('has-header-height');
+				set(root, '--arts-header-height-non-sticky', height + 'px');
+				set(root, '--arts-header-clearance-non-sticky', Math.round(bottom - rect.top) + 'px');
+				root.classList.add('has-header-height');
 			})();
 		</script>
 		<?php

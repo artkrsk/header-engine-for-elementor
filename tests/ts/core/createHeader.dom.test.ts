@@ -23,8 +23,9 @@ afterEach(() => {
     header.destroy(false)
   }
   created.length = 0
-  document.documentElement.style.removeProperty('--arts-header-height')
+  document.documentElement.style.removeProperty('--arts-header-height-sticky')
   document.documentElement.style.removeProperty('--arts-header-height-non-sticky')
+  document.documentElement.style.removeProperty('--arts-header-clearance-non-sticky')
   document.documentElement.classList.remove('has-header-height')
   document.body.innerHTML = ''
 })
@@ -268,14 +269,24 @@ describe('createHeader', () => {
   it('re-measures the height through the sticky change wiring end to end', () => {
     vi.useFakeTimers()
     const { bar, header, scrollTo } = makeRig()
+    const root = document.documentElement.style
     header.init()
     vi.advanceTimersByTime(150)
-    expect(document.documentElement.style.getPropertyValue('--arts-header-height')).toBe('80px')
+    expect(root.getPropertyValue('--arts-header-height-non-sticky')).toBe('80px')
+    expect(root.getPropertyValue('--arts-header-height-sticky')).toBe('')
+    // Stick → handleStickyChange(true) → the settled capture publishes the stuck height (zero
+    // transition duration in happy-dom, 150 ms settle).
     scrollTo(50)
     bar.getBoundingClientRect = () => ({ top: 0, bottom: 64, height: 64 }) as DOMRect
+    vi.advanceTimersByTime(150)
+    expect(root.getPropertyValue('--arts-header-height-sticky')).toBe('64px')
+    expect(root.getPropertyValue('--arts-header-height-non-sticky')).toBe('80px')
+    // Unstick → the rest pair re-measures the same way; the sticky value stays.
     scrollTo(0)
-    // Unstick → handleStickyChange(false) → re-measure (zero transition duration in happy-dom).
-    expect(document.documentElement.style.getPropertyValue('--arts-header-height')).toBe('64px')
+    vi.advanceTimersByTime(150)
+    expect(root.getPropertyValue('--arts-header-height-non-sticky')).toBe('64px')
+    expect(root.getPropertyValue('--arts-header-height-sticky')).toBe('64px')
+    expect(root.getPropertyValue('--arts-header-height')).toBe('')
     // Destroy while the rAF stubs are still installed; the afterEach re-destroy no-ops.
     header.destroy(false)
     vi.useRealTimers()

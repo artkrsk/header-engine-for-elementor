@@ -1,7 +1,7 @@
 /** CSS variable, class, and selector hooks — what callers may pass to override defaults. */
 export interface IConfig {
   vars?: {
-    headerHeight?: string
+    headerHeightSticky?: string
     headerHeightNonSticky?: string
     clearanceNonSticky?: string
     naturalHeight?: string

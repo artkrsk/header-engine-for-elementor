@@ -18,9 +18,9 @@ export interface IHeightObserverArgs {
    */
   initialHeight?: number
   /**
-   * Fires once either published height var genuinely changed and the writes settled (the vars are
+   * Fires once a published height var genuinely changed and the writes settled (the vars are
    * already updated). Lets consumers re-resolve var chains referencing the height vars: a stale
-   * pre-paint seed correcting, or a live-height change while sticky (a chained pin offset) —
+   * pre-paint seed correcting, or the sticky height settling after a stick (a chained pin offset) —
    * neither of which the reader's own observers can see.
    */
   onHeightVarsSettled?: () => void

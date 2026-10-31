@@ -169,17 +169,24 @@ each measure pass. Tick deciders and sub-modules:
   bubbling `arts-hs:layout` event on `document` schedules the existing rAF-coalesced rescan
   (removed in `destroy()`).
 
-`heightObserver/` publishes live + settled rest bar heights as CSS vars (border-box RO), told about
+`heightObserver/` publishes the settled STICKY bar height, the settled rest height and the rest
+clearance as CSS vars on `<html>` (border-box RO), told about
 sticky state by an `isSticking` predicate + the `onStickingChange` callback `createHeader` wires —
 it never reads back from the DOM, and the composition root measures the bar ONCE before any boot
 write and hands it over (`initialHeight`, `update(height)`), so `init()` and `refresh()` stay a
 single layout flush (the publisher's own rect read would land after the sticky engine's writes), and it signals settled var changes outward (`onHeightVarsSettled`,
 one signal per settle — the rest capture arms before the live write on purpose). Publishing is
-endpoint-only across the bar's OWN state transition: a sticky flip suppresses the RO-driven writes
-for the bar's measured transition duration and publishes once, settled — the vars inherit from
-`<html>`, so a per-frame write style-recalcs every consumer (profiled as the sticky-shrink FPS
-drop); a consumer hugging the shrink transitions its own consuming property instead. Heights are
-rounded to whole px everywhere (sub-pixel RO jitter must not become root var writes). RO-driven
+endpoint-only across the bar's OWN state transition: a sticky flip suppresses the RO-driven
+captures for the bar's measured transition duration and publishes once, settled; a consumer
+hugging the shrink transitions its own consuming property instead. There is NO live height: an
+inherited var on `<html>` re-resolves every `var()` user on the page (a whole-document style recalc
+per change, 85–130 ms at 4x CPU on a 2,700-element Velum page), so the engine publishes only state
+endpoints that change when the layout really did (`--arts-header-height-sticky` once the bar has
+stuck, the rest pair otherwise) and a consumer picks one by the wrapper's state class. Every write
+goes through `setInlineVar`, which skips an unchanged value, so the pre-paint seed's re-run at an
+AJAX header swap and a re-init on an unchanged header cost nothing (the seed script dedupes the
+same way: `tests/ts/phpParity.test.ts` executes it). Heights are
+rounded to whole px everywhere (sub-pixel RO jitter must not become a var write). RO-driven
 writes land on the NEXT frame, never inside the delivery: a consumer turning the var into page
 height resizes `<html>`, which the scroll bus and Lenis observe, and the browser reports the RO
 loop error (#4).
@@ -284,8 +291,11 @@ an empty `array()` encodes as `[]`, not `{}` — a section that can go empty nee
   `@property` non-inheriting with no initial value (see Data attributes). And `--arts-header-top-pinned` — SCSS-derived, not panel-authored and not
   registered (it always resolves to a plain px token), read at the same measure passes as the pin
   line's admin-bar term; see the admin-bar note under Gotchas.
-- **Engine-written vars** (`defaultConfig.vars`): `--arts-header-height`,
-  `--arts-header-height-non-sticky` (both on `<html>`), `--arts-header-clearance-non-sticky` (on
+- **Engine-written vars** (`defaultConfig.vars`): `--arts-header-height-sticky` (on `<html>`, the
+  settled stuck height, absent until the bar has stuck, so the pin-offset preset and the Fluid
+  Design System preset carry a non-sticky fallback; no live height exists),
+  `--arts-header-height-non-sticky` (on `<html>`),
+  `--arts-header-clearance-non-sticky` (on
   `<html>`, captured with the rest height and never while sticking, seeded pre-paint with it: the
   lowest edge the bar's content reaches from the bar's top — `measureClearance` — counting visible
   `[data-arts-header-extent]` descendants the bar's box does not contain, a dropdown hanging out of

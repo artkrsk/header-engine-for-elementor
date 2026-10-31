@@ -1,5 +1,5 @@
-import { VALUE_HOST_JS_CLASS } from '../constants/dom'
 import { coalesceToFrame } from '../utils/coalesceToFrame'
+import { resolveValueHost } from './resolveValueHost'
 
 const REVISION_VAR = '--arts-header-values-revision'
 
@@ -12,9 +12,7 @@ export function createValueHostInvalidation(container: HTMLElement): {
   refresh(): void
   destroy(revert: boolean): void
 } {
-  const host = container.parentElement?.classList.contains(VALUE_HOST_JS_CLASS)
-    ? container.parentElement
-    : null
+  const host = resolveValueHost(container)
   const win = container.ownerDocument.defaultView
   const original = host?.style.getPropertyValue(REVISION_VAR) ?? ''
   const priority = host?.style.getPropertyPriority(REVISION_VAR) ?? ''

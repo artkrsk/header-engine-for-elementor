@@ -88,12 +88,15 @@ describe('Markup.php mirrors the TS identifier contract', () => {
     expect(markup).toContain("'zones'")
   })
 
-  it('seeds both engine height vars and the height class pre-paint', () => {
-    expect(markup).toContain(defaultConfig.vars.headerHeight)
+  it('seeds the rest vars and the height class pre-paint, never the sticky height', () => {
     expect(markup).toContain(defaultConfig.vars.headerHeightNonSticky)
     expect(markup).toContain(defaultConfig.vars.clearanceNonSticky)
     expect(markup).toContain(EXTENT_ATTR)
     expect(markup).toContain(defaultConfig.classes.hasHeaderHeight)
+    // The sticky height exists once the bar has stuck — the engine's alone.
+    expect(markup).not.toContain(defaultConfig.vars.headerHeightSticky)
+    // Every write is skipped when already inline: an unchanged header swap touches nothing.
+    expect(markup).toContain('getPropertyValue(name) !== value')
   })
 
   it.each([

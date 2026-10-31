@@ -5,7 +5,11 @@
 //    side; `tests/ts/styleSync.test.ts` is the mechanical guard keeping the two in step.
 //
 // Engine-written vars (mirror `defaultConfig.vars`):
-// - `--arts-header-height`            live bar height, written on `<html>` (heightObserver)
+// - `--arts-header-height-sticky`     settled STUCK bar height, written on `<html>` (heightObserver)
+//                                     once the bar has stuck; absent before, so consumers fall back
+//                                     to the rest height. No live height is published: every change
+//                                     of an inherited root var restyles the whole page, so only
+//                                     state endpoints are, and a consumer picks one by state class
 // - `--arts-header-height-non-sticky` settled rest height, written on `<html>` (heightObserver);
 //                                     also seeded pre-paint by the consumer for sticky-boot loads
 // - `--arts-header-clearance-non-sticky` rest clearance, written on `<html>` (heightObserver): the

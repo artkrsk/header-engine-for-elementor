@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+* changed: the header no longer publishes a live height. It publishes its settled sticky height (`--arts-header-height-sticky`, available once the header has stuck) beside the non-sticky height and clearance, all on the page root and only when a value actually changed, so the sticky shrink and window resizes no longer restyle the whole page and an AJAX page transition that keeps the header rewrites nothing.
+* changed: the "Header Current Height" preset is now "Header Height (Sticky)" (pin offset and Fluid Design System), falling back to the non-sticky height before the first stick. Anything that read `--arts-header-height` directly should read `--arts-header-height-sticky` under the `arts-header_sticky` state and `--arts-header-height-non-sticky` otherwise.
+
 ## 1.2.0 – October 27, 2026
 
 * added: a new "Header Look Over This" setting on any section switches the header to an alternate look, with its own logo version and recolored Global Colors, while the header sits over that section.

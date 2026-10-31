@@ -271,16 +271,16 @@ class Controls {
 				'type'                 => Controls_Manager::SELECT,
 				'options'              => array(
 					''                  => esc_html__( 'Custom', 'artem-semkin-header-engine-for-elementor' ),
-					'header'            => esc_html__( 'Header Current Height', 'artem-semkin-header-engine-for-elementor' ),
+					'header'            => esc_html__( 'Header Height (Sticky)', 'artem-semkin-header-engine-for-elementor' ),
 					'header-non-sticky' => esc_html__( 'Header Height (Non-Sticky)', 'artem-semkin-header-engine-for-elementor' ),
 				),
 				'default'              => '',
 				'selectors_dictionary' => array(
-					// Current height publishes at the bar's transition ENDPOINTS (per-frame root
-					// var writes recalc the page) — a stacked panel hugs the shrink by
-					// transitioning its own consuming property. The fallback covers pre-boot,
-					// where only the non-sticky var is seeded.
-					'header'            => 'var(--arts-header-height, var(--arts-header-height-non-sticky))',
+					// The sticky height exists once the primary bar has stuck (its settled
+					// stuck height); before that a stacked panel pins under the rest height.
+					// Both are endpoints — a panel hugging the shrink transitions its own
+					// consuming property.
+					'header'            => 'var(--arts-header-height-sticky, var(--arts-header-height-non-sticky))',
 					'header-non-sticky' => 'var(--arts-header-height-non-sticky)',
 				),
 				'selectors'            => array(
@@ -1012,10 +1012,11 @@ class Controls {
 
 	/**
 	 * Expose header vars as pickable values in the Fluid Design System
-	 * dropdown. A silent no-op when that plugin is absent. The two
-	 * engine-written height vars (set on <html>, so they resolve page-wide).
-	 * The test for adding one is whether the var resolves wherever its preset
-	 * will be applied; --arts-header-release-top fails it and must stay out.
+	 * dropdown. A silent no-op when that plugin is absent. The engine-written
+	 * height vars (set on <html>, so they resolve page-wide; the sticky one
+	 * only once the bar has stuck, hence its fallback). The test for adding one
+	 * is whether the var resolves wherever its preset will be applied;
+	 * --arts-header-release-top fails it and must stay out.
 	 *
 	 * @param array<int, array<string, mixed>> $result
 	 * @return array<int, array<string, mixed>>
@@ -1038,9 +1039,9 @@ class Controls {
 	private function get_header_presets(): array {
 		return array(
 			array(
-				'id'    => 'arts-header-height',
-				'value' => 'var(--arts-header-height)',
-				'title' => esc_html__( 'Header Current Height', 'artem-semkin-header-engine-for-elementor' ),
+				'id'    => 'arts-header-height-sticky',
+				'value' => 'var(--arts-header-height-sticky, var(--arts-header-height-non-sticky))',
+				'title' => esc_html__( 'Header Height (Sticky)', 'artem-semkin-header-engine-for-elementor' ),
 			),
 			array(
 				'id'    => 'arts-header-height-non-sticky',

@@ -1,7 +1,7 @@
 /** What the engine consumes after merging with defaults. An empty class string disables that state class. */
 export interface IResolvedConfig {
   vars: {
-    headerHeight: string
+    headerHeightSticky: string
     headerHeightNonSticky: string
     clearanceNonSticky: string
     naturalHeight: string

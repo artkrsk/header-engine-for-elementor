@@ -17,7 +17,7 @@ describe('resolveConfig', () => {
     const resolved = resolveConfig({ classes: { hidden: 'my-hidden' } })
     expect(resolved.classes.hidden).toBe('my-hidden')
     expect(resolved.classes.sticking).toBe(defaultConfig.classes.sticking)
-    expect(resolved.vars.headerHeight).toBe(defaultConfig.vars.headerHeight)
+    expect(resolved.vars.headerHeightSticky).toBe(defaultConfig.vars.headerHeightSticky)
   })
 
   it('never mutates the shared defaults', () => {

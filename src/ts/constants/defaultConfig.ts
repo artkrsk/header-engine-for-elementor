@@ -7,7 +7,7 @@ import type { IResolvedConfig } from '../interfaces/IResolvedConfig'
  */
 export const defaultConfig: IResolvedConfig = {
   vars: {
-    headerHeight: '--arts-header-height',
+    headerHeightSticky: '--arts-header-height-sticky',
     headerHeightNonSticky: '--arts-header-height-non-sticky',
     clearanceNonSticky: '--arts-header-clearance-non-sticky',
     naturalHeight: '--arts-header-natural-height',

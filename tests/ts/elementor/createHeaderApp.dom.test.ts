@@ -29,8 +29,9 @@ afterEach(async () => {
   document.body.innerHTML = ''
   // destroy(false) keeps visual state by design — scrub the <html> writes between tests.
   document.documentElement.classList.remove('has-header-height')
-  document.documentElement.style.removeProperty('--arts-header-height')
+  document.documentElement.style.removeProperty('--arts-header-height-sticky')
   document.documentElement.style.removeProperty('--arts-header-height-non-sticky')
+  document.documentElement.style.removeProperty('--arts-header-clearance-non-sticky')
   ;(window as { elementorFrontend?: unknown }).elementorFrontend = undefined
   ;(window as { elementorModules?: unknown }).elementorModules = undefined
 })
