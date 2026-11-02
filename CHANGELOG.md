@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.2 – November 2, 2026
+
+* fixed: speed and caching plugins such as LiteSpeed and WP Rocket no longer delay the script that reserves space for the header, so pages no longer jump after first paint.
+* fixed: a header with a border no longer triggers a second height update right after the page loads.
+
 ## 1.3.1 – November 2, 2026
 
 * improved: pages with many elements stay smoother when the header shrinks, grows or the window is resized, because the header now publishes only its settled heights instead of a constantly changing one.
