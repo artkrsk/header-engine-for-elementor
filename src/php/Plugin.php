@@ -50,6 +50,7 @@ class Plugin {
 		add_action( 'elementor/frontend/container/after_render', array( $markup, 'add_header_wrapper_after' ) );
 		add_action( 'elementor/element/after_add_attributes', array( $markup, 'add_header_bar_attributes' ) );
 		add_action( 'elementor/element/after_add_attributes', array( $markup, 'add_zone_attributes' ) );
+		add_filter( 'rocket_excluded_inline_js_content', array( $markup, 'exclude_height_script_from_rocket_combine' ) );
 
 		add_action( 'elementor/controls/register', array( $controls, 'register_controls' ) );
 		add_action( 'elementor/element/container/section_background/before_section_end', array( $controls, 'add_header_sticky_background_controls' ) );

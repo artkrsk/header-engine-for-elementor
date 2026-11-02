@@ -189,7 +189,7 @@ same way: `tests/ts/phpParity.test.ts` executes it). Heights are
 rounded to whole px everywhere (sub-pixel RO jitter must not become a var write). RO-driven
 writes land on the NEXT frame, never inside the delivery: a consumer turning the var into page
 height resizes `<html>`, which the scroll bus and Lenis observe, and the browser reports the RO
-loop error (#4).
+loop error (#4). The seed's `<script>` carries `data-no-optimize="1" data-cfasync="false" nowprocket` and a `rocket_excluded_inline_js_content` entry: an optimizer that defers it paints the page with no clearance and jumps when it runs.
 
 `elementor/` holds `createHeaderApp` — **multi-instance**: a registry keyed by container,
 one engine per `.js-arts-header` wrapper; `init()`/`destroy()` are aggregates (concurrent calls

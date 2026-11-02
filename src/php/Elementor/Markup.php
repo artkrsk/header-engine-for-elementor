@@ -232,16 +232,31 @@ class Markup {
 	}
 
 	/**
+	 * Keep the pre-paint seed out of WP Rocket's "Combine JavaScript files", the one optimizer pass
+	 * that reads none of the seed's attributes and matches on the script's content instead.
+	 *
+	 * @param array<int, string> $exclusions
+	 * @return array<int, string>
+	 */
+	public function exclude_height_script_from_rocket_combine( array $exclusions ): array {
+		$exclusions[] = 'arts-header_elementor-element-';
+
+		return $exclusions;
+	}
+
+	/**
 	 * Pre-paint seed: sets the rest height and clearance vars + the has-header-height class on
 	 * <html>, synchronously, immediately after the header markup, so first paint has the correct
 	 * layout and the engine's height observer can trust the seeded non-sticky value on
 	 * scroll-restored loads. The sticky height is the engine's alone (it exists once the bar has
 	 * stuck). Every write skips an unchanged value: an inherited var written on <html> re-resolves
-	 * the whole page, and the navigator re-runs this script at every AJAX header swap.
+	 * the whole page, and the navigator re-runs this script at every AJAX header swap. The
+	 * attributes keep optimizers from deferring it past first paint: `data-no-optimize` for
+	 * LiteSpeed, `data-cfasync` for Autoptimize and Cloudflare, `nowprocket` for WP Rocket.
 	 */
 	private function print_inline_height_script( string $script_id, string $element_id ): void {
 		?>
-		<script id="<?php echo esc_attr( $script_id ); ?>">
+		<script id="<?php echo esc_attr( $script_id ); ?>" data-no-optimize="1" data-cfasync="false" nowprocket>
 			(function() {
 				var bar = document.querySelector('.arts-header_elementor-element-<?php echo esc_attr( $element_id ); ?> .arts-header__bar');
 				if (!bar) { return; }
@@ -249,10 +264,10 @@ class Markup {
 				var set = function(el, name, value) {
 					if (el.style.getPropertyValue(name) !== value) { el.style.setProperty(name, value); }
 				};
-				var height = bar.clientHeight;
 				// Clearance: the lowest edge the bar's content reaches, counting visible marked
 				// descendants the bar's box does not contain (a dropdown hanging out of a locked row).
 				var rect = bar.getBoundingClientRect();
+				var height = Math.round(rect.height);
 				var bottom = rect.bottom;
 				bar.querySelectorAll('[data-arts-header-extent]').forEach(function(el) {
 					if (typeof el.checkVisibility === 'function' && !el.checkVisibility({ visibilityProperty: true })) { return; }

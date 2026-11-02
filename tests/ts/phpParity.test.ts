@@ -156,7 +156,7 @@ describe.skipIf(!hasPhp)('Markup primary / secondary classification', () => {
     )
 
     expect(
-      out.map((element) => element.after.includes('<script id="arts-header-height-a-js">'))
+      out.map((element) => element.after.includes('<script id="arts-header-height-a-js"'))
     ).toEqual([true, false, true])
     expect(out.some((element) => element.after.includes('arts-header-height-b-js'))).toBe(false)
     expect(out.every((element) => element.after.includes('</div></div>'))).toBe(true)
@@ -355,7 +355,7 @@ describe.skipIf(!hasPhp)('Markup pre-paint height seed', () => {
   /** The seed script's body as PHP prints it after the primary header. */
   const renderSeed = (): string => {
     const [header] = renderElements([{ id: 'a', type: 'container', settings: ENABLED }])
-    const match = /<script id="arts-header-height-a-js">([\s\S]*?)<\/script>/.exec(
+    const match = /<script id="arts-header-height-a-js"[^>]*>([\s\S]*?)<\/script>/.exec(
       header?.after ?? ''
     )
     expect(match).not.toBeNull()
@@ -363,7 +363,6 @@ describe.skipIf(!hasPhp)('Markup pre-paint height seed', () => {
   }
 
   const sizeBar = (bar: HTMLElement, height: number): void => {
-    Object.defineProperty(bar, 'clientHeight', { value: height, configurable: true })
     bar.getBoundingClientRect = () => ({ top: 0, bottom: height, height }) as DOMRect
   }
 
