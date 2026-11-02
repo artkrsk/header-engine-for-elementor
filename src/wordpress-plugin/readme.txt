@@ -4,7 +4,7 @@ Tags: elementor, sticky header, elementor header, transparent header, hide heade
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0
 GitHub Plugin URI: https://github.com/artkrsk/header-engine-for-elementor/
@@ -108,7 +108,7 @@ No. The script and stylesheet together weigh about 25 KB, and the engine does it
 
 == Changelog ==
 
-= 1.3.1 =
+= 1.3.1 – November 2, 2026 =
 * improved: pages with many elements stay smoother when the header shrinks, grows or the window is resized, because the header now publishes only its settled heights instead of a constantly changing one.
 * improved: the "Header Current Height" choice in the pin offset and Fluid Design System presets is now named "Header Height (Sticky)" and falls back to the non-sticky height until the header has stuck.
 
