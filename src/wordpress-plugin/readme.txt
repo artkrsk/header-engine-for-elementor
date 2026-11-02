@@ -4,7 +4,7 @@ Tags: elementor, sticky header, elementor header, transparent header, hide heade
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.3.1
+Stable tag: 1.3.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0
 GitHub Plugin URI: https://github.com/artkrsk/header-engine-for-elementor/
@@ -108,7 +108,7 @@ No. The script and stylesheet together weigh about 25 KB, and the engine does it
 
 == Changelog ==
 
-= 1.3.2 =
+= 1.3.2 – November 2, 2026 =
 * fixed: speed and caching plugins such as LiteSpeed and WP Rocket no longer delay the script that reserves space for the header, so pages no longer jump after first paint.
 * fixed: a header with a border no longer triggers a second height update right after the page loads.
 
