@@ -1,9 +1,9 @@
 # Changelog
 
-## Unreleased
+## 1.3.1 – November 2, 2026
 
-* changed: the header no longer publishes a live height. It publishes its settled sticky height (`--arts-header-height-sticky`, available once the header has stuck) beside the non-sticky height and clearance, all on the page root and only when a value actually changed, so the sticky shrink and window resizes no longer restyle the whole page and an AJAX page transition that keeps the header rewrites nothing.
-* changed: the "Header Current Height" preset is now "Header Height (Sticky)" (pin offset and Fluid Design System), falling back to the non-sticky height before the first stick. Anything that read `--arts-header-height` directly should read `--arts-header-height-sticky` under the `arts-header_sticky` state and `--arts-header-height-non-sticky` otherwise.
+* improved: pages with many elements stay smoother when the header shrinks, grows or the window is resized, because the header now publishes only its settled heights instead of a constantly changing one.
+* improved: the "Header Current Height" choice in the pin offset and Fluid Design System presets is now named "Header Height (Sticky)" and falls back to the non-sticky height until the header has stuck.
 
 ## 1.3.0 – October 29, 2026
 
