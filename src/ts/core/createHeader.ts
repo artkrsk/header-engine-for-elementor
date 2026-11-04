@@ -12,7 +12,7 @@ import { readInlineOptions } from '../options/inlineOptions'
 import { resolveConfig } from '../options/resolveConfig'
 import { createSticky } from '../sticky/createSticky'
 import { measureBar } from '../sticky/measure'
-import { logger } from '../utils'
+import { logger, readTransitionDurationMs } from '../utils'
 import { createValueHostInvalidation } from './createValueHostInvalidation'
 
 /**
@@ -54,6 +54,8 @@ export function createHeader(
       values = createValueHostInvalidation(container)
       values.refresh()
       const barHeight = measureBar(bar)
+      // Same clean style as the height read; read later, at a sticky change, it forced a recalc.
+      const transitionMs = readTransitionDurationMs(bar)
       const stickyOptions = options.sticky
       if (stickyOptions !== false) {
         sticky = createSticky({
@@ -71,6 +73,7 @@ export function createHeader(
           options: options.heightObserver,
           config,
           initialHeight: barHeight,
+          transitionMs,
           isSticking: () => sticky?.isSticking ?? false,
           // A settled height-var change re-runs the sticky measurement pass: the pin/reveal
           // offset vars may chain to the height vars, and the sticky engine's own debounce can

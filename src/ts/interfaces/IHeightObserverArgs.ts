@@ -18,6 +18,12 @@ export interface IHeightObserverArgs {
    */
   initialHeight?: number
   /**
+   * The bar's transition duration in ms, read in the same boot pass as `initialHeight`, so a
+   * sticky change never reads computed style right after its class writes. Absent, the first
+   * sticky change reads it once.
+   */
+  transitionMs?: number
+  /**
    * Fires once a published height var genuinely changed and the writes settled (the vars are
    * already updated). Lets consumers re-resolve var chains referencing the height vars: a stale
    * pre-paint seed correcting, or the sticky height settling after a stick (a chained pin offset) —

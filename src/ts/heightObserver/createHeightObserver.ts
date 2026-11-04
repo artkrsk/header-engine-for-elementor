@@ -55,6 +55,10 @@ export function createHeightObserver(args: IHeightObserverArgs): IHeightObserver
   let destroyed = false
   let suppressed = false
   let transitionTimer = 0
+  // Read once per init, never re-read on resize: a phone's toolbar fires `resize` around the very
+  // flips this read would land in. A stale value only shifts how long RO captures stay muted; the
+  // settle debounce still waits for the bar to stop.
+  let transitionMs: number | null = args.transitionMs ?? null
 
   const publishSticky = (): void => {
     if (heightSticky > 0) {
@@ -156,7 +160,7 @@ export function createHeightObserver(args: IHeightObserverArgs): IHeightObserver
       // Both edges animate the bar (sticky styles in, or back to rest), so both suppress the
       // RO-driven captures for the transition and publish once, settled. Explicit update() stays
       // immediate — the scheduled endpoint write corrects a rare mid-window measure pass.
-      const transitionMs = readTransitionDurationMs(bar)
+      transitionMs ??= readTransitionDurationMs(bar)
       if (transitionMs > 0) {
         suppressed = true
         window.clearTimeout(transitionTimer)

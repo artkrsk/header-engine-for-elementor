@@ -177,7 +177,11 @@ write and hands it over (`initialHeight`, `update(height)`), so `init()` and `re
 single layout flush (the publisher's own rect read would land after the sticky engine's writes), and it signals settled var changes outward (`onHeightVarsSettled`,
 one signal per settle — the rest capture arms before the live write on purpose). Publishing is
 endpoint-only across the bar's OWN state transition: a sticky flip suppresses the RO-driven
-captures for the bar's measured transition duration and publishes once, settled; a consumer
+captures for the bar's measured transition duration and publishes once, settled. That duration is
+read in the same boot pass as the height (`transitionMs`) and never re-read until the next init:
+read at the flip, right after the sticky class writes, it forced a 20 to 37 ms header recalc at
+4x CPU on every stick and unstick (velum #509), and a resize re-read would bring it back on phones,
+whose toolbar fires `resize` mid-scroll. A consumer
 hugging the shrink transitions its own consuming property instead. There is NO live height: an
 inherited var on `<html>` re-resolves every `var()` user on the page (a whole-document style recalc
 per change, 85–130 ms at 4x CPU on a 2,700-element Velum page), so the engine publishes only state
