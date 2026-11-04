@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.3 – November 4, 2026
+
+* improved: the header now sticks and unsticks more smoothly on pages with many elements, especially on phones.
+* fixed: in right-to-left languages, a secondary logo narrower than the primary one now lines up at the correct end.
+
 ## 1.3.2 – November 2, 2026
 
 * fixed: speed and caching plugins such as LiteSpeed and WP Rocket no longer delay the script that reserves space for the header, so pages no longer jump after first paint.
