@@ -4,7 +4,7 @@ Tags: elementor, sticky header, elementor header, transparent header, hide heade
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.3.2
+Stable tag: 1.3.3
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0
 GitHub Plugin URI: https://github.com/artkrsk/header-engine-for-elementor/
@@ -107,6 +107,10 @@ No. The script and stylesheet together weigh about 25 KB, and the engine does it
 5. Primary and secondary logos in the Dual Site Logo widget — the header swaps them automatically when it sticks.
 
 == Changelog ==
+
+= 1.3.3 – November 4, 2026 =
+* improved: the header now sticks and unsticks more smoothly on pages with many elements, especially on phones.
+* fixed: in right-to-left languages, a secondary logo narrower than the primary one now lines up at the correct end.
 
 = 1.3.2 – November 2, 2026 =
 * fixed: speed and caching plugins such as LiteSpeed and WP Rocket no longer delay the script that reserves space for the header, so pages no longer jump after first paint.
