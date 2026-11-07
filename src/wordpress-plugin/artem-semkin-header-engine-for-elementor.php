@@ -12,7 +12,6 @@
  * Text Domain: artem-semkin-header-engine-for-elementor
  * License: GPLv3
  * License URI: https://www.gnu.org/licenses/gpl-3.0
- * Tested up to: 7.1
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
