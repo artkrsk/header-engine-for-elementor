@@ -13,6 +13,12 @@ use Elementor\Core\Base\Document;
  * by the `arts_header_custom_logo_secondary` theme mod, kept in two-way sync
  * with Elementor's kit Site Identity settings (site_logo / site_secondary_logo
  * / site_favicon) so editing from either surface updates both.
+ *
+ * The three write filters also veto an id that is not an image on this site
+ * from replacing a working one: a kit carrying another site's ids (raw meta
+ * copy, demo import) re-sends them on every Site Settings publish, and
+ * Elementor's own Site Identity on_save() writes custom_logo and site_icon
+ * after our before_save, so only the filters see every writer.
  */
 class Backend {
 	/**
@@ -104,6 +110,7 @@ class Backend {
 	 * @return mixed
 	 */
 	public function handle_custom_logo_theme_mod( $value, $old_value ) {
+		$value = $this->keep_working_image( $value, $old_value );
 		$this->sync_value_to_elementor_site_settings( $value, 'site_logo' );
 		return $value;
 	}
@@ -114,6 +121,7 @@ class Backend {
 	 * @return mixed
 	 */
 	public function handle_secondary_logo_theme_mod( $value, $old_value ) {
+		$value = $this->keep_working_image( $value, $old_value );
 		$this->sync_value_to_elementor_site_settings( $value, 'site_secondary_logo' );
 		return $value;
 	}
@@ -125,8 +133,35 @@ class Backend {
 	 * @return mixed
 	 */
 	public function handle_favicon_option( $value, $old_value, $option ) {
+		$value = $this->keep_working_image( $value, $old_value );
 		$this->sync_value_to_elementor_site_settings( $value, 'site_favicon' );
 		return $value;
+	}
+
+	/**
+	 * Returning the old value cancels the write: set_theme_mod() stores it
+	 * back, update_option() hits its unchanged-value early return. An empty
+	 * value still goes through, so clearing keeps working.
+	 *
+	 * @param mixed $value
+	 * @param mixed $old_value
+	 * @return mixed
+	 */
+	private function keep_working_image( $value, $old_value ) {
+		if ( empty( $value ) || $this->is_image_id( $value ) || ! $this->is_image_id( $old_value ) ) {
+			return $value;
+		}
+
+		return $old_value;
+	}
+
+	/**
+	 * Positive ids only: get_post() falls back to the global $post for an empty one.
+	 *
+	 * @param mixed $value
+	 */
+	private function is_image_id( $value ): bool {
+		return is_numeric( $value ) && (int) $value > 0 && wp_attachment_is_image( (int) $value );
 	}
 
 	/**

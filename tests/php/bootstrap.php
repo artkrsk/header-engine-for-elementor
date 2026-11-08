@@ -166,6 +166,11 @@ function wp_get_attachment_image_url( int $attachment_id, string $size = 'thumbn
 	return $GLOBALS['arts_test']['attachments'][ $attachment_id ] ?? false;
 }
 
+/** An id counts as an image when the row's attachments map knows it. */
+function wp_attachment_is_image( $post = null ): bool {
+	return is_numeric( $post ) && isset( $GLOBALS['arts_test']['attachments'][ (int) $post ] );
+}
+
 function untrailingslashit( string $value ): string {
 	return rtrim( $value, '/\\' );
 }
