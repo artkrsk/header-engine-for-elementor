@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.4 – November 10, 2026
+
+* fixed: the site logo, secondary logo and favicon are no longer replaced by a broken image when Elementor's Site Settings holds an image from another site.
+
 ## 1.3.3 – November 4, 2026
 
 * improved: the header now sticks and unsticks more smoothly on pages with many elements, especially on phones.

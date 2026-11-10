@@ -4,7 +4,7 @@ Tags: elementor, sticky header, elementor header, transparent header, hide heade
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.3.3
+Stable tag: 1.3.4
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0
 GitHub Plugin URI: https://github.com/artkrsk/header-engine-for-elementor/
@@ -108,7 +108,7 @@ No. The script and stylesheet together weigh about 25 KB, and the engine does it
 
 == Changelog ==
 
-= 1.3.4 =
+= 1.3.4 – November 10, 2026 =
 * fixed: the site logo, secondary logo and favicon are no longer replaced by a broken image when Elementor's Site Settings holds an image from another site.
 
 = 1.3.3 – November 4, 2026 =
