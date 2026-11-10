@@ -108,6 +108,9 @@ No. The script and stylesheet together weigh about 25 KB, and the engine does it
 
 == Changelog ==
 
+= 1.3.4 =
+* fixed: the site logo, secondary logo and favicon are no longer replaced by a broken image when Elementor's Site Settings holds an image from another site.
+
 = 1.3.3 – November 4, 2026 =
 * improved: the header now sticks and unsticks more smoothly on pages with many elements, especially on phones.
 * fixed: in right-to-left languages, a secondary logo narrower than the primary one now lines up at the correct end.
