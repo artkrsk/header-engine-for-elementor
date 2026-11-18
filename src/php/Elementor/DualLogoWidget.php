@@ -67,7 +67,7 @@ class DualLogoWidget extends Widget_Base {
 			'has_title',
 			array(
 				'type'    => Controls_Manager::HIDDEN,
-				'default' => get_theme_mod( 'header_text' ) && get_bloginfo( 'name' ) ? 'yes' : '',
+				'default' => $this->is_header_text_enabled() && get_bloginfo( 'name' ) ? 'yes' : '',
 			)
 		);
 
@@ -75,7 +75,7 @@ class DualLogoWidget extends Widget_Base {
 			'has_tagline',
 			array(
 				'type'    => Controls_Manager::HIDDEN,
-				'default' => get_theme_mod( 'header_text' ) && get_bloginfo( 'description' ) ? 'yes' : '',
+				'default' => $this->is_header_text_enabled() && get_bloginfo( 'description' ) ? 'yes' : '',
 			)
 		);
 
@@ -214,7 +214,7 @@ class DualLogoWidget extends Widget_Base {
 				'type'      => Controls_Manager::HEADING,
 				'label'     => esc_html__( 'Site Tagline', 'artem-semkin-header-engine-for-elementor' ),
 				'condition' => array( 'has_tagline' => 'yes' ),
-				'separator' => get_theme_mod( 'header_text' ) && get_bloginfo( 'name' ) && get_bloginfo( 'description' ) ? 'before' : 'default',
+				'separator' => $this->is_header_text_enabled() && get_bloginfo( 'name' ) && get_bloginfo( 'description' ) ? 'before' : 'default',
 			)
 		);
 
@@ -449,6 +449,11 @@ class DualLogoWidget extends Widget_Base {
 		return is_numeric( $value ) ? (int) $value : 0;
 	}
 
+	/** WP registers `header_text` with default 1, so an unsaved mod means shown. */
+	private function is_header_text_enabled(): bool {
+		return (bool) get_theme_mod( 'header_text', 1 );
+	}
+
 	private function get_logo_url( int $attachment_id ): string {
 		if ( $attachment_id > 0 ) {
 			$logo_src = wp_get_attachment_image_src( $attachment_id, 'full' );
@@ -463,7 +468,7 @@ class DualLogoWidget extends Widget_Base {
 
 		$title                         = get_bloginfo( 'name' );
 		$tagline                       = get_bloginfo( 'description' );
-		$display_title_tagline_enabled = get_theme_mod( 'header_text' );
+		$display_title_tagline_enabled = $this->is_header_text_enabled();
 		$primary_logo_id               = $this->get_theme_mod_id( 'custom_logo' );
 		$secondary_logo_id             = $this->get_theme_mod_id( 'arts_header_custom_logo_secondary' );
 
