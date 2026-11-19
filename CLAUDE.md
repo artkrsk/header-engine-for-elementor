@@ -219,7 +219,8 @@ src/ts/            boot.ts + index.ts; core/ events/ options/ sticky/ heightObse
                    constants/ interfaces/ types/ utils/ (mostly a vendored @arts/utilities subset)
 src/styles/        the `arts-header` cascade layer: index + _tokens (contract file), _modes,
                    _reveal, _logo, _interaction
-src/php/           Plugin (singleton bootstrap, did_action('elementor/loaded') race guard) +
+src/php/           Plugin (singleton bootstrap, wired on after_setup_theme behind the
+                   `arts_header/enabled` filter) +
                    Elementor/{Assets, Markup, Controls, Backend, DualLogoWidget,
                    MediaPreviewOnlyControl}; libraries/ holds the built bundles (gitignored)
 src/wordpress-plugin/  the shipped main file + readme.txt (headers stamped from composer.json)

@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin emitter. Row: {"didAction":0|1} — what did_action('elementor/loaded') reports when the
- * singleton is built. Reports the hooks registered at construction and, when the plugin deferred to
- * `elementor/loaded`, the hooks registered after that action fired. Every hook is checked for a
- * callable callback that accepts enough arguments for its required parameters.
+ * Plugin emitter. Row: {"didAction":0|1} — what did_action('after_setup_theme') reports when the
+ * singleton is built; Elementor has loaded in every row. Reports the hooks registered at construction
+ * and, when the plugin deferred to `after_setup_theme`, the hooks registered after that action fired.
+ * Every hook is checked for a callable callback that accepts enough arguments for its required parameters.
  */
 
 require __DIR__ . '/bootstrap.php';
@@ -45,22 +45,23 @@ arts_test_run_rows(
 	function ( array $row ): array {
 		arts_test_reset_static( Plugin::class, 'instance', null );
 		arts_test_drain_hooks();
-		$GLOBALS['arts_test']['did_action']['elementor/loaded'] = $row['didAction'];
+		$GLOBALS['arts_test']['did_action']['elementor/loaded']  = 1;
+		$GLOBALS['arts_test']['did_action']['after_setup_theme'] = $row['didAction'];
 
 		$plugin    = Plugin::instance();
 		$raw       = arts_test_drain_hooks();
 		$construct = arts_test_describe_hooks( $raw );
 
-		$after_loaded = null;
-		if ( array() !== $raw && 'elementor/loaded' === $raw[0]['hook'] ) {
+		$after_setup = null;
+		if ( array() !== $raw && 'after_setup_theme' === $raw[0]['hook'] ) {
 			call_user_func( $raw[0]['callback'] );
-			$after_loaded = arts_test_describe_hooks( arts_test_drain_hooks() );
+			$after_setup = arts_test_describe_hooks( arts_test_drain_hooks() );
 		}
 
 		return array(
-			'construct'   => $construct,
-			'afterLoaded' => $after_loaded,
-			'singleton'   => Plugin::instance() === $plugin && array() === arts_test_drain_hooks(),
+			'construct'  => $construct,
+			'afterSetup' => $after_setup,
+			'singleton'  => Plugin::instance() === $plugin && array() === arts_test_drain_hooks(),
 		);
 	}
 );
