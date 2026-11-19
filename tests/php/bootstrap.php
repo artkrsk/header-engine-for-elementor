@@ -149,6 +149,11 @@ function add_filter( string $hook_name, $callback, int $priority = 10, int $acce
 	return true;
 }
 
+/** No callbacks run here: a filter hands its value back. */
+function apply_filters( string $hook_name, $value ) {
+	return $value;
+}
+
 function set_theme_mod( string $name, $value ): void {
 	arts_test_record( 'set_theme_mod', array( $name, $value ) );
 }

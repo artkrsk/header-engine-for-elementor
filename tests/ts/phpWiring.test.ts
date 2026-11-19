@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { hasPhp, lazyEmitter } from './phpEmitter'
 
 /**
- * Assets (the editor flag the bundle reads) and Plugin (the load-order race guard and the hook
- * table) run against the WordPress shims in `tests/php/bootstrap.php`.
+ * Assets (the editor flag the bundle reads) and Plugin (the wait for `after_setup_theme` and the
+ * hook table) run against the WordPress shims in `tests/php/bootstrap.php`.
  */
 
 interface IRecordedCall {
@@ -22,7 +22,7 @@ interface IHookRow {
 
 interface IPluginResult {
   construct: IHookRow[]
-  afterLoaded: IHookRow[] | null
+  afterSetup: IHookRow[] | null
   singleton: boolean
 }
 
@@ -132,18 +132,18 @@ describe.skipIf(!hasPhp)('Plugin bootstrap', () => {
   const loadedAgain = () => emitted()[1]
   const early = () => emitted()[2]
 
-  it('wires everything immediately when elementor/loaded already fired', () => {
+  it('wires everything immediately when after_setup_theme already fired', () => {
     for (const result of [loaded(), loadedAgain()]) {
-      expect(result?.afterLoaded).toBeNull()
-      expect(result?.construct.some((row) => row.hook === 'elementor/loaded')).toBe(false)
+      expect(result?.afterSetup).toBeNull()
+      expect(result?.construct.some((row) => row.hook === 'after_setup_theme')).toBe(false)
       expect(result?.construct.length).toBeGreaterThan(10)
     }
   })
 
-  it('defers to elementor/loaded when it has not fired, then wires the same hooks', () => {
+  it('defers to after_setup_theme when it has not fired, then wires the same hooks', () => {
     expect(early()?.construct).toEqual([
       {
-        hook: 'elementor/loaded',
+        hook: 'after_setup_theme',
         callback: 'Plugin::init_elementor',
         priority: 10,
         accepted_args: 1,
@@ -151,7 +151,7 @@ describe.skipIf(!hasPhp)('Plugin bootstrap', () => {
         args_ok: true
       }
     ])
-    expect(early()?.afterLoaded).toEqual(loaded()?.construct)
+    expect(early()?.afterSetup).toEqual(loaded()?.construct)
   })
 
   it('is a singleton that never wires twice', () => {

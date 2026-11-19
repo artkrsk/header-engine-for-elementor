@@ -20,16 +20,31 @@ class Plugin {
 	}
 
 	private function __construct() {
-		// Guard against the alphabetical load-order race: a plugin slug sorting
-		// after "elementor" can miss the elementor/loaded action entirely.
-		if ( did_action( 'elementor/loaded' ) ) {
+		// A theme or another plugin answers `arts_header/enabled` from its own file, so nothing is
+		// wired before all of them have loaded. Every hook below fires on `init` or later.
+		if ( did_action( 'after_setup_theme' ) ) {
 			$this->init_elementor();
 		} else {
-			add_action( 'elementor/loaded', array( $this, 'init_elementor' ) );
+			add_action( 'after_setup_theme', array( $this, 'init_elementor' ) );
 		}
 	}
 
 	public function init_elementor(): void {
+		if ( ! did_action( 'elementor/loaded' ) ) {
+			return;
+		}
+
+		/**
+		 * Whether the plugin runs on this site. Returning false wires nothing, the editor included:
+		 * no controls, no Dual Site Logo widget, no logo sync, no assets and no header markup. For a
+		 * theme that runs its own header engine on the same Container.
+		 *
+		 * @param bool $enabled
+		 */
+		if ( ! (bool) apply_filters( 'arts_header/enabled', true ) ) {
+			return;
+		}
+
 		$assets   = new Elementor\Assets();
 		$backend  = new Elementor\Backend();
 		$markup   = new Elementor\Markup();

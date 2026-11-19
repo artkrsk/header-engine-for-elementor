@@ -28,6 +28,16 @@ cp .env.example .env   # set DEV_TARGET to your Local site's plugin dir
 
 Everything else (lint, typecheck, phpstan, phpcs, knip, fallow) runs via `pnpm exec` — see the [tooling docs](https://github.com/artkrsk/wp-plugin-tooling).
 
+## Turning the plugin off
+
+A theme or plugin that runs its own header engine on the same Elementor Container can keep this plugin off the site:
+
+```php
+add_filter( 'arts_header/enabled', '__return_false' );
+```
+
+The filter is read once, on `after_setup_theme`: add it from a plugin file or the theme's `functions.php`, not from a later hook. While it returns false the plugin registers nothing, in the editor too: no controls, no Dual Site Logo widget, no logo sync, no assets and no header markup.
+
 ## License
 
 GPL-3.0-or-later.
