@@ -108,6 +108,10 @@ No. The script and stylesheet together weigh about 25 KB, and the engine does it
 
 == Changelog ==
 
+= 1.3.5 =
+* added: a theme can now turn the plugin off with the arts_header/enabled filter, so it no longer conflicts with a theme that ships its own header engine.
+* fixed: the Dual Site Logo widget now shows the site title and tagline on sites that never saved the Customizer's display option, matching what the Customizer shows.
+
 = 1.3.4 – November 10, 2026 =
 * fixed: the site logo, secondary logo and favicon are no longer replaced by a broken image when Elementor's Site Settings holds an image from another site.
 
