@@ -2,8 +2,8 @@
 /**
  * Shared bootstrap for the PHP emitters that tests/ts/php*.test.ts spawn. An emitter reads a JSON
  * array of rows on stdin and prints one JSON line per row; vitest compares the lines to the TS
- * side. The plugin has no composer runtime deps, so a tiny PSR-4 loader stands in for
- * vendor/autoload.php and the suite runs without `composer install`.
+ * side. src/php has no composer runtime deps (only the main file uses arts/base), so a tiny PSR-4
+ * loader stands in for vendor/autoload.php and the suite runs without `composer install`.
  *
  * No PHP 8.1+ syntax here: the plugin's floor is 8.0 and these scripts run on whatever `php` is on PATH.
  */

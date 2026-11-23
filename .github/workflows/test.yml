@@ -18,8 +18,8 @@ jobs:
   test:
     uses: artkrsk/wordpress-plugin-workflows/.github/workflows/test.yml@main
     with:
-      # 41 KB actual — 0.1 MB is ~2.5x headroom
-      zip_budget_mb: '0.1'
+      # 103 KB actual (60 KB plus the prefixed arts/base) — 0.12 MB leaves ~19 KB headroom
+      zip_budget_mb: '0.12'
       blueprint_check: true
       # coverage: true after the repo goes public (Codecov)
     secrets:

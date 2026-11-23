@@ -24,3 +24,6 @@ define( 'ARTS_HEADER_PLUGIN_FILE', __FILE__ );
 require_once __DIR__ . '/vendor/autoload.php';
 
 \Arts\HeaderForElementor\Plugin::instance();
+
+// Elementor's caches cleared once per version.
+\ArtsHeaderForElementor\Arts\Base\Elementor\CacheClear::on_version( 'header-engine', ARTS_HEADER_PLUGIN_VERSION );

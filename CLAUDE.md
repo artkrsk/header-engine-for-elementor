@@ -8,7 +8,9 @@ CSS, not per-frame JS. The PHP layer decorates an Elementor **Container** into t
 Package: `@arts/header` (private, ESM). Consumer entry: `src/ts/index.ts`, also the `@engine` alias.
 Composer: `arts/header-engine-for-elementor`, PSR-4 `Arts\HeaderForElementor\` → `src/php/` — deliberately
 NOT `Arts\Header`, which belongs to the separate `arts/header` framework package; the two must stay
-distinct in case both ever load in one process. Zero runtime composer deps; `composer.json` is the
+distinct in case both ever load in one process. One runtime composer dep, `arts/base`, Strauss-prefixed
+into `vendor-prefixed/` as `ArtsHeaderForElementor\` for the main file's `CacheClear::on_version()` (one
+Elementor cache clear per version); it adds ~43 KB to the zip, which is why the budget is 0.12 MB. `composer.json` is the
 single version source (the build stamps the plugin header, readme.txt, and package.json from it).
 
 ## Status / scope

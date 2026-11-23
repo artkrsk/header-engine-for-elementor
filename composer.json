@@ -27,9 +27,13 @@
     }
   },
   "require": {
-    "php": ">=8.0"
+    "php": ">=8.0",
+    "arts/base": "^1.2"
   },
   "autoload": {
+    "classmap": [
+      "vendor-prefixed/"
+    ],
     "psr-4": {
       "Arts\\HeaderForElementor\\": "src/php/"
     }
@@ -38,12 +42,52 @@
     "phpstan/phpstan": "^2.0",
     "szepeviktor/phpstan-wordpress": "^2.0",
     "arts/elementor-stubs": "^4.0",
-    "arts/wp-plugin-standards": "^1.0"
+    "arts/wp-plugin-standards": "^1.0",
+    "brianhenryie/strauss": "^0.32"
   },
   "scripts": {
     "phpstan": "phpstan analyse --memory-limit=1G",
     "pre-autoload-dump": [
       "@php -r \"is_dir('vendor-prefixed') || mkdir('vendor-prefixed');\""
+    ],
+    "prefix-namespaces": [
+      "@php vendor/bin/strauss",
+      "@composer dump-autoload"
+    ],
+    "post-install-cmd": [
+      "@php -r \"if (file_exists('vendor/bin/strauss')) { passthru(PHP_BINARY . ' vendor/bin/strauss'); passthru('composer dump-autoload'); }\""
+    ],
+    "post-update-cmd": [
+      "@php -r \"if (file_exists('vendor/bin/strauss')) { passthru(PHP_BINARY . ' vendor/bin/strauss'); passthru('composer dump-autoload'); }\""
     ]
+  },
+  "extra": {
+    "strauss": {
+      "target_directory": "vendor-prefixed",
+      "namespace_prefix": "ArtsHeaderForElementor\\",
+      "classmap_prefix": "ArtsHeaderForElementor_",
+      "constant_prefix": "ARTS_HEADER_FOR_ELEMENTOR_VENDOR_",
+      "classmap_output": true,
+      "include_modified_date": true,
+      "include_author": true,
+      "packages": [
+        "arts/base"
+      ],
+      "update_call_sites": [
+        "src/php",
+        "src/wordpress-plugin"
+      ],
+      "delete_vendor_packages": false,
+      "exclude_from_copy": {
+        "file_patterns": [
+          "/^tests\\//",
+          "/phpcs\\.xml/",
+          "/phpstan/",
+          "/\\.github/",
+          "/\\.gitignore/",
+          "/composer\\.lock/"
+        ]
+      }
+    }
   }
 }
