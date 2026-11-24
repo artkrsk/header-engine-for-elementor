@@ -108,6 +108,9 @@ No. The script and stylesheet together weigh about 25 KB, and the engine does it
 
 == Changelog ==
 
+= 1.3.6 =
+* fixed: after an update, changes to the header's styles and markup now show on existing pages, because Elementor's caches are cleared once per update.
+
 = 1.3.5 – November 20, 2026 =
 * added: a theme can now turn the plugin off with the arts_header/enabled filter, so it no longer conflicts with a theme that ships its own header engine.
 * fixed: the Dual Site Logo widget now shows the site title and tagline on sites that never saved the Customizer's display option, matching what the Customizer shows.
