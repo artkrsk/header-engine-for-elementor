@@ -112,6 +112,9 @@ No. The script and stylesheet together weigh about 25 KB, and the engine does it
 
 == Changelog ==
 
+= 1.4.0 =
+* added: Recolor While Sticky and Recolor in Alternate Look can now swap a Global Color for another Global Color, so the header follows a light/dark palette switch.
+
 = 1.3.6 – November 24, 2026 =
 * fixed: after an update, changes to the header's styles and markup now show on existing pages, because Elementor's caches are cleared once per update.
 

@@ -374,11 +374,16 @@ an empty `array()` encodes as `[]`, not `{}` — a section that can go empty nee
   (repeater, fields `global_id` + `sticky_color`) — the sticky recolor: each row re-declares
   `--e-global-color-{{global_id.VALUE}}` on `HEADER_STICKY_STATE_BAR_SELECTOR`, the exact idiom the
   kit's own Global Colors panel uses, so every widget in the bar consuming that global re-colors
-  with zero per-widget wiring (hardcoded colors unaffected; the override value can't itself be a
-  global — cycle guard). Kit colors for the SELECT come from
+  with zero per-widget wiring (hardcoded colors unaffected). The override is the typed
+  `sticky_color` (globe picker off: with a global value Elementor's post CSS leaves
+  `{{global_id.VALUE}}` in the property name literal) or the sibling SELECT `sticky_global`, which
+  stages `var(--e-global-color-<override>)` as `--arts-header-sticky-color-<id>` on the WRAPPER
+  (`HEADER_SELECTOR`, remaps nothing) for the bar to read, so rows never reference each other: A ↔ B
+  swaps and no var cycle is possible, no guard needed. Kit colors for the SELECTs come from
   `kits_manager->get_active_kit_for_frontend()` at registration (guarded; empty options when no
   kit). A deleted kit color degrades silently: the row emits a var nobody consumes.
-  `arts_header_alt_global_colors` (fields `global_id` + `alt_color`) is the same recolor for the
+  `arts_header_alt_global_colors` (fields `global_id` + `alt_color` + `alt_global`, staged as
+  `--arts-header-alt-color-<id>`) is the same recolor for the
   alternate look, scoped via `HEADER_ALT_STATE_BAR_SELECTOR` (`_alt` alone, like sticky) and
   registered AFTER the sticky repeater so it wins at equal specificity; the `_logo.scss` alt block
   sits after the sticky one for the same reason. Alt zones, like all zones, need On Scroll

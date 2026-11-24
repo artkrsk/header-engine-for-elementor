@@ -599,17 +599,34 @@ class Controls {
 			)
 		);
 
-		// The override value deliberately can't be a global itself (mirrors the
-		// kit's own Global Colors repeater) — a global defined via a global the
-		// bar may also remap would be a resolution cycle.
+		// No globe picker: with a global value Elementor's post CSS rewrites only the text after the
+		// colon, leaving {{global_id.VALUE}} in the property name literal. A global override is the
+		// sibling select below.
 		$global_colors_repeater->add_control(
 			'sticky_color',
 			array(
 				'label'     => esc_html__( 'Color While Sticky', 'artem-semkin-header-engine-for-elementor' ),
 				'type'      => Controls_Manager::COLOR,
 				'global'    => array( 'active' => false ),
+				'condition' => array( 'sticky_global' => '' ),
 				'selectors' => array(
 					self::HEADER_STICKY_STATE_BAR_SELECTOR => '--e-global-color-{{global_id.VALUE}}: {{VALUE}};',
+				),
+			)
+		);
+
+		// Registered after sticky_color so it wins on the shared property. The override is resolved on
+		// the wrapper, which remaps nothing, so rows never reference each other: A ↔ B swaps, no var cycle.
+		$global_colors_repeater->add_control(
+			'sticky_global',
+			array(
+				'label'     => esc_html__( 'Global Color While Sticky', 'artem-semkin-header-engine-for-elementor' ),
+				'type'      => Controls_Manager::SELECT,
+				'options'   => $this->get_kit_global_color_options(),
+				'default'   => '',
+				'selectors' => array(
+					self::HEADER_SELECTOR                  => '--arts-header-sticky-color-{{global_id.VALUE}}: var(--e-global-color-{{VALUE}});',
+					self::HEADER_STICKY_STATE_BAR_SELECTOR => '--e-global-color-{{global_id.VALUE}}: var(--arts-header-sticky-color-{{global_id.VALUE}});',
 				),
 			)
 		);
@@ -625,7 +642,7 @@ class Controls {
 			'arts_header_sticky_global_colors',
 			array(
 				'label'         => esc_html__( 'Recolor While Sticky', 'artem-semkin-header-engine-for-elementor' ),
-				'description'   => esc_html__( 'Widgets inside this header that use a Global Color switch to the override while the header is sticky. Hardcoded colors are not affected.', 'artem-semkin-header-engine-for-elementor' ),
+				'description'   => esc_html__( 'Widgets inside this header that use a Global Color switch to the override while the header is sticky. The override can be a typed color or another Global Color. Hardcoded colors are not affected.', 'artem-semkin-header-engine-for-elementor' ),
 				'type'          => Controls_Manager::REPEATER,
 				'fields'        => $global_colors_repeater->get_controls(),
 				'prevent_empty' => false,
@@ -680,8 +697,23 @@ class Controls {
 				'label'     => esc_html__( 'Color in Alternate Look', 'artem-semkin-header-engine-for-elementor' ),
 				'type'      => Controls_Manager::COLOR,
 				'global'    => array( 'active' => false ),
+				'condition' => array( 'alt_global' => '' ),
 				'selectors' => array(
 					self::HEADER_ALT_STATE_BAR_SELECTOR => '--e-global-color-{{global_id.VALUE}}: {{VALUE}};',
+				),
+			)
+		);
+
+		$alt_colors_repeater->add_control(
+			'alt_global',
+			array(
+				'label'     => esc_html__( 'Global Color in Alternate Look', 'artem-semkin-header-engine-for-elementor' ),
+				'type'      => Controls_Manager::SELECT,
+				'options'   => $this->get_kit_global_color_options(),
+				'default'   => '',
+				'selectors' => array(
+					self::HEADER_SELECTOR               => '--arts-header-alt-color-{{global_id.VALUE}}: var(--e-global-color-{{VALUE}});',
+					self::HEADER_ALT_STATE_BAR_SELECTOR => '--e-global-color-{{global_id.VALUE}}: var(--arts-header-alt-color-{{global_id.VALUE}});',
 				),
 			)
 		);
@@ -690,7 +722,7 @@ class Controls {
 			'arts_header_alt_global_colors',
 			array(
 				'label'         => esc_html__( 'Recolor in Alternate Look', 'artem-semkin-header-engine-for-elementor' ),
-				'description'   => esc_html__( 'Widgets inside this header that use a Global Color switch to the override while the header is over a container set to Alternate (Header Zone, Header Look Over This). Hardcoded colors are not affected.', 'artem-semkin-header-engine-for-elementor' ),
+				'description'   => esc_html__( 'Widgets inside this header that use a Global Color switch to the override while the header is over a container set to Alternate (Header Zone, Header Look Over This). The override can be a typed color or another Global Color. Hardcoded colors are not affected.', 'artem-semkin-header-engine-for-elementor' ),
 				'type'          => Controls_Manager::REPEATER,
 				'fields'        => $alt_colors_repeater->get_controls(),
 				'prevent_empty' => false,
