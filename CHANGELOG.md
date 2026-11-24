@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.6 – November 24, 2026
+
+* fixed: after an update, changes to the header's styles and markup now show on existing pages, because Elementor's caches are cleared once per update.
+
 ## 1.3.5 – November 20, 2026
 
 * added: a theme can now turn the plugin off with the arts_header/enabled filter, so it no longer conflicts with a theme that ships its own header engine.

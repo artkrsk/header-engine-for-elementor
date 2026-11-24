@@ -4,7 +4,7 @@ Tags: elementor, sticky header, elementor header, transparent header, hide heade
 Requires at least: 6.5
 Tested up to: 7.2
 Requires PHP: 8.0
-Stable tag: 1.3.5
+Stable tag: 1.3.6
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0
 GitHub Plugin URI: https://github.com/artkrsk/header-engine-for-elementor/
@@ -107,6 +107,9 @@ No. The script and stylesheet together weigh about 25 KB, and the engine does it
 5. Primary and secondary logos in the Dual Site Logo widget — the header swaps them automatically when it sticks.
 
 == Changelog ==
+
+= 1.3.6 – November 24, 2026 =
+* fixed: after an update, changes to the header's styles and markup now show on existing pages, because Elementor's caches are cleared once per update.
 
 = 1.3.5 – November 20, 2026 =
 * added: a theme can now turn the plugin off with the arts_header/enabled filter, so it no longer conflicts with a theme that ships its own header engine.
