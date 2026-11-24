@@ -15,9 +15,9 @@ Sticky and auto-hide header for Elementor containers. Hide on scroll down, revea
 
 Turn any Elementor Container into a site header that knows what to do on scroll: pin it to the top, tuck it away while readers scroll down, bring it back the moment they scroll up, and restyle it while it is stuck. You set it all up in the Container's own settings panel. There is no separate builder to learn, and the free version of Elementor is enough.
 
-= ✅ Used in Velum theme =
+= ✅ Used in Velum and Trigger themes =
 
-Velum, my portfolio theme for architects and studios, uses this plugin for its sticky, hide-on-scroll header. [Velum's page](https://artemsemkin.com/themes/velum/?utm_source=wordpress.org&utm_medium=referral&utm_campaign=artem-semkin-header-engine-for-elementor) has a live demo to try it.
+Velum, my portfolio theme for architects and studios, uses this plugin for its sticky, hide-on-scroll header. Trigger, my AJAX portfolio theme, installs it during setup for its header. [Velum's page](https://artemsemkin.com/themes/velum/?utm_source=wordpress.org&utm_medium=referral&utm_campaign=artem-semkin-header-engine-for-elementor) and [Trigger's page](https://artemsemkin.com/themes/trigger/?utm_source=wordpress.org&utm_medium=referral&utm_campaign=artem-semkin-header-engine-for-elementor) have live demos to try it.
 
 = What you get =
 
