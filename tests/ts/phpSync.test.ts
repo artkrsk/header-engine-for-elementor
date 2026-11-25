@@ -99,13 +99,12 @@ describe('Markup.php mirrors the TS identifier contract', () => {
     expect(markup).toContain('getPropertyValue(name) !== value')
   })
 
-  it.each([
-    NON_STICKY_LOGO_ATTR,
-    STICKY_LOGO_ATTR,
-    ALT_LOGO_ATTR
-  ])('prints the %s logo-version attribute', (attr) => {
-    expect(markup).toContain(`'${attr}'`)
-  })
+  it.each([NON_STICKY_LOGO_ATTR, STICKY_LOGO_ATTR, ALT_LOGO_ATTR])(
+    'prints the %s logo-version attribute',
+    (attr) => {
+      expect(markup).toContain(`'${attr}'`)
+    }
+  )
 
   it('renders the zone marker from the Header Zone panel keys', () => {
     expect(markup).toContain(`'${ZONE_ATTR}'`)

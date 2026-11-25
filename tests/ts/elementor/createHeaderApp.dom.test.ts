@@ -301,27 +301,27 @@ describe('createHeaderApp', () => {
     expect(app.artsHeader?.isInitialized).toBe(true)
   })
 
-  it.each([
-    'callbackBefore',
-    'callbackAfter'
-  ] as const)('logs and rethrows a failing %s, and the next init() runs again', async (hook) => {
-    makeHeaderFixture()
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const failure = new Error('boom')
-    const callback = vi.fn(async () => {})
-    callback.mockRejectedValueOnce(failure)
-    const app = await createHeaderApp({ autoInit: false, [hook]: callback })
-    apps.push(app)
-    await expect(app.init()).rejects.toBe(failure)
-    expect(errorSpy).toHaveBeenCalledWith(
-      ':Header [ERROR] Error during arts header initialization:',
-      failure
-    )
-    // The failed run must not stay parked as the "in-flight" one.
-    await expect(app.init()).resolves.toBe(true)
-    expect(callback).toHaveBeenCalledTimes(2)
-    expect(app.artsHeader?.isInitialized).toBe(true)
-  })
+  it.each(['callbackBefore', 'callbackAfter'] as const)(
+    'logs and rethrows a failing %s, and the next init() runs again',
+    async (hook) => {
+      makeHeaderFixture()
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const failure = new Error('boom')
+      const callback = vi.fn(async () => {})
+      callback.mockRejectedValueOnce(failure)
+      const app = await createHeaderApp({ autoInit: false, [hook]: callback })
+      apps.push(app)
+      await expect(app.init()).rejects.toBe(failure)
+      expect(errorSpy).toHaveBeenCalledWith(
+        ':Header [ERROR] Error during arts header initialization:',
+        failure
+      )
+      // The failed run must not stay parked as the "in-flight" one.
+      await expect(app.init()).resolves.toBe(true)
+      expect(callback).toHaveBeenCalledTimes(2)
+      expect(app.artsHeader?.isInitialized).toBe(true)
+    }
+  )
 
   it('keeps serving editor upserts after one of them fails', async () => {
     const first = makeHeaderFixture()
@@ -349,25 +349,28 @@ describe('createHeaderApp', () => {
   it.each([
     [true, false],
     [false, true]
-  ])('destroys one editor container with revert=%s — the sticky look survives only without it', async (revert, keepsLook) => {
-    const { container, bar } = makeHeaderFixture()
-    const other = makeHeaderFixture()
-    // Scrolled before boot: the engine publishes its stuck state at construction.
-    setScroll(0, 50)
-    const app = await createHeaderApp({ autoInit: false })
-    apps.push(app)
-    const { load, destroyOne } = captureEditorHooks(app)
-    await load({ container, bar })
-    await load({ container: other.container, bar: other.bar })
-    const destroyed = app.getInstance(container)
-    expect(container.classList.contains('arts-header_sticky')).toBe(true)
-    await destroyOne(container, revert)
-    expect(destroyed?.isInitialized).toBe(false)
-    expect(container.classList.contains('arts-header_sticky')).toBe(keepsLook)
-    // Only that container went: the sibling header keeps running.
-    expect(app.instances).toHaveLength(1)
-    expect(app.getInstance(other.container)?.isInitialized).toBe(true)
-  })
+  ])(
+    'destroys one editor container with revert=%s — the sticky look survives only without it',
+    async (revert, keepsLook) => {
+      const { container, bar } = makeHeaderFixture()
+      const other = makeHeaderFixture()
+      // Scrolled before boot: the engine publishes its stuck state at construction.
+      setScroll(0, 50)
+      const app = await createHeaderApp({ autoInit: false })
+      apps.push(app)
+      const { load, destroyOne } = captureEditorHooks(app)
+      await load({ container, bar })
+      await load({ container: other.container, bar: other.bar })
+      const destroyed = app.getInstance(container)
+      expect(container.classList.contains('arts-header_sticky')).toBe(true)
+      await destroyOne(container, revert)
+      expect(destroyed?.isInitialized).toBe(false)
+      expect(container.classList.contains('arts-header_sticky')).toBe(keepsLook)
+      // Only that container went: the sibling header keeps running.
+      expect(app.instances).toHaveLength(1)
+      expect(app.getInstance(other.container)?.isInitialized).toBe(true)
+    }
+  )
 
   it('treats an editor destroy without a container as the aggregate destroy', async () => {
     const first = makeHeaderFixture()
