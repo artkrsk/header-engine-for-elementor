@@ -182,29 +182,30 @@ const syncRows = handlers.flatMap(([handler]) =>
 describe.skipIf(!hasPhp)('Backend WordPress -> kit sync', () => {
   const results = lazyEmitter<IBackendResult>('backend.php', syncRows)
 
-  describe.each(
-    handlers.map(([handler, option], index) => ({ handler, option, index }))
-  )('$handler handler', ({ option, index }) => {
-    it.each(syncCases.map((entry, caseIndex) => ({ entry, caseIndex })))('$entry.name', ({
-      entry,
-      caseIndex
-    }) => {
-      const result = results()[index * syncCases.length + caseIndex]
+  describe.each(handlers.map(([handler, option], index) => ({ handler, option, index })))(
+    '$handler handler',
+    ({ option, index }) => {
+      it.each(syncCases.map((entry, caseIndex) => ({ entry, caseIndex })))(
+        '$entry.name',
+        ({ entry, caseIndex }) => {
+          const result = results()[index * syncCases.length + caseIndex]
 
-      expect(result?.returned).toEqual(entry.value)
-      expect(
-        result?.calls.filter((call) => call.fn === 'wp_get_attachment_image_url')
-      ).toHaveLength(entry.lookups)
-      if (entry.url === null) {
-        expect(result?.kit).toEqual([])
-        return
-      }
-      expect(result?.kit).toHaveLength(1)
-      expect(result?.kit[0]?.option).toBe(option)
-      expect(result?.kit[0]?.value.url).toBe(entry.url)
-      expect(String(result?.kit[0]?.value.id)).toBe(String(entry.value))
-    })
-  })
+          expect(result?.returned).toEqual(entry.value)
+          expect(
+            result?.calls.filter((call) => call.fn === 'wp_get_attachment_image_url')
+          ).toHaveLength(entry.lookups)
+          if (entry.url === null) {
+            expect(result?.kit).toEqual([])
+            return
+          }
+          expect(result?.kit).toHaveLength(1)
+          expect(result?.kit[0]?.option).toBe(option)
+          expect(result?.kit[0]?.value.url).toBe(entry.url)
+          expect(String(result?.kit[0]?.value.id)).toBe(String(entry.value))
+        }
+      )
+    }
+  )
 
   it('hands the value back untouched when Elementor is not installed at all', () => {
     const [result] = lazyEmitter<IBackendResult>(

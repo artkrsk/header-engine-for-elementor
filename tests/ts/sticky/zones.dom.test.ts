@@ -482,20 +482,23 @@ describe('createZoneTracker', () => {
         },
         [false, false, true, false]
       ]
-    ] as const)('forces a %s zone to the center rule and the window path', (_kind, configure, expected) => {
-      const { tracker, onChange } = makeHorizontalRig(
-        () => range,
-        ({ panel }) => configure(panel)
-      )
-      // The panel's own rect [1000, 2500] would be in view here; the window opens at 1550.
-      tracker.evaluate(1200)
-      expect(onChange).not.toHaveBeenCalled()
-      tracker.evaluate(1549)
-      expect(onChange).not.toHaveBeenCalled()
-      tracker.evaluate(1550)
-      expect(onChange).toHaveBeenLastCalledWith(...expected)
-      tracker.evaluate(2650)
-      expect(onChange).toHaveBeenLastCalledWith(false, false, false, false)
-    })
+    ] as const)(
+      'forces a %s zone to the center rule and the window path',
+      (_kind, configure, expected) => {
+        const { tracker, onChange } = makeHorizontalRig(
+          () => range,
+          ({ panel }) => configure(panel)
+        )
+        // The panel's own rect [1000, 2500] would be in view here; the window opens at 1550.
+        tracker.evaluate(1200)
+        expect(onChange).not.toHaveBeenCalled()
+        tracker.evaluate(1549)
+        expect(onChange).not.toHaveBeenCalled()
+        tracker.evaluate(1550)
+        expect(onChange).toHaveBeenLastCalledWith(...expected)
+        tracker.evaluate(2650)
+        expect(onChange).toHaveBeenLastCalledWith(false, false, false, false)
+      }
+    )
   })
 })

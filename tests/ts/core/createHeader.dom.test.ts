@@ -184,87 +184,90 @@ describe('createHeader', () => {
   it.each([
     ['', false],
     [' with a marked panel in a horizontal section', true]
-  ])('init() and refresh() read every layout metric before their first DOM write%s', (_, horizontal) => {
-    const { container, bar, header } = makeRig()
-    const host = document.createElement('div')
-    host.className = 'arts-header-values js-arts-header-values'
-    container.before(host)
-    host.appendChild(container)
-    const rects: HTMLElement[] = []
-    const getScrollRange = vi.fn(() => ({
-      start: 1550,
-      end: 2650,
-      onStageAtEngage: false,
-      onStageAtRelease: false,
-      stageTop: 0,
-      stageHeight: 800
-    }))
-    if (horizontal) {
-      vi.stubGlobal('artsHorizontalScroll', { contract: 1, getScrollRange })
-      container.getBoundingClientRect = () =>
-        ({
-          top: -window.scrollY,
-          bottom: 80 - window.scrollY,
-          height: 80,
-          left: 0,
-          width: 500
-        }) as DOMRect
-      const section = document.createElement('div')
-      section.className = 'js-arts-hs'
-      section.getBoundingClientRect = () =>
-        ({ top: 1000, bottom: 4000, left: 0, width: 1000 }) as DOMRect
-      const panel = document.createElement('div')
-      panel.setAttribute('data-arts-header-hide-over', 'at-top')
-      panel.getBoundingClientRect = () => ({ top: 1000, bottom: 2500 }) as DOMRect
-      section.appendChild(panel)
-      document.body.appendChild(section)
-      rects.push(section, panel)
-    }
-    const log: string[] = []
-    const tap = <T extends object, K extends keyof T>(
-      target: T,
-      key: K,
-      kind: 'read' | 'write' | 'host',
-      skip?: (...args: unknown[]) => boolean
-    ): void => {
-      const original = target[key] as unknown as (...args: unknown[]) => unknown
-      ;(target as Record<K, unknown>)[key] = function (this: unknown, ...args: unknown[]) {
-        if (!skip?.(...args)) {
-          log.push(kind)
-        }
-        return original.apply(this, args)
+  ])(
+    'init() and refresh() read every layout metric before their first DOM write%s',
+    (_, horizontal) => {
+      const { container, bar, header } = makeRig()
+      const host = document.createElement('div')
+      host.className = 'arts-header-values js-arts-header-values'
+      container.before(host)
+      host.appendChild(container)
+      const rects: HTMLElement[] = []
+      const getScrollRange = vi.fn(() => ({
+        start: 1550,
+        end: 2650,
+        onStageAtEngage: false,
+        onStageAtRelease: false,
+        stageTop: 0,
+        stageHeight: 800
+      }))
+      if (horizontal) {
+        vi.stubGlobal('artsHorizontalScroll', { contract: 1, getScrollRange })
+        container.getBoundingClientRect = () =>
+          ({
+            top: -window.scrollY,
+            bottom: 80 - window.scrollY,
+            height: 80,
+            left: 0,
+            width: 500
+          }) as DOMRect
+        const section = document.createElement('div')
+        section.className = 'js-arts-hs'
+        section.getBoundingClientRect = () =>
+          ({ top: 1000, bottom: 4000, left: 0, width: 1000 }) as DOMRect
+        const panel = document.createElement('div')
+        panel.setAttribute('data-arts-header-hide-over', 'at-top')
+        panel.getBoundingClientRect = () => ({ top: 1000, bottom: 2500 }) as DOMRect
+        section.appendChild(panel)
+        document.body.appendChild(section)
+        rects.push(section, panel)
       }
+      const log: string[] = []
+      const tap = <T extends object, K extends keyof T>(
+        target: T,
+        key: K,
+        kind: 'read' | 'write' | 'host',
+        skip?: (...args: unknown[]) => boolean
+      ): void => {
+        const original = target[key] as unknown as (...args: unknown[]) => unknown
+        ;(target as Record<K, unknown>)[key] = function (this: unknown, ...args: unknown[]) {
+          if (!skip?.(...args)) {
+            log.push(kind)
+          }
+          return original.apply(this, args)
+        }
+      }
+      // Layout-forcing reads. A computed-style read of <html> is exempt: the root is never the
+      // dirtied node, so it flushes nothing (measured: 0 ms with a dirty descendant subtree).
+      tap(bar, 'getBoundingClientRect', 'read')
+      tap(container, 'getBoundingClientRect', 'read')
+      for (const el of rects) {
+        tap(el, 'getBoundingClientRect', 'read')
+      }
+      tap(window, 'getComputedStyle', 'read', (el) => el === document.documentElement)
+      tap(host.style, 'setProperty', 'host')
+      tap(container.style, 'setProperty', 'write')
+      tap(container.classList, 'toggle', 'write')
+      tap(document.documentElement.style, 'setProperty', 'write')
+      tap(document.documentElement.classList, 'toggle', 'write')
+      const expectOneFlush = (): void => {
+        // The value-host invalidation is the one write allowed ahead of the reads, once per pass: it
+        // dirties the host so the measurement below resolves its viewport lengths in that SAME flush.
+        expect(log[0]).toBe('host')
+        expect(log.filter((kind) => kind === 'host')).toHaveLength(1)
+        const rest = log.slice(1)
+        const firstWrite = rest.indexOf('write')
+        expect(firstWrite).toBeGreaterThan(0)
+        expect(rest.lastIndexOf('read')).toBeLessThan(firstWrite)
+      }
+      header.init()
+      expectOneFlush()
+      log.length = 0
+      header.refresh()
+      expectOneFlush()
+      expect(getScrollRange).toHaveBeenCalledTimes(horizontal ? 2 : 0)
     }
-    // Layout-forcing reads. A computed-style read of <html> is exempt: the root is never the
-    // dirtied node, so it flushes nothing (measured: 0 ms with a dirty descendant subtree).
-    tap(bar, 'getBoundingClientRect', 'read')
-    tap(container, 'getBoundingClientRect', 'read')
-    for (const el of rects) {
-      tap(el, 'getBoundingClientRect', 'read')
-    }
-    tap(window, 'getComputedStyle', 'read', (el) => el === document.documentElement)
-    tap(host.style, 'setProperty', 'host')
-    tap(container.style, 'setProperty', 'write')
-    tap(container.classList, 'toggle', 'write')
-    tap(document.documentElement.style, 'setProperty', 'write')
-    tap(document.documentElement.classList, 'toggle', 'write')
-    const expectOneFlush = (): void => {
-      // The value-host invalidation is the one write allowed ahead of the reads, once per pass: it
-      // dirties the host so the measurement below resolves its viewport lengths in that SAME flush.
-      expect(log[0]).toBe('host')
-      expect(log.filter((kind) => kind === 'host')).toHaveLength(1)
-      const rest = log.slice(1)
-      const firstWrite = rest.indexOf('write')
-      expect(firstWrite).toBeGreaterThan(0)
-      expect(rest.lastIndexOf('read')).toBeLessThan(firstWrite)
-    }
-    header.init()
-    expectOneFlush()
-    log.length = 0
-    header.refresh()
-    expectOneFlush()
-    expect(getScrollRange).toHaveBeenCalledTimes(horizontal ? 2 : 0)
-  })
+  )
 
   it('re-measures the height through the sticky change wiring end to end', () => {
     vi.useFakeTimers()
