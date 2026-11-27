@@ -42,6 +42,18 @@ The filter is read once, on `after_setup_theme`: add it from a plugin file or th
 
 GPL-3.0-or-later.
 
+## Standalone markup
+
+A bar written as plain HTML, with the engine's markup and scripts but no Elementor container, keeps
+its native padding and gap. Add `arts-header__bar_values` to the bar to take them from the header
+values instead: the bar's `padding-block` and `padding-inline` come from `--arts-header-padding-*`,
+and from the `-sticky` values while the header is sticky and not held, and its `gap` from
+`--arts-header-row-gap` and `--arts-header-column-gap`. The bar must sit in the usual chain,
+`.arts-header-values > .arts-header > .arts-header__bar_values`; a theme sets the values on
+`.arts-header-values` (or through the `-default` variables). The change between the two states
+animates through the bar's existing `padding` transition. Left and right map to inline start and
+end, so an RTL page mirrors; an Elementor header keeps left on the left there.
+
 ## TypeScript package entries
 
 Themes integrating with the installed WordPress plugin use `@arts/header/contract` for public
