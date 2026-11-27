@@ -45,32 +45,10 @@
   }
 }
 
-// Elementor's generated native variables are unlayered. This compatibility boundary must be
-// unlayered too, and outrank the normal/sticky generated selectors. It only matches headers
-// with the new host; ordinary containers and standalone engine markup retain native behavior
-// unless the bar opts in with `arts-header__bar_values` (rules at the end of this file).
-.arts-header-values > .arts-header > .arts-header__bar.elementor-element.e-con {
-  --row-gap: var(--arts-header-row-gap);
-  --column-gap: var(--arts-header-column-gap);
-  --gap: var(--arts-header-row-gap) var(--arts-header-column-gap);
-
-  @each $side in top, right, bottom, left {
-    --padding-#{$side}: var(--arts-header-padding-#{$side});
-  }
-}
-
-.arts-header-values
-  > .arts-header.arts-header_sticky:where(:not(.arts-header_held))
-  > .arts-header__bar.elementor-element.e-con {
-  @each $side in top, right, bottom, left {
-    --padding-#{$side}: var(--arts-header-padding-#{$side}-sticky);
-  }
-}
-
 // Opt-in for a bar written outside Elementor: the same values, states and parent chain as the
-// Elementor rules above, onto the bar's own padding and gap. Left and right map to inline start
-// and end, so an RTL page mirrors (Elementor's container swaps them back and keeps the sides).
-// Unlayered like the rules above: a layered rule would lose to any unlayered reset.
+// Elementor aliases in elementor.scss, onto the bar's own padding and gap. Left and right map to
+// inline start and end, so an RTL page mirrors (Elementor's container swaps them back and keeps
+// the sides). Unlayered like those aliases: a layered rule would lose to any unlayered reset.
 .arts-header-values > .arts-header > .arts-header__bar_values {
   gap: var(--arts-header-row-gap) var(--arts-header-column-gap);
   padding-block: var(--arts-header-padding-top) var(--arts-header-padding-bottom);

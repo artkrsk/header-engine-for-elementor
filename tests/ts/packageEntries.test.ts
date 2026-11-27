@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { runInNewContext } from 'node:vm'
 import { build } from 'esbuild'
 import { Window } from 'happy-dom'
+import { compile } from 'sass'
 import { afterAll, describe, expect, it } from 'vitest'
 
 // This consumer has its own node_modules and no producer tsconfig, globals or Vite ambient types.
@@ -153,5 +154,16 @@ const element = document.createElement('div'); const instance = Provider.createH
     expect(resolve(consumerRequire.resolve(`${packageName}/src/styles/index.scss`))).toBe(
       join(root, 'src/styles/index.scss')
     )
+  })
+
+  it('keeps Elementor, WPML and WooCommerce classes out of the package stylesheet', () => {
+    // Compiled as scripts/build-library.mjs compiles styles.css; those rules belong in elementor.scss.
+    const { css } = compile(join(root, 'src/styles/index.scss'), {
+      loadPaths: [join(root, 'node_modules')],
+      style: 'compressed'
+    })
+    const platformClass =
+      /\.(?:elementor|e-con|e-div-block|wpml|woocommerce|widget_shopping_cart|mini-cart)[\w-]*/g
+    expect(css.match(platformClass) ?? []).toEqual([])
   })
 })
