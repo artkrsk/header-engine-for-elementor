@@ -4,7 +4,7 @@ Tags: elementor, sticky header, elementor header, transparent header, hide heade
 Requires at least: 6.5
 Tested up to: 7.2
 Requires PHP: 8.0
-Stable tag: 1.3.6
+Stable tag: 1.4.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0
 GitHub Plugin URI: https://github.com/artkrsk/header-engine-for-elementor/
@@ -112,7 +112,7 @@ No. The script and stylesheet together weigh about 25 KB, and the engine does it
 
 == Changelog ==
 
-= 1.4.0 =
+= 1.4.0 – November 27, 2026 =
 * added: Recolor While Sticky and Recolor in Alternate Look can now swap a Global Color for another Global Color, so the header follows a light/dark palette switch.
 * added: a header bar written outside Elementor can now take its padding and gap from the header values by adding the arts-header__bar_values class, including the sticky padding, with the change animated as in an Elementor header.
 
