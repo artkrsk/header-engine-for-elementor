@@ -139,7 +139,7 @@ each measure pass. Tick deciders and sub-modules:
   class turns the sticky LOOK off while `_sticky` stays on, because `_sticky` also positions the
   bar in the fixed, hero-bottom and released modes. Every in-box sticky rule excludes it with a
   zero-specificity `:where(:not(.arts-header_held))` (the `HEADER_STICKY_*` selector constants in
-  `Controls.php`, `_values.scss` padding, the sticky-logo block in `_logo.scss`), so the sticky
+  `Controls.php`, `_values.scss` and `elementor.scss` padding, the sticky-logo block in `_logo.scss`), so the sticky
   rules keep their weight and the alt rules, registered later, still win; the non-sticky logo block
   matches `:is(:not(_sticky), _held)`. A held flip animates the bar like a stick flip, so
   `setHeld` re-fires `onStickingChange` while sticking and the height observer publishes the
@@ -220,7 +220,10 @@ non-factory pattern. `events/headerEvents.ts` is the public document CustomEvent
 src/ts/            boot.ts + index.ts; core/ events/ options/ sticky/ heightObserver/ elementor/
                    constants/ interfaces/ types/ utils/ (mostly a vendored @arts/utilities subset)
 src/styles/        the `arts-header` cascade layer: index + _tokens (contract file), _modes,
-                   _reveal, _logo, _interaction
+                   _reveal, _logo, _interaction. index is the engine alone (the package's
+                   styles.css); elementor.scss (`@use 'index'` + Elementor/WPML/cart rules, the
+                   editor exemption) is the plugin bundle entry. packageEntries.test.ts fails if
+                   an Elementor class reaches index's output
 src/php/           Plugin (singleton bootstrap, wired on after_setup_theme behind the
                    `arts_header/enabled` filter) +
                    Elementor/{Assets, Markup, Controls, Backend, DualLogoWidget,
@@ -400,7 +403,7 @@ an empty `array()` encodes as `[]`, not `{}` — a section that can go empty nee
 
 ## Gotchas / invariants
 
-- **Safari viewport lengths (Velum #290):** Elementor headers are `.arts-header-values` (`display: contents`) → `.arts-header` → native Container/bar. The host owns typed reveal/pin offsets, normal/sticky padding and gaps; `_values.scss` aliases computed inherited lengths into Elementor's native variables through an unlayered, header-only compatibility rule. Native control IDs and original selectors stay; extra host selectors use the same responsive/FDS pipeline, including Kit defaults. Empty sticky padding follows the normal token. Percentages stay percentages through `<length-percentage>`; em uses the host's inherited font context (custom bar-only typography is outside this layout adapter). The wrapper remains the state, geometry and event owner. `estimateNaturalTop` skips only the known host. WebKit caches viewport lengths on a boxless host when viewport size changes, so `createValueHostInvalidation` coalesces resize events into one host-local style invalidation per frame, with no layout reads or root-variable writes; init/refresh invalidate before measuring and destroy releases the listener/queued frame. A bar written outside Elementor opts in with `arts-header__bar_values`: two more unlayered rules at the end of `_values.scss` (same parent chain, same sticky/held states) set its own `padding-block`, `padding-inline` and `gap`; left/right map to inline start/end, so RTL mirrors, unlike Elementor's container, whose `body.rtl` swap keeps the physical sides. Regenerate Elementor CSS after deploying these selector changes. The `/contract` exports `VALUE_HOST_JS_CLASS` for snapshot integrations: Canvas header scenery must clone the host while measuring/hiding the boxed wrapper.
+- **Safari viewport lengths (Velum #290):** Elementor headers are `.arts-header-values` (`display: contents`) → `.arts-header` → native Container/bar. The host owns typed reveal/pin offsets, normal/sticky padding and gaps; `elementor.scss` aliases computed inherited lengths into Elementor's native variables through an unlayered, header-only compatibility rule. Native control IDs and original selectors stay; extra host selectors use the same responsive/FDS pipeline, including Kit defaults. Empty sticky padding follows the normal token. Percentages stay percentages through `<length-percentage>`; em uses the host's inherited font context (custom bar-only typography is outside this layout adapter). The wrapper remains the state, geometry and event owner. `estimateNaturalTop` skips only the known host. WebKit caches viewport lengths on a boxless host when viewport size changes, so `createValueHostInvalidation` coalesces resize events into one host-local style invalidation per frame, with no layout reads or root-variable writes; init/refresh invalidate before measuring and destroy releases the listener/queued frame. A bar written outside Elementor opts in with `arts-header__bar_values`: two more unlayered rules at the end of `_values.scss` (same parent chain, same sticky/held states) set its own `padding-block`, `padding-inline` and `gap`; left/right map to inline start/end, so RTL mirrors, unlike Elementor's container, whose `body.rtl` swap keeps the physical sides. Regenerate Elementor CSS after deploying these selector changes. The `/contract` exports `VALUE_HOST_JS_CLASS` for snapshot integrations: Canvas header scenery must clone the host while measuring/hiding the boxed wrapper.
 
 - **Library-surface modules must not lean on `global.d.ts`** — a consumer that `link:`s this
   package compiles the source with its own tsc, and ambient Window augmentations don't travel with

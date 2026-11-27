@@ -1,8 +1,11 @@
 // Artem Semkin Header Engine for Elementor — the engine stylesheet.
 //
 // Architecture:
-// - Engine rules live in `arts-header`; the Elementor value aliases in _values are unlayered
-//   so they can replace Elementor's generated raw lengths on the animated bar.
+// - This entry is the engine alone, the package's `styles.css`; the plugin bundle builds from
+//   elementor.scss, which adds the Elementor-only rules on top.
+// - Engine rules live in `arts-header`; the `arts-header__bar_values` rules in _values (and
+//   elementor.scss's value aliases) are unlayered so they win over unlayered resets and
+//   Elementor's generated raw lengths on the animated bar.
 // - The WRAPPER positions in every docking mode and carries the reveal transform; the bar's
 //   modifier class only signals which mode. One code path for flow + overlay keeps the engine
 //   mode-agnostic.

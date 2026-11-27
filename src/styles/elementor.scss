@@ -1,0 +1,60 @@
+// WordPress bundle entry: the engine (index.scss, also the package's styles entry) plus what only
+// exists on an Elementor page: the value aliases onto Elementor's container variables, the
+// container parts the bar transition reaches, the widget click-through boundaries and the editor
+// exemption. The split keeps the bundle's cascade as it was: nothing here loses on order to a
+// rule it used to beat.
+
+@use 'index';
+@use 'modes';
+
+// Elementor's generated native variables are unlayered. This compatibility boundary must be
+// unlayered too, and outrank the normal/sticky generated selectors. It only matches headers
+// with the new host; ordinary containers and standalone engine markup retain native behavior
+// unless the bar opts in with `arts-header__bar_values` (_values.scss).
+.arts-header-values > .arts-header > .arts-header__bar.elementor-element.e-con {
+  --row-gap: var(--arts-header-row-gap);
+  --column-gap: var(--arts-header-column-gap);
+  --gap: var(--arts-header-row-gap) var(--arts-header-column-gap);
+
+  @each $side in top, right, bottom, left {
+    --padding-#{$side}: var(--arts-header-padding-#{$side});
+  }
+}
+
+.arts-header-values
+  > .arts-header.arts-header_sticky:where(:not(.arts-header_held))
+  > .arts-header__bar.elementor-element.e-con {
+  @each $side in top, right, bottom, left {
+    --padding-#{$side}: var(--arts-header-padding-#{$side}-sticky);
+  }
+}
+
+@layer arts-header {
+  .arts-header .arts-header__bar.e-con:not(.e-div-block-base) > .e-con-inner,
+  .arts-header .arts-header__bar.e-con:not(.e-div-block-base),
+  .arts-header .arts-header__bar.elementor-element:not(.e-div-block-base) .elementor-widget-container,
+  .arts-header .arts-header__bar.elementor-element:not(.e-div-block-base, :has(.elementor-widget-container)) {
+    @include modes.bar-transition;
+  }
+
+  .arts-header {
+    // Widget boundary: descendants inherit `auto` from here, so an unlayered theme reset like
+    // `all: unset` on a control resolves its pointer-events to auto instead of the wrapper's none.
+    .elementor-widget,
+    .wpml-elementor-ls,
+    .wpml-elementor-ls *,
+    .mini-cart__content,
+    .mini-cart__content *,
+    .widget_shopping_cart {
+      pointer-events: initial;
+    }
+  }
+
+  // The editor keeps the bar clickable. `revert-layer` drops every pointer-events rule of this
+  // layer on the wrapper and its descendants, as if none had matched. Keep it last: it ties the
+  // two-class members above and in _interaction.scss on specificity and wins on order.
+  .elementor-editor-active .arts-header,
+  .elementor-editor-active .arts-header * {
+    pointer-events: revert-layer;
+  }
+}

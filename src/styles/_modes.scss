@@ -1,5 +1,12 @@
 @use 'tokens';
 
+// The bar surface transition; elementor.scss applies it to Elementor's container parts too.
+@mixin bar-transition {
+  transition-property: background, box-shadow, border-color, border-width, border-radius, opacity, padding;
+  transition-duration: tokens.$transition-duration;
+  transition-timing-function: ease;
+}
+
 // Wrapper positioning per docking mode, plus the structural pieces that ride it (bar surface
 // transitions, release override).
 
@@ -30,14 +37,8 @@
   // Bar visual-state transitions (background/border/etc. when toggling per-state sticky styles).
   // Sticky padding lives in Controls.php (`padding_sticky` → `--padding-*` on the sticky-scoped
   // bar, `_sticky` alone — "pseudo sticky": a hiding/locked bar keeps its sticky padding).
-  .arts-header .arts-header__bar,
-  .arts-header .arts-header__bar.e-con:not(.e-div-block-base) > .e-con-inner,
-  .arts-header .arts-header__bar.e-con:not(.e-div-block-base),
-  .arts-header .arts-header__bar.elementor-element:not(.e-div-block-base) .elementor-widget-container,
-  .arts-header .arts-header__bar.elementor-element:not(.e-div-block-base, :has(.elementor-widget-container)) {
-    transition-property: background, box-shadow, border-color, border-width, border-radius, opacity, padding;
-    transition-duration: tokens.$transition-duration;
-    transition-timing-function: ease;
+  .arts-header .arts-header__bar {
+    @include bar-transition;
   }
 
   // Ink motion for the sticky global-color remaps: remapped `--e-global-color-*` values flip on
